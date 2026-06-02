@@ -12,7 +12,7 @@ Update via `/done` command after each completed step.
   - BE: `dotnet new sln`, 4 projects (Domain, Application, Infrastructure, Api)
   - FE: `npm create vite@latest` + TS strict + Tailwind + shadcn init
   - Root: `.gitignore`, `README.md`, `docker-compose.yml` (postgres, seq)
-- [ ] Step 2 [BE] — Base entities: `BaseEntity`, `ITenantOwned`, `ISoftDeletable`, `Tenant`, `User`, `UserRole`
+- [x] Step 2 [BE] — Base entities: `BaseEntity`, `ITenantOwned`, `ISoftDeletable`, `Tenant`, `User`, `UserRole`
 - [ ] Step 3 [BE] — `AppDbContext` + EF configurations + global query filters (tenant + soft delete)
 - [ ] Step 4 [BE] — Migration: `InitialIdentity`
 - [ ] Step 5 [BE] — JWT auth (login, refresh, logout) + `CurrentUser` accessor + tenancy middleware

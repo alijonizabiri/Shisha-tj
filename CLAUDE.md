@@ -164,9 +164,9 @@ For `[FULL]` steps:
 ## Current Status
 
 **Phase:** 0 — Foundation
-**Last completed:** Step 1 [FULL] — Repository scaffold
-**Last commit:** Phase 0 Step 1 [FULL]: Repository scaffold
-**Next step:** Phase 0 Step 2 [BE] — Base entities
+**Last completed:** Step 2 [BE] — Base entities
+**Last commit:** Phase 0 Step 2 [BE]: Base entities
+**Next step:** Phase 0 Step 3 [BE] — AppDbContext + EF configurations + global query filters
 **Build BE:** ✅ 0 warnings, 0 errors
 **Build FE:** ✅ built in ~500ms
 **Tests:** ✅ BE 3/3 | FE 3/3
