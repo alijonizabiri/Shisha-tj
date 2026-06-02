@@ -13,7 +13,7 @@ Update via `/done` command after each completed step.
   - FE: `npm create vite@latest` + TS strict + Tailwind + shadcn init
   - Root: `.gitignore`, `README.md`, `docker-compose.yml` (postgres, seq)
 - [x] Step 2 [BE] — Base entities: `BaseEntity`, `ITenantOwned`, `ISoftDeletable`, `Tenant`, `User`, `UserRole`
-- [ ] Step 3 [BE] — `AppDbContext` + EF configurations + global query filters (tenant + soft delete)
+- [x] Step 3 [BE] — `AppDbContext` + EF configurations + global query filters (tenant + soft delete)
 - [ ] Step 4 [BE] — Migration: `InitialIdentity`
 - [ ] Step 5 [BE] — JWT auth (login, refresh, logout) + `CurrentUser` accessor + tenancy middleware
 - [ ] Step 6 [BE] — `SaveChangesInterceptor` (auto-fill `CreatedAt`, `UpdatedAt`, `TenantId`)

@@ -164,9 +164,9 @@ For `[FULL]` steps:
 ## Current Status
 
 **Phase:** 0 — Foundation
-**Last completed:** Step 2 [BE] — Base entities
-**Last commit:** Phase 0 Step 2 [BE]: Base entities
-**Next step:** Phase 0 Step 3 [BE] — AppDbContext + EF configurations + global query filters
+**Last completed:** Step 3 [BE] — AppDbContext + EF configurations + global query filters
+**Last commit:** Phase 0 Step 3 [BE]: AppDbContext + EF configurations + global query filters
+**Next step:** Phase 0 Step 4 [BE] — Migration: InitialIdentity
 **Build BE:** ✅ 0 warnings, 0 errors
 **Build FE:** ✅ built in ~500ms
 **Tests:** ✅ BE 3/3 | FE 3/3
