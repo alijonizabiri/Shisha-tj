@@ -164,9 +164,9 @@ For `[FULL]` steps:
 ## Current Status
 
 **Phase:** 0 — Foundation
-**Last completed:** Step 4 [BE] — Migration: InitialIdentity
-**Last commit:** Phase 0 Step 4 [BE]: Migration InitialIdentity
-**Next step:** Phase 0 Step 5 [BE] — JWT auth (login, refresh, logout) + CurrentUser accessor + tenancy middleware
+**Last completed:** Step 5 [BE] — JWT auth + CurrentUser accessor
+**Last commit:** Phase 0 Step 5 [BE]: JWT auth (login, refresh, logout) + CurrentUser accessor
+**Next step:** Phase 0 Step 6 [BE] — SaveChangesInterceptor (auto-fill audit fields)
 **Build BE:** ✅ 0 warnings, 0 errors
 **Build FE:** ✅ built in ~500ms
 **Tests:** ✅ BE 3/3 | FE 3/3
