@@ -25,9 +25,12 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
             .HasConversion<string>()
             .IsRequired();
 
+        builder.Property(u => u.IsActive)
+            .HasDefaultValue(true);
+
         builder.HasIndex(u => u.TenantId);
 
-        // Note: unique (tenant_id, email) where not deleted — enforced via partial index in migration.
+        // Partial unique index enforced via raw SQL in migration (EF Core doesn't generate it natively).
         builder.HasOne(u => u.Tenant)
             .WithMany()
             .HasForeignKey(u => u.TenantId)
