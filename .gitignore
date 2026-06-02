@@ -1,0 +1,42 @@
+# Claude Code
+.claude/
+
+# .NET
+bin/
+obj/
+*.user
+*.suo
+.vs/
+.idea/
+*.DotSettings
+TestResults/
+*.nupkg
+*.snupkg
+
+# Frontend
+node_modules/
+dist/
+.cache/
+.parcel-cache/
+*.local
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Docker volumes
+postgres-data/
+seq-data/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+logs/
+
+# Coverage
+coverage/
