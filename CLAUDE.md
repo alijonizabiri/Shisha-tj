@@ -163,14 +163,14 @@ For `[FULL]` steps:
 
 ## Current Status
 
-**Phase:** 0 — Foundation
-**Last completed:** Step 10 [FE] — Auto-generated TS types from Swagger (openapi-typescript script)
-**Last commit:** Phase 0 Step 10 [FE]: types.ts + generate:types script (port fix)
-**Next step:** Phase 0 Step 11 [FULL] — Integration test: login flow end-to-end
+**Phase:** 1 — Designer
+**Last completed:** Step 11 [FULL] — Integration test: login flow end-to-end (Phase 0 complete)
+**Last commit:** Phase 0 Step 11 [FULL]: auth integration tests + CurrentUserAccessor fix
+**Next step:** Phase 1 Step 1 [FE] — Pure functions in features/designer/lib/
 **Build BE:** ✅ 0 warnings, 0 errors
 **Build FE:** ✅ typecheck + lint + build passing
-**Tests:** ✅ BE 5/5 | FE 7/7
+**Tests:** ✅ BE 11/11 | FE 10/10
 **Updated:** 2026-06-03
 
 ## Completed Phases
-- (none yet)
+- Phase 0 — Foundation ✅ (2026-06-03) — tag `v0.1-foundation` — [summary](docs/phase-summaries/Phase0-summary.md)

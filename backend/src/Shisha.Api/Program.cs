@@ -129,3 +129,6 @@ app.MapHealthChecks("/health", new HealthCheckOptions
 app.MapControllers();
 
 app.Run();
+
+// Exposed for WebApplicationFactory<Program> in integration tests
+public partial class Program { }

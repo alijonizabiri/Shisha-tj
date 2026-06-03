@@ -5,7 +5,7 @@ Update via `/done` command after each completed step.
 
 ---
 
-## Phase 0 — Foundation
+## Phase 0 — Foundation ✅ Complete — 2026-06-03
 **Goal:** repos, infra, auth, base layout. Nothing visible to the end user yet.
 
 - [x] Step 1 [FULL] — Repository scaffold
@@ -21,8 +21,8 @@ Update via `/done` command after each completed step.
 - [x] Step 8 [FE] — Axios client with JWT interceptors + auth context + protected routes
 - [x] Step 9 [FE] — Layout shell (sidebar + header + dark mode toggle) + login page
 - [x] Step 10 [FE] — Auto-generated TS types from Swagger (`openapi-typescript` script)
-- [ ] Step 11 [FULL] — Integration test: login flow end-to-end
-- [ ] **Phase 0 complete** → tag `v0.1-foundation`
+- [x] Step 11 [FULL] — Integration test: login flow end-to-end
+- [x] **Phase 0 complete** → tag `v0.1-foundation`
 
 ---
 
