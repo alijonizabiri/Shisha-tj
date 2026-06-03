@@ -107,6 +107,7 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+    await DevSeeder.SeedAsync(app.Services);
 }
 
 app.UseHttpsRedirection();
