@@ -16,6 +16,9 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options, ICurren
     public DbSet<Measurement> Measurements => Set<Measurement>();
     public DbSet<Glass> Glasses => Set<Glass>();
     public DbSet<Hole> Holes => Set<Hole>();
+    public DbSet<Lead> Leads => Set<Lead>();
+    public DbSet<RefusalReason> RefusalReasons => Set<RefusalReason>();
+    public DbSet<Product> Products => Set<Product>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

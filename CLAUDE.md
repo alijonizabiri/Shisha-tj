@@ -164,9 +164,9 @@ For `[FULL]` steps:
 ## Current Status
 
 **Phase:** 2 — CRM Kanban
-**Last completed:** Phase 2 Step 1 [BE] — `Lead` entity + `LeadStatus` enum + `LeadStatusTransitionService`
-**Last commit:** Phase 2 Step 1 [BE]: Lead entity + LeadStatus enum + LeadStatusTransitionService
-**Next step:** Phase 2 Step 2 [BE] — Entity `RefusalReason` + `Product` (seed data)
+**Last completed:** Phase 2 Step 2 [BE] — `RefusalReason` + `Product` entities + seed data
+**Last commit:** Phase 2 Step 2 [BE]: RefusalReason + Product entities + EF configs + dev seed
+**Next step:** Phase 2 Step 3 [BE] — Migration: `AddLeads`
 **Build BE:** ✅ 0 warnings, 0 errors (Domain/Application/Infrastructure; API locked by running process)
 **Build FE:** ✅ typecheck + lint + build passing
 **Tests:** ✅ BE 53/53 | FE 54/54

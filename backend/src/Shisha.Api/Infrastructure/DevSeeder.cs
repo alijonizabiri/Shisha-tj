@@ -61,6 +61,26 @@ public static class DevSeeder
         ];
 
         db.Users.AddRange(users);
+
+        RefusalReason[] refusalReasons =
+        [
+            new RefusalReason { TenantId = tenant.Id, Label = "Дорого",                  SortOrder = 0 },
+            new RefusalReason { TenantId = tenant.Id, Label = "Передумал",               SortOrder = 1 },
+            new RefusalReason { TenantId = tenant.Id, Label = "Нашёл дешевле",           SortOrder = 2 },
+            new RefusalReason { TenantId = tenant.Id, Label = "Не понравился дизайн",    SortOrder = 3 },
+            new RefusalReason { TenantId = tenant.Id, Label = "Другое",                  SortOrder = 4 },
+        ];
+        db.RefusalReasons.AddRange(refusalReasons);
+
+        Product[] products =
+        [
+            new Product { TenantId = tenant.Id, Name = "Душевая кабина",       IsActive = true },
+            new Product { TenantId = tenant.Id, Name = "Стеклянная дверь",     IsActive = true },
+            new Product { TenantId = tenant.Id, Name = "Стеклянная перегородка", IsActive = true },
+            new Product { TenantId = tenant.Id, Name = "Перила",               IsActive = true },
+        ];
+        db.Products.AddRange(products);
+
         await db.SaveChangesAsync();
 
         var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
