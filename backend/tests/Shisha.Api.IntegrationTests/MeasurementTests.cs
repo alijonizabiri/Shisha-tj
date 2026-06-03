@@ -153,6 +153,24 @@ public sealed class MeasurementTests(ApiFactory factory)
     }
 
     [Fact]
+    public async Task GetPdf_ExistingMeasurement_ReturnsPdfBytes()
+    {
+        if (!factory.IsAvailable) return;
+
+        var client = await AuthenticatedClientAsync();
+        var createResponse = await client.PostAsJsonAsync("/api/v1/measurements", DefaultRequest());
+        var created = await createResponse.Content.ReadFromJsonAsync<JsonElement>(JsonOpts);
+        var id = created.GetProperty("id").GetString()!;
+
+        var pdfResponse = await client.GetAsync($"/api/v1/measurements/{id}/pdf?format=a4");
+
+        Assert.Equal(HttpStatusCode.OK, pdfResponse.StatusCode);
+        Assert.Equal("application/pdf", pdfResponse.Content.Headers.ContentType?.MediaType);
+        var bytes = await pdfResponse.Content.ReadAsByteArrayAsync();
+        Assert.True(bytes.Length > 1000, "PDF should be non-trivial size");
+    }
+
+    [Fact]
     public async Task Create_Unauthenticated_Returns401()
     {
         if (!factory.IsAvailable) return;

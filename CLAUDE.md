@@ -164,12 +164,12 @@ For `[FULL]` steps:
 ## Current Status
 
 **Phase:** 1 — Designer
-**Last completed:** Step 8 [BE] — MeasurementService + POST/GET/PUT /api/v1/measurements
-**Last commit:** Phase 1 Step 8 [BE]: MeasurementService + 3 endpoints + 7 integration tests
-**Next step:** Phase 1 Step 9 [BE] — PDF generation (QuestPDF, A4+A3, drawing + client header + financials)
+**Last completed:** Step 10 [BE] — PDF endpoint GET /api/v1/measurements/{id}/pdf?format=a4
+**Last commit:** Phase 1 Steps 9+10 [BE]: QuestPDF A4/A3 document + PDF endpoint
+**Next step:** Phase 1 Step 11 [FULL] — Wire frontend Designer → BE save → download PDF
 **Build BE:** ✅ 0 warnings, 0 errors
 **Build FE:** ✅ typecheck + lint + build passing
-**Tests:** ✅ BE 18/18 | FE 52/52
+**Tests:** ✅ BE 19/19 | FE 52/52
 **Updated:** 2026-06-03
 
 ## Completed Phases

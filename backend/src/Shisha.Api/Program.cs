@@ -6,13 +6,17 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Serilog;
 using Shisha.Api.Infrastructure;
+using QuestPDF.Infrastructure;
 using Shisha.Application.Abstractions;
 using Shisha.Application.Auth;
 using Shisha.Application.Measurements;
 using Shisha.Infrastructure.Configuration;
 using Shisha.Infrastructure.Persistence;
 using Shisha.Infrastructure.Persistence.Interceptors;
+using Shisha.Infrastructure.Pdf;
 using Shisha.Infrastructure.Services;
+
+QuestPDF.Settings.License = LicenseType.Community;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -60,6 +64,7 @@ builder.Services.AddSingleton<IJwtService, JwtService>();
 builder.Services.AddSingleton<IPasswordHasher, PasswordHasher>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IMeasurementService, MeasurementService>();
+builder.Services.AddSingleton<IMeasurementPdfService, MeasurementPdfService>();
 
 // CORS — allow the Vite dev server in development
 builder.Services.AddCors(opts =>

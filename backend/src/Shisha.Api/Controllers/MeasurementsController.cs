@@ -8,7 +8,9 @@ namespace Shisha.Api.Controllers;
 [ApiController]
 [Route("api/v1/measurements")]
 [Authorize]
-public sealed class MeasurementsController(IMeasurementService measurementService) : ControllerBase
+public sealed class MeasurementsController(
+    IMeasurementService measurementService,
+    IMeasurementPdfService pdfService) : ControllerBase
 {
     [HttpPost]
     public async Task<ActionResult<MeasurementResponse>> Create(
@@ -33,6 +35,25 @@ public sealed class MeasurementsController(IMeasurementService measurementServic
         {
             var result = await measurementService.GetByIdAsync(id, ct);
             return Ok(result);
+        }
+        catch (NotFoundException)
+        {
+            return NotFound();
+        }
+    }
+
+    [HttpGet("{id:guid}/pdf")]
+    [Produces("application/pdf")]
+    public async Task<IActionResult> GetPdf(
+        Guid id,
+        [FromQuery] string format = "a4",
+        CancellationToken ct = default)
+    {
+        try
+        {
+            var measurement = await measurementService.GetByIdAsync(id, ct);
+            var bytes = pdfService.Generate(measurement, format.ToLowerInvariant());
+            return File(bytes, "application/pdf", $"measurement-{id:N}.pdf");
         }
         catch (NotFoundException)
         {
