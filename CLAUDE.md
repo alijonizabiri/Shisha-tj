@@ -164,12 +164,12 @@ For `[FULL]` steps:
 ## Current Status
 
 **Phase:** 1 — Designer
-**Last completed:** Step 2 [FE] — DrawingCanvas SVG component (panels + dimensions + holes)
-**Last commit:** Phase 1 Step 2 [FE]: DrawingCanvas SVG component + 6 tests
-**Next step:** Phase 1 Step 3 [FE] — Hole with pointer-events drag (works on tablet)
+**Last completed:** Step 3 [FE] — Hole with pointer-events drag (works on tablet)
+**Last commit:** Phase 1 Step 3 [FE]: Hole draggable component + DrawingCanvas state
+**Next step:** Phase 1 Step 4 [FE] — Designer page form (width, height, config, colors, client info)
 **Build BE:** ✅ 0 warnings, 0 errors
 **Build FE:** ✅ typecheck + lint + build passing
-**Tests:** ✅ BE 11/11 | FE 38/38
+**Tests:** ✅ BE 11/11 | FE 42/42
 **Updated:** 2026-06-03
 
 ## Completed Phases
