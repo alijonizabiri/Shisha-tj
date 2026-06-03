@@ -164,12 +164,12 @@ For `[FULL]` steps:
 ## Current Status
 
 **Phase:** 1 — Designer
-**Last completed:** Step 1 [FE] — Pure functions in features/designer/lib/
-**Last commit:** Phase 1 Step 1 [FE]: computePanels + defaultHoles + 22 unit tests
-**Next step:** Phase 1 Step 2 [FE] — DrawingCanvas SVG component (panels + dimensions + holes)
+**Last completed:** Step 2 [FE] — DrawingCanvas SVG component (panels + dimensions + holes)
+**Last commit:** Phase 1 Step 2 [FE]: DrawingCanvas SVG component + 6 tests
+**Next step:** Phase 1 Step 3 [FE] — Hole with pointer-events drag (works on tablet)
 **Build BE:** ✅ 0 warnings, 0 errors
 **Build FE:** ✅ typecheck + lint + build passing
-**Tests:** ✅ BE 11/11 | FE 32/32
+**Tests:** ✅ BE 11/11 | FE 38/38
 **Updated:** 2026-06-03
 
 ## Completed Phases

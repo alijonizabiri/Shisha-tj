@@ -33,7 +33,7 @@ Update via `/done` command after each completed step.
   - `computePanels(measureMm, heightMm, mode)` — returns array of `{width, isDoor}`
   - `defaultHoles(panel, height)` — returns array of `{x, y, r, type}`
   - Unit tests: 156 → 80/80, 166 → 90/80, 200+4=204 → 124/80, etc.
-- [ ] Step 2 [FE] — `<DrawingCanvas>` SVG component (panels + dimensions + holes)
+- [x] Step 2 [FE] — `<DrawingCanvas>` SVG component (panels + dimensions + holes)
 - [ ] Step 3 [FE] — `<Hole>` with pointer-events drag (works on tablet)
 - [ ] Step 4 [FE] — Designer page form (width, height, config, colors, client info)
 - [ ] Step 5 [FE] — Right sidebar: area, master fee (120 × m²), deposit, balance
