@@ -163,13 +163,13 @@ For `[FULL]` steps:
 
 ## Current Status
 
-**Phase:** 1 — Designer
-**Last completed:** Step 12 [QA] — Phase 1 complete ✅
-**Last commit:** Phase 1 Step 12 [QA]: lint fixes (useWatch, derived hole state) + phase complete
-**Next step:** Phase 2 Step 1 [BE] — Entity `Lead` with status enum + transitions service
-**Build BE:** ✅ 0 warnings, 0 errors
+**Phase:** 2 — CRM Kanban
+**Last completed:** Phase 2 Step 1 [BE] — `Lead` entity + `LeadStatus` enum + `LeadStatusTransitionService`
+**Last commit:** Phase 2 Step 1 [BE]: Lead entity + LeadStatus enum + LeadStatusTransitionService
+**Next step:** Phase 2 Step 2 [BE] — Entity `RefusalReason` + `Product` (seed data)
+**Build BE:** ✅ 0 warnings, 0 errors (Domain/Application/Infrastructure; API locked by running process)
 **Build FE:** ✅ typecheck + lint + build passing
-**Tests:** ✅ BE 19/19 | FE 54/54
+**Tests:** ✅ BE 53/53 | FE 54/54
 **Updated:** 2026-06-03
 
 ## Completed Phases

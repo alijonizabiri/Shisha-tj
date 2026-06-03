@@ -51,7 +51,7 @@ Update via `/done` command after each completed step.
 ## Phase 2 — CRM Kanban
 **Goal:** operator manages leads, measurer sees assigned visits.
 
-- [ ] Step 1 [BE] — Entity `Lead` with status enum + transitions service
+- [x] Step 1 [BE] — Entity `Lead` with status enum + transitions service
 - [ ] Step 2 [BE] — Entity `RefusalReason` + `Product` (seed data)
 - [ ] Step 3 [BE] — Migration: `AddLeads`
 - [ ] Step 4 [BE] — `LeadService` + CRUD endpoints + status transition endpoint
