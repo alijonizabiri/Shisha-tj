@@ -164,9 +164,9 @@ For `[FULL]` steps:
 ## Current Status
 
 **Phase:** 0 — Foundation
-**Last completed:** Step 8 [FE] — Axios client with JWT interceptors + auth context + protected routes
-**Last commit:** Phase 0 Step 8 [FE]: Axios client + AuthContext + ProtectedRoute
-**Next step:** Phase 0 Step 9 [FE] — Layout shell (sidebar + header + dark mode toggle) + login page
+**Last completed:** Step 9 [FE] — Layout shell (sidebar + header + dark mode toggle) + login page
+**Last commit:** Phase 0 Step 9 [FE]: AppShell + Sidebar + Header + LoginPage
+**Next step:** Phase 0 Step 10 [FE] — Auto-generated TS types from Swagger (openapi-typescript script)
 **Build BE:** ✅ 0 warnings, 0 errors
 **Build FE:** ✅ typecheck + lint + build passing
 **Tests:** ✅ BE 5/5 | FE 7/7

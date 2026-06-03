@@ -19,7 +19,7 @@ Update via `/done` command after each completed step.
 - [x] Step 6 [BE] — `SaveChangesInterceptor` (auto-fill `CreatedAt`, `UpdatedAt`, `TenantId`)
 - [x] Step 7 [BE] — Serilog wiring + `/health` endpoint + Swagger
 - [x] Step 8 [FE] — Axios client with JWT interceptors + auth context + protected routes
-- [ ] Step 9 [FE] — Layout shell (sidebar + header + dark mode toggle) + login page
+- [x] Step 9 [FE] — Layout shell (sidebar + header + dark mode toggle) + login page
 - [ ] Step 10 [FE] — Auto-generated TS types from Swagger (`openapi-typescript` script)
 - [ ] Step 11 [FULL] — Integration test: login flow end-to-end
 - [ ] **Phase 0 complete** → tag `v0.1-foundation`

@@ -1,25 +1,31 @@
 import { createBrowserRouter } from 'react-router-dom'
 import { ProtectedRoute } from '@/features/auth/ProtectedRoute'
+import { LoginPage } from '@/features/auth/LoginPage'
+import { AppShell } from './layout/AppShell'
 
 export const router = createBrowserRouter([
   {
     path: '/login',
-    element: (
-      <div className="flex min-h-screen items-center justify-center">
-        <p className="text-muted-foreground">Страница входа (Step 9)</p>
-      </div>
-    ),
+    element: <LoginPage />,
   },
   {
     element: <ProtectedRoute />,
     children: [
       {
-        path: '/',
-        element: (
-          <div className="flex min-h-screen items-center justify-center">
-            <p className="text-muted-foreground">SHISHA_TJ — authenticated</p>
-          </div>
-        ),
+        element: <AppShell />,
+        children: [
+          {
+            path: '/',
+            element: (
+              <div>
+                <h1 className="text-2xl font-bold">Добро пожаловать</h1>
+                <p className="mt-2 text-muted-foreground">
+                  Дашборд появится в Phase 4.
+                </p>
+              </div>
+            ),
+          },
+        ],
       },
     ],
   },
