@@ -13,6 +13,9 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options, ICurren
     public DbSet<Tenant> Tenants => Set<Tenant>();
     public DbSet<User> Users => Set<User>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    public DbSet<Measurement> Measurements => Set<Measurement>();
+    public DbSet<Glass> Glasses => Set<Glass>();
+    public DbSet<Hole> Holes => Set<Hole>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

@@ -164,9 +164,9 @@ For `[FULL]` steps:
 ## Current Status
 
 **Phase:** 1 — Designer
-**Last completed:** Step 5 [FE] — Right sidebar: area, master fee, deposit, balance
-**Last commit:** Phase 1 Step 5 [FE]: CalculationSidebar with live financials
-**Next step:** Phase 1 Step 6 [BE] — Entities: Measurement, Glass, Hole, GlassColor, HardwareColor
+**Last completed:** Step 7 [BE] — Migration AddMeasurements (measurements, glasses, holes tables)
+**Last commit:** Phase 1 Steps 6+7 [BE]: Measurement/Glass/Hole entities + AddMeasurements migration
+**Next step:** Phase 1 Step 8 [BE] — MeasurementService + endpoints POST/GET/PUT /api/v1/measurements
 **Build BE:** ✅ 0 warnings, 0 errors
 **Build FE:** ✅ typecheck + lint + build passing
 **Tests:** ✅ BE 11/11 | FE 52/52
