@@ -18,6 +18,8 @@ export const measurementFormSchema = z.object({
   clientName: z.string().min(2, 'Мин. 2 символа').max(100),
   clientPhone: z.string().regex(/^\+?\d{9,15}$/, 'Формат: +992xxxxxxxxx'),
   clientAddress: z.string().max(200).optional(),
+  deliveryTjs: z.coerce.number().min(0, 'Мин. 0 сом'),
+  depositTjs: z.coerce.number().min(0, 'Мин. 0 сом'),
 })
 
 export type MeasurementFormValues = z.infer<typeof measurementFormSchema>

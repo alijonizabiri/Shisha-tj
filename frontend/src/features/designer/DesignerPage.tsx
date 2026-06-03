@@ -1,9 +1,10 @@
 import { useMemo } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { computePanels } from './lib/computePanels'
+import { computeMetrics, computePanels } from './lib/computePanels'
 import { defaultHoles } from './lib/defaultHoles'
 import { measurementFormSchema, type MeasurementFormValues } from './schemas'
+import { CalculationSidebar } from './components/CalculationSidebar'
 import { DrawingCanvas } from './components/DrawingCanvas'
 import { MeasurementForm } from './components/MeasurementForm'
 
@@ -20,6 +21,8 @@ export function DesignerPage() {
       clientName: '',
       clientPhone: '',
       clientAddress: '',
+      deliveryTjs: 100,
+      depositTjs: 0,
     },
   })
 
@@ -39,6 +42,15 @@ export function DesignerPage() {
     () => panels.map((p) => defaultHoles(p, p.heightMm)),
     [panels],
   )
+
+  const metrics = useMemo(() => {
+    const m = typeof measureMm === 'number' ? measureMm : Number(measureMm)
+    const h = typeof heightMm === 'number' ? heightMm : Number(heightMm)
+    if (!Number.isFinite(m) || !Number.isFinite(h) || m < 600 || m > 3000 || h < 1500 || h > 2500) {
+      return null
+    }
+    return computeMetrics(m, h)
+  }, [measureMm, heightMm])
 
   const warning = useMemo(() => {
     if (panels.length === 0) return null
@@ -90,6 +102,12 @@ export function DesignerPage() {
           )}
         </div>
       </main>
+
+      <CalculationSidebar
+        areaSqM={metrics?.areaSqM ?? null}
+        masterFeeTjs={metrics?.masterFeeTjs ?? null}
+        form={form}
+      />
     </div>
   )
 }

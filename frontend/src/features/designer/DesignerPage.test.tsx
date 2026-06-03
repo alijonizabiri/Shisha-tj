@@ -45,6 +45,38 @@ describe('DesignerPage', () => {
     expect(screen.queryByRole('alert')).toBeNull()
   })
 
+  it('shows placeholder dashes before dimensions are entered', () => {
+    render(<DesignerPage />)
+    expect(screen.getAllByText('—').length).toBeGreaterThan(0)
+  })
+
+  it('shows area after entering valid dimensions', () => {
+    render(<DesignerPage />)
+    fireEvent.change(screen.getByLabelText('Ширина проёма (мм)'), {
+      target: { value: '1560' },
+    })
+    // totalWidth=1600, areaSqM=(1600/1000)*(2000/1000)=3.20
+    expect(screen.getByText('3.20 м²')).toBeTruthy()
+  })
+
+  it('delivery defaults to 100', () => {
+    render(<DesignerPage />)
+    const deliveryInput = screen.getByLabelText('Доставка') as HTMLInputElement
+    expect(Number(deliveryInput.value)).toBe(100)
+  })
+
+  it('balance = masterFee + delivery − deposit', () => {
+    render(<DesignerPage />)
+    fireEvent.change(screen.getByLabelText('Ширина проёма (мм)'), {
+      target: { value: '1560' },
+    })
+    // masterFee=384, delivery=100(default), deposit=0 → balance=484
+    // Change deposit to 200 → balance = 384+100−200 = 284
+    fireEvent.change(screen.getByLabelText('Депозит'), { target: { value: '200' } })
+    const balanceRow = screen.getByText('Остаток').closest('div')!
+    expect(balanceRow.textContent).toMatch(/284/)
+  })
+
   it('renders 3 rects after switching to ThreeGlass', async () => {
     const user = userEvent.setup()
     const { container } = render(<DesignerPage />)

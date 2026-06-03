@@ -164,12 +164,12 @@ For `[FULL]` steps:
 ## Current Status
 
 **Phase:** 1 — Designer
-**Last completed:** Step 4 [FE] — Designer page form (width, height, config, colors, client info)
-**Last commit:** Phase 1 Step 4 [FE]: DesignerPage form + live canvas + warnings
-**Next step:** Phase 1 Step 5 [FE] — Right sidebar: area, master fee (120 × m²), deposit, balance
+**Last completed:** Step 5 [FE] — Right sidebar: area, master fee, deposit, balance
+**Last commit:** Phase 1 Step 5 [FE]: CalculationSidebar with live financials
+**Next step:** Phase 1 Step 6 [BE] — Entities: Measurement, Glass, Hole, GlassColor, HardwareColor
 **Build BE:** ✅ 0 warnings, 0 errors
 **Build FE:** ✅ typecheck + lint + build passing
-**Tests:** ✅ BE 11/11 | FE 48/48
+**Tests:** ✅ BE 11/11 | FE 52/52
 **Updated:** 2026-06-03
 
 ## Completed Phases

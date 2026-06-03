@@ -36,7 +36,7 @@ Update via `/done` command after each completed step.
 - [x] Step 2 [FE] — `<DrawingCanvas>` SVG component (panels + dimensions + holes)
 - [x] Step 3 [FE] — `<Hole>` with pointer-events drag (works on tablet)
 - [x] Step 4 [FE] — Designer page form (width, height, config, colors, client info)
-- [ ] Step 5 [FE] — Right sidebar: area, master fee (120 × m²), deposit, balance
+- [x] Step 5 [FE] — Right sidebar: area, master fee (120 × m²), deposit, balance
 - [ ] Step 6 [BE] — Entities: `Measurement`, `Glass`, `Hole`, `GlassColor` (enum), `HardwareColor` (enum)
 - [ ] Step 7 [BE] — Migration: `AddMeasurements`
 - [ ] Step 8 [BE] — `MeasurementService` + endpoints: POST/GET/PUT `/api/v1/measurements`
