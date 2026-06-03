@@ -1,6 +1,7 @@
 import { createBrowserRouter } from 'react-router-dom'
 import { ProtectedRoute } from '@/features/auth/ProtectedRoute'
 import { LoginPage } from '@/features/auth/LoginPage'
+import { DesignerPage } from '@/features/designer/DesignerPage'
 import { AppShell } from './layout/AppShell'
 
 export const router = createBrowserRouter([
@@ -24,6 +25,10 @@ export const router = createBrowserRouter([
                 </p>
               </div>
             ),
+          },
+          {
+            path: '/designer',
+            element: <DesignerPage />,
           },
         ],
       },
