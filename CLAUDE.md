@@ -164,12 +164,12 @@ For `[FULL]` steps:
 ## Current Status
 
 **Phase:** 1 — Designer
-**Last completed:** Step 10 [BE] — PDF endpoint GET /api/v1/measurements/{id}/pdf?format=a4
-**Last commit:** Phase 1 Steps 9+10 [BE]: QuestPDF A4/A3 document + PDF endpoint
-**Next step:** Phase 1 Step 11 [FULL] — Wire frontend Designer → BE save → download PDF
+**Last completed:** Step 11 [FULL] — Frontend Designer wired to BE save + PDF download
+**Last commit:** Phase 1 Step 11 [FULL]: Designer save + PDF download buttons
+**Next step:** Phase 1 Step 12 [QA] — End-to-end test on real tablet + Android phone
 **Build BE:** ✅ 0 warnings, 0 errors
 **Build FE:** ✅ typecheck + lint + build passing
-**Tests:** ✅ BE 19/19 | FE 52/52
+**Tests:** ✅ BE 19/19 | FE 54/54
 **Updated:** 2026-06-03
 
 ## Completed Phases

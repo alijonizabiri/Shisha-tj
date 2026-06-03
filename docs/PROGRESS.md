@@ -42,7 +42,7 @@ Update via `/done` command after each completed step.
 - [x] Step 8 [BE] — `MeasurementService` + endpoints: POST/GET/PUT `/api/v1/measurements`
 - [x] Step 9 [BE] — PDF generation with QuestPDF: A4 + A3 layouts, drawing + client header + financials
 - [x] Step 10 [BE] — Endpoint: `GET /api/v1/measurements/{id}/pdf?format=a4`
-- [ ] Step 11 [FULL] — Wire frontend Designer → BE save → download PDF
+- [x] Step 11 [FULL] — Wire frontend Designer → BE save → download PDF
 - [ ] Step 12 [QA] — End-to-end test on real tablet + Android phone
 - [ ] **Phase 1 complete** → tag `v0.2-designer`
 

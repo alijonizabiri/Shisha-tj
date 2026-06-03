@@ -17,9 +17,10 @@ const SELECT_CLASS =
 interface Props {
   form: UseFormReturn<MeasurementFormValues>
   onSubmit: (values: MeasurementFormValues) => void
+  isLoading?: boolean
 }
 
-export function MeasurementForm({ form, onSubmit }: Props) {
+export function MeasurementForm({ form, onSubmit, isLoading = false }: Props) {
   const {
     register,
     handleSubmit,
@@ -164,8 +165,8 @@ export function MeasurementForm({ form, onSubmit }: Props) {
         </div>
       </section>
 
-      <Button type="submit" className="w-full">
-        Сохранить
+      <Button type="submit" className="w-full" disabled={isLoading}>
+        {isLoading ? 'Сохранение...' : 'Сохранить'}
       </Button>
     </form>
   )

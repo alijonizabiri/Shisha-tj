@@ -1,7 +1,21 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { DesignerPage } from './DesignerPage'
+
+// ── Mock the API module so tests don't need QueryClientProvider or a server ───
+
+vi.mock('./api', () => ({
+  useSaveMeasurement: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+    isError: false,
+    isSuccess: false,
+    data: undefined,
+    error: null,
+  }),
+  downloadMeasurementPdf: vi.fn(),
+}))
 
 describe('DesignerPage', () => {
   it('renders all form fields', () => {
@@ -87,5 +101,17 @@ describe('DesignerPage', () => {
     await user.click(screen.getByText('3 стекла'))
     // 1800+40=1840 → sides=520, door=800 → 3 panels
     expect(container.querySelectorAll('rect').length).toBe(3)
+  })
+
+  it('save button is present and enabled by default', () => {
+    render(<DesignerPage />)
+    const btn = screen.getByRole('button', { name: /сохранить/i })
+    expect(btn).toBeTruthy()
+    expect((btn as HTMLButtonElement).disabled).toBe(false)
+  })
+
+  it('PDF buttons are not shown before save', () => {
+    render(<DesignerPage />)
+    expect(screen.queryByText(/Скачать PDF/i)).toBeNull()
   })
 })

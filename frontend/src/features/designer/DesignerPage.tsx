@@ -1,12 +1,27 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { computeMetrics, computePanels } from './lib/computePanels'
 import { defaultHoles } from './lib/defaultHoles'
+import type { Hole } from './lib/types'
 import { measurementFormSchema, type MeasurementFormValues } from './schemas'
+import { downloadMeasurementPdf, useSaveMeasurement, type HoleRequest } from './api'
 import { CalculationSidebar } from './components/CalculationSidebar'
 import { DrawingCanvas } from './components/DrawingCanvas'
 import { MeasurementForm } from './components/MeasurementForm'
+import { Button } from '@/shared/ui/button'
+
+function flattenHoles(holesByPanel: Hole[][]): HoleRequest[] {
+  return holesByPanel.flatMap((holes, panelIndex) =>
+    holes.map((hole) => ({
+      panelIndex,
+      xMm: hole.xMm,
+      yMm: hole.yMm,
+      radiusMm: hole.radiusMm,
+      holeType: hole.holeType,
+    })),
+  )
+}
 
 export function DesignerPage() {
   const form = useForm<MeasurementFormValues>({
@@ -26,9 +41,17 @@ export function DesignerPage() {
     },
   })
 
+  const saveMutation = useSaveMeasurement()
+  const [savedId, setSavedId] = useState<string | null>(null)
+
   const measureMm = form.watch('measureMm')
   const heightMm = form.watch('heightMm')
   const configuration = form.watch('configuration')
+
+  // Clear the saved state when drawing parameters change
+  useEffect(() => {
+    setSavedId(null)
+  }, [measureMm, heightMm, configuration])
 
   const panels = useMemo(() => {
     const m = typeof measureMm === 'number' ? measureMm : Number(measureMm)
@@ -42,6 +65,12 @@ export function DesignerPage() {
     () => panels.map((p) => defaultHoles(p, p.heightMm)),
     [panels],
   )
+
+  // Track current hole positions; reset whenever panels change (DrawingCanvas remounts)
+  const [currentHoles, setCurrentHoles] = useState<Hole[][]>(holesByPanel)
+  useEffect(() => {
+    setCurrentHoles(holesByPanel)
+  }, [holesByPanel])
 
   const metrics = useMemo(() => {
     const m = typeof measureMm === 'number' ? measureMm : Number(measureMm)
@@ -67,8 +96,18 @@ export function DesignerPage() {
   // Key forces DrawingCanvas to remount (and reset hole positions) when panel sizes change
   const canvasKey = panels.map((p) => `${p.widthMm}x${p.heightMm}`).join('-')
 
-  function handleSave(_values: MeasurementFormValues): void {
-    // wired to backend in Step 11
+  function handleSave(values: MeasurementFormValues): void {
+    saveMutation.mutate(
+      {
+        measureMm: values.measureMm,
+        heightMm: values.heightMm,
+        configuration: values.configuration,
+        glassColor: values.glassColor,
+        hardwareColor: values.hardwareColor,
+        holes: flattenHoles(currentHoles),
+      },
+      { onSuccess: (data) => setSavedId(data.id) },
+    )
   }
 
   return (
@@ -76,7 +115,39 @@ export function DesignerPage() {
       <aside className="w-72 shrink-0 overflow-y-auto border-r border-border bg-card">
         <div className="p-4">
           <h1 className="mb-4 text-lg font-semibold">Дизайнер</h1>
-          <MeasurementForm form={form} onSubmit={handleSave} />
+          <MeasurementForm
+            form={form}
+            onSubmit={handleSave}
+            isLoading={saveMutation.isPending}
+          />
+
+          {saveMutation.isError && (
+            <p className="mt-2 text-sm text-destructive">Ошибка сохранения. Попробуйте ещё раз.</p>
+          )}
+
+          {savedId && (
+            <div className="mt-3 flex flex-col gap-2">
+              <p className="text-sm font-medium text-green-600 dark:text-green-400">
+                Замер сохранён ✓
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full"
+                onClick={() => void downloadMeasurementPdf(savedId, 'a4')}
+              >
+                Скачать PDF (A4)
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full"
+                onClick={() => void downloadMeasurementPdf(savedId, 'a3')}
+              >
+                Скачать PDF (A3)
+              </Button>
+            </div>
+          )}
         </div>
       </aside>
 
@@ -91,7 +162,12 @@ export function DesignerPage() {
         )}
         <div className="flex-1 overflow-auto p-4">
           {panels.length > 0 ? (
-            <DrawingCanvas key={canvasKey} panels={panels} holesByPanel={holesByPanel} />
+            <DrawingCanvas
+              key={canvasKey}
+              panels={panels}
+              holesByPanel={holesByPanel}
+              onHolesChange={setCurrentHoles}
+            />
           ) : (
             <div className="flex h-full items-center justify-center">
               <div className="text-center text-muted-foreground">
