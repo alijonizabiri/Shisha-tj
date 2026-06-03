@@ -8,6 +8,7 @@ using Serilog;
 using Shisha.Api.Infrastructure;
 using Shisha.Application.Abstractions;
 using Shisha.Application.Auth;
+using Shisha.Application.Measurements;
 using Shisha.Infrastructure.Configuration;
 using Shisha.Infrastructure.Persistence;
 using Shisha.Infrastructure.Persistence.Interceptors;
@@ -58,6 +59,7 @@ builder.Services.AddScoped<ICurrentUser, CurrentUserAccessor>();
 builder.Services.AddSingleton<IJwtService, JwtService>();
 builder.Services.AddSingleton<IPasswordHasher, PasswordHasher>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IMeasurementService, MeasurementService>();
 
 // CORS — allow the Vite dev server in development
 builder.Services.AddCors(opts =>

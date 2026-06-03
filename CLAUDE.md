@@ -164,12 +164,12 @@ For `[FULL]` steps:
 ## Current Status
 
 **Phase:** 1 — Designer
-**Last completed:** Step 7 [BE] — Migration AddMeasurements (measurements, glasses, holes tables)
-**Last commit:** Phase 1 Steps 6+7 [BE]: Measurement/Glass/Hole entities + AddMeasurements migration
-**Next step:** Phase 1 Step 8 [BE] — MeasurementService + endpoints POST/GET/PUT /api/v1/measurements
+**Last completed:** Step 8 [BE] — MeasurementService + POST/GET/PUT /api/v1/measurements
+**Last commit:** Phase 1 Step 8 [BE]: MeasurementService + 3 endpoints + 7 integration tests
+**Next step:** Phase 1 Step 9 [BE] — PDF generation (QuestPDF, A4+A3, drawing + client header + financials)
 **Build BE:** ✅ 0 warnings, 0 errors
 **Build FE:** ✅ typecheck + lint + build passing
-**Tests:** ✅ BE 11/11 | FE 52/52
+**Tests:** ✅ BE 18/18 | FE 52/52
 **Updated:** 2026-06-03
 
 ## Completed Phases

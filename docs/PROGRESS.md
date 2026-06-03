@@ -39,7 +39,7 @@ Update via `/done` command after each completed step.
 - [x] Step 5 [FE] — Right sidebar: area, master fee (120 × m²), deposit, balance
 - [x] Step 6 [BE] — Entities: `Measurement`, `Glass`, `Hole`, `GlassColor` (enum), `HardwareColor` (enum)
 - [x] Step 7 [BE] — Migration: `AddMeasurements`
-- [ ] Step 8 [BE] — `MeasurementService` + endpoints: POST/GET/PUT `/api/v1/measurements`
+- [x] Step 8 [BE] — `MeasurementService` + endpoints: POST/GET/PUT `/api/v1/measurements`
 - [ ] Step 9 [BE] — PDF generation with QuestPDF: A4 + A3 layouts, drawing + client header + financials
 - [ ] Step 10 [BE] — Endpoint: `GET /api/v1/measurements/{id}/pdf?format=a4`
 - [ ] Step 11 [FULL] — Wire frontend Designer → BE save → download PDF
