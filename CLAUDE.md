@@ -164,9 +164,9 @@ For `[FULL]` steps:
 ## Current Status
 
 **Phase:** 0 — Foundation
-**Last completed:** Step 9 [FE] — Layout shell (sidebar + header + dark mode toggle) + login page
-**Last commit:** Phase 0 Step 9 [FE]: AppShell + Sidebar + Header + LoginPage
-**Next step:** Phase 0 Step 10 [FE] — Auto-generated TS types from Swagger (openapi-typescript script)
+**Last completed:** Step 10 [FE] — Auto-generated TS types from Swagger (openapi-typescript script)
+**Last commit:** Phase 0 Step 10 [FE]: types.ts + generate:types script (port fix)
+**Next step:** Phase 0 Step 11 [FULL] — Integration test: login flow end-to-end
 **Build BE:** ✅ 0 warnings, 0 errors
 **Build FE:** ✅ typecheck + lint + build passing
 **Tests:** ✅ BE 5/5 | FE 7/7

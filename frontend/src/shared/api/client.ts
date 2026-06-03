@@ -8,7 +8,7 @@ export function setAccessToken(token: string | null): void {
 }
 
 export const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_URL ?? 'http://localhost:5000',
+  baseURL: import.meta.env.VITE_API_URL ?? 'http://localhost:5175',
   headers: { 'Content-Type': 'application/json' },
 })
 
@@ -67,7 +67,7 @@ apiClient.interceptors.response.use(
     }
 
     try {
-      const base = import.meta.env.VITE_API_URL ?? 'http://localhost:5000'
+      const base = import.meta.env.VITE_API_URL ?? 'http://localhost:5175'
       const { data } = await axios.post<{ accessToken: string; refreshToken: string }>(
         `${base}/api/v1/auth/refresh`,
         { refreshToken: storedRefresh },

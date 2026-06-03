@@ -1,13 +1,10 @@
 import axios from 'axios'
 import { apiClient } from '@/shared/api/client'
+import type { components } from '@/shared/api/types'
 
-export interface LoginResponse {
-  accessToken: string
-  refreshToken: string
-  expiresAt: string
-}
+export type LoginResponse = components['schemas']['LoginResponse']
 
-const base = (): string => import.meta.env.VITE_API_URL ?? 'http://localhost:5000'
+const base = (): string => import.meta.env.VITE_API_URL ?? 'http://localhost:5175'
 
 // Raw axios — no auth header needed for login or refresh
 export async function loginRequest(email: string, password: string): Promise<LoginResponse> {

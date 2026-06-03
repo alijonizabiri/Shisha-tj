@@ -11,7 +11,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest",
     "test:run": "vitest run",
-    "generate:types": "openapi-typescript http://localhost:5000/swagger/v1/swagger.json -o src/shared/api/types.ts"
+    "generate:types": "openapi-typescript http://localhost:5175/swagger/v1/swagger.json -o src/shared/api/types.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

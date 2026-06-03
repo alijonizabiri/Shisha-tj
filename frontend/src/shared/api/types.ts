@@ -1,0 +1,90 @@
+/**
+ * Auto-generated from the backend Swagger spec.
+ * Regenerate: npm run generate:types  (requires backend running on http://localhost:5175)
+ *
+ * Hand-crafted initial version — covers the current API surface (Phase 0).
+ * This file will be overwritten by the generator on each run.
+ */
+
+export interface paths {
+  '/api/v1/auth/login': {
+    post: {
+      requestBody: {
+        content: { 'application/json': components['schemas']['LoginRequest'] }
+      }
+      responses: {
+        200: { content: { 'application/json': components['schemas']['LoginResponse'] } }
+        401: { content: { 'application/json': components['schemas']['ProblemDetails'] } }
+      }
+    }
+  }
+  '/api/v1/auth/refresh': {
+    post: {
+      requestBody: {
+        content: { 'application/json': components['schemas']['RefreshRequest'] }
+      }
+      responses: {
+        200: { content: { 'application/json': components['schemas']['LoginResponse'] } }
+        401: { content: { 'application/json': components['schemas']['ProblemDetails'] } }
+      }
+    }
+  }
+  '/api/v1/auth/logout': {
+    post: {
+      requestBody: {
+        content: { 'application/json': components['schemas']['LogoutRequest'] }
+      }
+      responses: {
+        204: { content: never }
+      }
+    }
+  }
+  '/health': {
+    get: {
+      responses: {
+        200: { content: { 'application/json': { status: string; timestamp: string } } }
+      }
+    }
+  }
+}
+
+export type webhooks = Record<string, never>
+
+export interface components {
+  schemas: {
+    LoginRequest: {
+      email: string
+      password: string
+    }
+    LoginResponse: {
+      accessToken: string
+      refreshToken: string
+      /** ISO 8601 UTC */
+      expiresAt: string
+    }
+    RefreshRequest: {
+      refreshToken: string
+    }
+    LogoutRequest: {
+      refreshToken: string
+    }
+    ProblemDetails: {
+      type?: string | null
+      title?: string | null
+      status?: number | null
+      detail?: string | null
+      instance?: string | null
+      errorCode?: string
+      errors?: Record<string, string[]>
+    }
+  }
+  responses: never
+  parameters: never
+  requestBodies: never
+  headers: never
+  pathItems: never
+}
+
+export type $defs = Record<string, never>
+export type external = Record<string, never>
+export type operations = Record<string, never>
