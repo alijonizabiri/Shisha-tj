@@ -164,12 +164,12 @@ For `[FULL]` steps:
 ## Current Status
 
 **Phase:** 0 — Foundation
-**Last completed:** Step 7 [BE] — Serilog wiring + /health endpoint + Swagger
-**Last commit:** Phase 0 Step 7 [BE]: Serilog + /health + Swagger JWT auth
-**Next step:** Phase 0 Step 8 [FE] — Axios client with JWT interceptors + auth context + protected routes
+**Last completed:** Step 8 [FE] — Axios client with JWT interceptors + auth context + protected routes
+**Last commit:** Phase 0 Step 8 [FE]: Axios client + AuthContext + ProtectedRoute
+**Next step:** Phase 0 Step 9 [FE] — Layout shell (sidebar + header + dark mode toggle) + login page
 **Build BE:** ✅ 0 warnings, 0 errors
-**Build FE:** ✅ built in ~500ms
-**Tests:** ✅ BE 5/5 | FE 3/3
+**Build FE:** ✅ typecheck + lint + build passing
+**Tests:** ✅ BE 5/5 | FE 7/7
 **Updated:** 2026-06-03
 
 ## Completed Phases

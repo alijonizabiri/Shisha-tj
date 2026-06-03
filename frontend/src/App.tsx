@@ -1,7 +1,11 @@
+import { RouterProvider } from 'react-router-dom'
+import { Providers } from './app/providers'
+import { router } from './app/router'
+
 export function App() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <p className="text-muted-foreground">SHISHA_TJ — scaffold ready</p>
-    </div>
+    <Providers>
+      <RouterProvider router={router} />
+    </Providers>
   )
 }
