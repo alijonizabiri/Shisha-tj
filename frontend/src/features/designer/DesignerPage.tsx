@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { useMemo, useState } from 'react'
+import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { computeMetrics, computePanels } from './lib/computePanels'
 import { defaultHoles } from './lib/defaultHoles'
@@ -42,16 +42,11 @@ export function DesignerPage() {
   })
 
   const saveMutation = useSaveMeasurement()
-  const [savedId, setSavedId] = useState<string | null>(null)
 
-  const measureMm = form.watch('measureMm')
-  const heightMm = form.watch('heightMm')
-  const configuration = form.watch('configuration')
-
-  // Clear the saved state when drawing parameters change
-  useEffect(() => {
-    setSavedId(null)
-  }, [measureMm, heightMm, configuration])
+  // useWatch instead of form.watch() — compatible with the React Compiler
+  const measureMm = useWatch({ control: form.control, name: 'measureMm' })
+  const heightMm = useWatch({ control: form.control, name: 'heightMm' })
+  const configuration = useWatch({ control: form.control, name: 'configuration' })
 
   const panels = useMemo(() => {
     const m = typeof measureMm === 'number' ? measureMm : Number(measureMm)
@@ -66,11 +61,31 @@ export function DesignerPage() {
     [panels],
   )
 
-  // Track current hole positions; reset whenever panels change (DrawingCanvas remounts)
-  const [currentHoles, setCurrentHoles] = useState<Hole[][]>(holesByPanel)
-  useEffect(() => {
-    setCurrentHoles(holesByPanel)
-  }, [holesByPanel])
+  const canvasKey = panels.map((p) => `${p.widthMm}x${p.heightMm}`).join('-')
+
+  // Hole tracker — keyed by canvasKey so dragged positions reset when panels resize.
+  // currentHoles falls back to holesByPanel whenever the key doesn't match.
+  const [holeTracker, setHoleTracker] = useState<{ key: string; holes: Hole[][] }>({
+    key: canvasKey,
+    holes: holesByPanel,
+  })
+  const currentHoles = holeTracker.key === canvasKey ? holeTracker.holes : holesByPanel
+
+  // Snapshot of what was last saved — derived savedId becomes null when form diverges
+  const [savedSnapshot, setSavedSnapshot] = useState<{
+    id: string
+    measureMm: unknown
+    heightMm: unknown
+    configuration: string
+  } | null>(null)
+
+  const savedId =
+    savedSnapshot !== null &&
+    savedSnapshot.measureMm === measureMm &&
+    savedSnapshot.heightMm === heightMm &&
+    savedSnapshot.configuration === configuration
+      ? savedSnapshot.id
+      : null
 
   const metrics = useMemo(() => {
     const m = typeof measureMm === 'number' ? measureMm : Number(measureMm)
@@ -93,9 +108,6 @@ export function DesignerPage() {
     return null
   }, [panels, configuration])
 
-  // Key forces DrawingCanvas to remount (and reset hole positions) when panel sizes change
-  const canvasKey = panels.map((p) => `${p.widthMm}x${p.heightMm}`).join('-')
-
   function handleSave(values: MeasurementFormValues): void {
     saveMutation.mutate(
       {
@@ -106,7 +118,15 @@ export function DesignerPage() {
         hardwareColor: values.hardwareColor,
         holes: flattenHoles(currentHoles),
       },
-      { onSuccess: (data) => setSavedId(data.id) },
+      {
+        onSuccess: (data) =>
+          setSavedSnapshot({
+            id: data.id,
+            measureMm: values.measureMm,
+            heightMm: values.heightMm,
+            configuration: values.configuration,
+          }),
+      },
     )
   }
 
@@ -166,7 +186,7 @@ export function DesignerPage() {
               key={canvasKey}
               panels={panels}
               holesByPanel={holesByPanel}
-              onHolesChange={setCurrentHoles}
+              onHolesChange={(holes) => setHoleTracker({ key: canvasKey, holes })}
             />
           ) : (
             <div className="flex h-full items-center justify-center">

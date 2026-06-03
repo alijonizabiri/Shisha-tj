@@ -26,7 +26,7 @@ Update via `/done` command after each completed step.
 
 ---
 
-## Phase 1 — Designer (the killer feature)
+## Phase 1 — Designer (the killer feature) ✅ Complete — 2026-06-03
 **Goal:** measurer can produce a PDF drawing on a tablet at the client's apartment.
 
 - [x] Step 1 [FE] — Pure functions in `features/designer/lib/`:
@@ -43,8 +43,8 @@ Update via `/done` command after each completed step.
 - [x] Step 9 [BE] — PDF generation with QuestPDF: A4 + A3 layouts, drawing + client header + financials
 - [x] Step 10 [BE] — Endpoint: `GET /api/v1/measurements/{id}/pdf?format=a4`
 - [x] Step 11 [FULL] — Wire frontend Designer → BE save → download PDF
-- [ ] Step 12 [QA] — End-to-end test on real tablet + Android phone
-- [ ] **Phase 1 complete** → tag `v0.2-designer`
+- [x] Step 12 [QA] — End-to-end test on real tablet + Android phone
+- [x] **Phase 1 complete** → tag `v0.2-designer`
 
 ---
 

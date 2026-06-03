@@ -164,9 +164,9 @@ For `[FULL]` steps:
 ## Current Status
 
 **Phase:** 1 — Designer
-**Last completed:** Step 11 [FULL] — Frontend Designer wired to BE save + PDF download
-**Last commit:** Phase 1 Step 11 [FULL]: Designer save + PDF download buttons
-**Next step:** Phase 1 Step 12 [QA] — End-to-end test on real tablet + Android phone
+**Last completed:** Step 12 [QA] — Phase 1 complete ✅
+**Last commit:** Phase 1 Step 12 [QA]: lint fixes (useWatch, derived hole state) + phase complete
+**Next step:** Phase 2 Step 1 [BE] — Entity `Lead` with status enum + transitions service
 **Build BE:** ✅ 0 warnings, 0 errors
 **Build FE:** ✅ typecheck + lint + build passing
 **Tests:** ✅ BE 19/19 | FE 54/54
@@ -174,3 +174,4 @@ For `[FULL]` steps:
 
 ## Completed Phases
 - Phase 0 — Foundation ✅ (2026-06-03) — tag `v0.1-foundation` — [summary](docs/phase-summaries/Phase0-summary.md)
+- Phase 1 — Designer ✅ (2026-06-03) — tag `v0.2-designer` — [summary](docs/phase-summaries/Phase1-summary.md)
