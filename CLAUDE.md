@@ -164,9 +164,9 @@ For `[FULL]` steps:
 ## Current Status
 
 **Phase:** 0 — Foundation
-**Last completed:** Step 6 [BE] — SaveChangesInterceptor (auto-fill audit fields)
-**Last commit:** Phase 0 Step 6 [BE]: SaveChangesInterceptor (audit fields + soft delete)
-**Next step:** Phase 0 Step 7 [BE] — Serilog wiring + /health endpoint + Swagger
+**Last completed:** Step 7 [BE] — Serilog wiring + /health endpoint + Swagger
+**Last commit:** Phase 0 Step 7 [BE]: Serilog + /health + Swagger JWT auth
+**Next step:** Phase 0 Step 8 [FE] — Axios client with JWT interceptors + auth context + protected routes
 **Build BE:** ✅ 0 warnings, 0 errors
 **Build FE:** ✅ built in ~500ms
 **Tests:** ✅ BE 5/5 | FE 3/3
