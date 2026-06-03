@@ -7,14 +7,17 @@ using Shisha.Application.Abstractions;
 using Shisha.Application.Auth;
 using Shisha.Infrastructure.Configuration;
 using Shisha.Infrastructure.Persistence;
+using Shisha.Infrastructure.Persistence.Interceptors;
 using Shisha.Infrastructure.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Database
-builder.Services.AddDbContext<AppDbContext>(opts =>
+builder.Services.AddScoped<AuditInterceptor>();
+builder.Services.AddDbContext<AppDbContext>((sp, opts) =>
     opts.UseNpgsql(builder.Configuration.GetConnectionString("Default"))
-        .UseSnakeCaseNamingConvention());
+        .UseSnakeCaseNamingConvention()
+        .AddInterceptors(sp.GetRequiredService<AuditInterceptor>()));
 
 // JWT options
 var jwtSection = builder.Configuration.GetSection(JwtOptions.SectionName);

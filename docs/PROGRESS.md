@@ -16,7 +16,7 @@ Update via `/done` command after each completed step.
 - [x] Step 3 [BE] — `AppDbContext` + EF configurations + global query filters (tenant + soft delete)
 - [x] Step 4 [BE] — Migration: `InitialIdentity`
 - [x] Step 5 [BE] — JWT auth (login, refresh, logout) + `CurrentUser` accessor + tenancy middleware
-- [ ] Step 6 [BE] — `SaveChangesInterceptor` (auto-fill `CreatedAt`, `UpdatedAt`, `TenantId`)
+- [x] Step 6 [BE] — `SaveChangesInterceptor` (auto-fill `CreatedAt`, `UpdatedAt`, `TenantId`)
 - [ ] Step 7 [BE] — Serilog wiring + `/health` endpoint + Swagger
 - [ ] Step 8 [FE] — Axios client with JWT interceptors + auth context + protected routes
 - [ ] Step 9 [FE] — Layout shell (sidebar + header + dark mode toggle) + login page

@@ -164,13 +164,13 @@ For `[FULL]` steps:
 ## Current Status
 
 **Phase:** 0 — Foundation
-**Last completed:** Step 5 [BE] — JWT auth + CurrentUser accessor
-**Last commit:** Phase 0 Step 5 [BE]: JWT auth (login, refresh, logout) + CurrentUser accessor
-**Next step:** Phase 0 Step 6 [BE] — SaveChangesInterceptor (auto-fill audit fields)
+**Last completed:** Step 6 [BE] — SaveChangesInterceptor (auto-fill audit fields)
+**Last commit:** Phase 0 Step 6 [BE]: SaveChangesInterceptor (audit fields + soft delete)
+**Next step:** Phase 0 Step 7 [BE] — Serilog wiring + /health endpoint + Swagger
 **Build BE:** ✅ 0 warnings, 0 errors
 **Build FE:** ✅ built in ~500ms
-**Tests:** ✅ BE 3/3 | FE 3/3
-**Updated:** 2026-06-02
+**Tests:** ✅ BE 5/5 | FE 3/3
+**Updated:** 2026-06-03
 
 ## Completed Phases
 - (none yet)
