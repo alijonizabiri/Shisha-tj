@@ -29,7 +29,7 @@ Update via `/done` command after each completed step.
 ## Phase 1 — Designer (the killer feature)
 **Goal:** measurer can produce a PDF drawing on a tablet at the client's apartment.
 
-- [ ] Step 1 [FE] — Pure functions in `features/designer/lib/`:
+- [x] Step 1 [FE] — Pure functions in `features/designer/lib/`:
   - `computePanels(measureMm, heightMm, mode)` — returns array of `{width, isDoor}`
   - `defaultHoles(panel, height)` — returns array of `{x, y, r, type}`
   - Unit tests: 156 → 80/80, 166 → 90/80, 200+4=204 → 124/80, etc.

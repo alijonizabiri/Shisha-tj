@@ -164,12 +164,12 @@ For `[FULL]` steps:
 ## Current Status
 
 **Phase:** 1 — Designer
-**Last completed:** Step 11 [FULL] — Integration test: login flow end-to-end (Phase 0 complete)
-**Last commit:** Phase 0 Step 11 [FULL]: auth integration tests + CurrentUserAccessor fix
-**Next step:** Phase 1 Step 1 [FE] — Pure functions in features/designer/lib/
+**Last completed:** Step 1 [FE] — Pure functions in features/designer/lib/
+**Last commit:** Phase 1 Step 1 [FE]: computePanels + defaultHoles + 22 unit tests
+**Next step:** Phase 1 Step 2 [FE] — DrawingCanvas SVG component (panels + dimensions + holes)
 **Build BE:** ✅ 0 warnings, 0 errors
 **Build FE:** ✅ typecheck + lint + build passing
-**Tests:** ✅ BE 11/11 | FE 10/10
+**Tests:** ✅ BE 11/11 | FE 32/32
 **Updated:** 2026-06-03
 
 ## Completed Phases
