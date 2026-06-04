@@ -72,7 +72,7 @@ Update via `/done` command after each completed step.
 
 - [x] Step 1 [BE] — Entities: `FactoryOrder`, `FactoryOrderItem`, `Payment`, `Hardware`, `Expense`
 - [x] Step 2 [BE] — Migration: `AddFinances`
-- [ ] Step 3 [BE] — `FactoryOrderService` (create batch from selected leads)
+- [x] Step 3 [BE] — `FactoryOrderService` (create batch from selected leads)
 - [ ] Step 4 [BE] — `PaymentService` (deposit + balance + refund)
 - [ ] Step 5 [BE] — `ProfitCalculator` service (price − glass − hardware − master − reworks)
 - [ ] Step 6 [BE] — Endpoint: `GET /api/v1/leads/{id}/finances` — full picture

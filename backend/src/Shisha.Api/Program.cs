@@ -9,6 +9,7 @@ using Shisha.Api.Infrastructure;
 using QuestPDF.Infrastructure;
 using Shisha.Application.Abstractions;
 using Shisha.Application.Auth;
+using Shisha.Application.FactoryOrders;
 using Shisha.Application.Leads;
 using Shisha.Application.Measurements;
 using Shisha.Application.Users;
@@ -70,6 +71,7 @@ builder.Services.AddScoped<IMeasurementService, MeasurementService>();
 builder.Services.AddSingleton<IMeasurementPdfService, MeasurementPdfService>();
 builder.Services.AddScoped<ILeadStatusTransitionService, LeadStatusTransitionService>();
 builder.Services.AddScoped<ILeadService, LeadService>();
+builder.Services.AddScoped<IFactoryOrderService, FactoryOrderService>();
 builder.Services.AddScoped<IUserService, UserService>();
 
 // CORS — allow the Vite dev server in development

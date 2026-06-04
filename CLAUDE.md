@@ -164,9 +164,9 @@ For `[FULL]` steps:
 ## Current Status
 
 **Phase:** 3 — Finances
-**Last completed:** Phase 3 Step 2 [BE] — Migration: `AddFinances`
-**Last commit:** Phase 3 Step 2 [BE]: AddFinances migration — factory_orders, factory_order_items, payments, hardware, expenses
-**Next step:** Phase 3 Step 3 [BE] — `FactoryOrderService` (create batch from selected leads)
+**Last completed:** Phase 3 Step 3 [BE] — `FactoryOrderService` (create batch from selected leads)
+**Last commit:** Phase 3 Step 3 [BE]: FactoryOrderService + FactoryOrdersController — CRUD, send, receive, rework
+**Next step:** Phase 3 Step 4 [BE] — `PaymentService` (deposit + balance + refund)
 **Build BE:** ✅ 0 warnings, 0 errors
 **Build FE:** ✅ typecheck + lint + build passing
 **Tests:** ✅ BE 78/78 | FE 73/73
