@@ -71,7 +71,7 @@ Update via `/done` command after each completed step.
 **Goal:** track factory orders, hardware, payments, profit per lead.
 
 - [x] Step 1 [BE] — Entities: `FactoryOrder`, `FactoryOrderItem`, `Payment`, `Hardware`, `Expense`
-- [ ] Step 2 [BE] — Migration: `AddFinances`
+- [x] Step 2 [BE] — Migration: `AddFinances`
 - [ ] Step 3 [BE] — `FactoryOrderService` (create batch from selected leads)
 - [ ] Step 4 [BE] — `PaymentService` (deposit + balance + refund)
 - [ ] Step 5 [BE] — `ProfitCalculator` service (price − glass − hardware − master − reworks)

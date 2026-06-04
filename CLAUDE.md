@@ -164,9 +164,9 @@ For `[FULL]` steps:
 ## Current Status
 
 **Phase:** 3 — Finances
-**Last completed:** Phase 3 Step 1 [BE] — Entities: FactoryOrder, FactoryOrderItem, Payment, Hardware, Expense
-**Last commit:** Phase 3 Step 1 [BE]: FactoryOrder, FactoryOrderItem, Payment, Hardware, Expense entities + EF configurations
-**Next step:** Phase 3 Step 2 [BE] — Migration: `AddFinances`
+**Last completed:** Phase 3 Step 2 [BE] — Migration: `AddFinances`
+**Last commit:** Phase 3 Step 2 [BE]: AddFinances migration — factory_orders, factory_order_items, payments, hardware, expenses
+**Next step:** Phase 3 Step 3 [BE] — `FactoryOrderService` (create batch from selected leads)
 **Build BE:** ✅ 0 warnings, 0 errors
 **Build FE:** ✅ typecheck + lint + build passing
 **Tests:** ✅ BE 78/78 | FE 73/73
