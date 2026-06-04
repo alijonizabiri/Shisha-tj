@@ -105,3 +105,9 @@ public record LeadDetailResponse(
     DateTime CreatedAt,
     DateTime UpdatedAt,
     IReadOnlyList<LeadMeasurementDto> Measurements);
+
+// ── Lookups ───────────────────────────────────────────────────────────────────
+
+public record RefusalReasonDto(Guid Id, string Label);
+
+public record ProductDto(Guid Id, string Name, bool IsActive);

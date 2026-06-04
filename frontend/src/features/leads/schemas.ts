@@ -11,3 +11,10 @@ export const createLeadSchema = z.object({
 })
 
 export type CreateLeadFormValues = z.infer<typeof createLeadSchema>
+
+export const refuseLeadSchema = z.object({
+  refusalReasonId: z.string().min(1, 'Выберите причину отказа'),
+  refusalNote:     z.string().max(2000).optional(),
+})
+
+export type RefuseLeadFormValues = z.infer<typeof refuseLeadSchema>

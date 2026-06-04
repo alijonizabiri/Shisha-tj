@@ -4,6 +4,7 @@ import { ArrowLeft, Ruler } from 'lucide-react'
 import { useLead } from './api'
 import { LeadStatusBadge } from './components/LeadStatusBadge'
 import { AssignMeasurerDialog } from './components/AssignMeasurerDialog'
+import { RefuseLeadDialog } from './components/RefuseLeadDialog'
 import { formatDate } from '@/shared/lib/formatDate'
 import { formatMoney } from '@/shared/lib/formatMoney'
 
@@ -33,6 +34,9 @@ export function LeadDetailPage() {
   const { id } = useParams<{ id: string }>()
   const { data: lead, isLoading, isError } = useLead(id ?? '')
   const [assignOpen, setAssignOpen] = useState(false)
+  const [refuseOpen, setRefuseOpen] = useState(false)
+
+  const canRefuse = ['New', 'Measurement', 'Thinking'].includes(lead?.status ?? '')
 
   if (isLoading) {
     return <div className="py-16 text-center text-muted-foreground">Загрузка…</div>
@@ -82,6 +86,14 @@ export function LeadDetailPage() {
               className="h-9 rounded-md border border-input bg-background px-3 text-sm hover:bg-accent hover:text-accent-foreground transition-colors"
             >
               {lead.status === 'New' ? 'Отправить на замер' : 'Назначить замерщика'}
+            </button>
+          )}
+          {canRefuse && (
+            <button
+              onClick={() => setRefuseOpen(true)}
+              className="h-9 rounded-md border border-destructive/50 bg-background px-3 text-sm text-destructive hover:bg-destructive/10 transition-colors"
+            >
+              Отказать
             </button>
           )}
         </div>
@@ -212,6 +224,12 @@ export function LeadDetailPage() {
         open={assignOpen}
         onClose={() => setAssignOpen(false)}
         lead={lead}
+      />
+      <RefuseLeadDialog
+        open={refuseOpen}
+        onClose={() => setRefuseOpen(false)}
+        leadId={lead.id}
+        leadName={lead.name}
       />
     </div>
   )

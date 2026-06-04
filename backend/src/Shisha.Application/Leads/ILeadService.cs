@@ -10,4 +10,6 @@ public interface ILeadService
     Task PatchStatusAsync(Guid id, PatchStatusRequest request, CancellationToken ct = default);
     Task AssignMeasurerAsync(Guid id, AssignMeasurerRequest request, CancellationToken ct = default);
     Task DeleteAsync(Guid id, CancellationToken ct = default);
+    Task<IReadOnlyList<RefusalReasonDto>> GetRefusalReasonsAsync(CancellationToken ct = default);
+    Task<IReadOnlyList<ProductDto>> GetProductsAsync(CancellationToken ct = default);
 }

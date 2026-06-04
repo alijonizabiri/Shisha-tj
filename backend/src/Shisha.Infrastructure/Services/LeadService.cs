@@ -186,6 +186,25 @@ public sealed class LeadService(
         await db.SaveChangesAsync(ct);
     }
 
+    public async Task<IReadOnlyList<RefusalReasonDto>> GetRefusalReasonsAsync(CancellationToken ct = default)
+    {
+        return await db.RefusalReasons
+            .AsNoTracking()
+            .OrderBy(r => r.SortOrder)
+            .Select(r => new RefusalReasonDto(r.Id, r.Label))
+            .ToListAsync(ct);
+    }
+
+    public async Task<IReadOnlyList<ProductDto>> GetProductsAsync(CancellationToken ct = default)
+    {
+        return await db.Products
+            .AsNoTracking()
+            .Where(p => p.IsActive)
+            .OrderBy(p => p.Name)
+            .Select(p => new ProductDto(p.Id, p.Name, p.IsActive))
+            .ToListAsync(ct);
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     private async Task<LeadDetailResponse> LoadLeadResponseAsync(Guid id, CancellationToken ct)

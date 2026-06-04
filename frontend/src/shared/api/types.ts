@@ -153,6 +153,10 @@ export interface components {
       name: string
       isActive: boolean
     }
+    RefusalReasonDto: {
+      id: string
+      label: string
+    }
     LeadDetailResponse: {
       id: string
       name: string

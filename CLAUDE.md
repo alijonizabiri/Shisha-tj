@@ -164,12 +164,12 @@ For `[FULL]` steps:
 ## Current Status
 
 **Phase:** 2 — CRM Kanban
-**Last completed:** Phase 2 Step 10 [FULL] — Assign-measurer modal
-**Last commit:** Phase 2 Step 10 [FULL]: AssignMeasurerDialog + GET /users/measurers endpoint
-**Next step:** Phase 2 Step 11 [FE] — Refusal modal (with reason selection)
+**Last completed:** Phase 2 Step 11 [FE] — Refusal modal (with reason selection)
+**Last commit:** Phase 2 Step 11 [FE]: RefuseLeadDialog + GET /refusal-reasons + GET /products endpoints
+**Next step:** Phase 2 Step 12 [QA] — Status transition validation (can't skip steps)
 **Build BE:** ✅ 0 warnings, 0 errors
 **Build FE:** ✅ typecheck + lint + build passing
-**Tests:** ✅ BE 65/65 | FE 64/64
+**Tests:** ✅ BE 65/65 | FE 73/73
 **Updated:** 2026-06-04
 
 ## Completed Phases
