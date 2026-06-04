@@ -163,15 +163,16 @@ For `[FULL]` steps:
 
 ## Current Status
 
-**Phase:** 2 — CRM Kanban
-**Last completed:** Phase 2 Step 11 [FE] — Refusal modal (with reason selection)
-**Last commit:** Phase 2 Step 11 [FE]: RefuseLeadDialog + GET /refusal-reasons + GET /products endpoints
-**Next step:** Phase 2 Step 12 [QA] — Status transition validation (can't skip steps)
+**Phase:** 3 — Finances
+**Last completed:** Phase 2 Step 12 [QA] — Status transition validation (can't skip steps)
+**Last commit:** Phase 2 Step 12 [QA]: LeadStatusTransitionTests — 15 new integration tests; Phase 2 complete
+**Next step:** Phase 3 Step 1 [BE] — Entities: FactoryOrder, FactoryOrderItem, Payment, Hardware, Expense
 **Build BE:** ✅ 0 warnings, 0 errors
 **Build FE:** ✅ typecheck + lint + build passing
-**Tests:** ✅ BE 65/65 | FE 73/73
+**Tests:** ✅ BE 80/80 | FE 73/73
 **Updated:** 2026-06-04
 
 ## Completed Phases
 - Phase 0 — Foundation ✅ (2026-06-03) — tag `v0.1-foundation` — [summary](docs/phase-summaries/Phase0-summary.md)
 - Phase 1 — Designer ✅ (2026-06-03) — tag `v0.2-designer` — [summary](docs/phase-summaries/Phase1-summary.md)
+- Phase 2 — CRM Kanban ✅ (2026-06-04) — tag `v0.3-crm` — [summary](docs/phase-summaries/Phase2-summary.md)

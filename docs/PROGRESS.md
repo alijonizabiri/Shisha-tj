@@ -48,7 +48,7 @@ Update via `/done` command after each completed step.
 
 ---
 
-## Phase 2 — CRM Kanban
+## Phase 2 — CRM Kanban ✅ Complete — 2026-06-04
 **Goal:** operator manages leads, measurer sees assigned visits.
 
 - [x] Step 1 [BE] — Entity `Lead` with status enum + transitions service
@@ -62,8 +62,8 @@ Update via `/done` command after each completed step.
 - [x] Step 9 [FE] — New lead form (operator)
 - [x] Step 10 [FE] — Assign-measurer modal
 - [x] Step 11 [FE] — Refusal modal (with reason selection)
-- [ ] Step 12 [QA] — Status transition validation (can't skip steps)
-- [ ] **Phase 2 complete** → tag `v0.3-crm`
+- [x] Step 12 [QA] — Status transition validation (can't skip steps)
+- [x] **Phase 2 complete** → tag `v0.3-crm`
 
 ---
 
