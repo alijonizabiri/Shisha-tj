@@ -164,12 +164,12 @@ For `[FULL]` steps:
 ## Current Status
 
 **Phase:** 2 — CRM Kanban
-**Last completed:** Phase 2 Step 3 [BE] — Migration: `AddLeads`
-**Last commit:** Phase 2 Step 3 [BE]: AddLeads migration + LeadConfiguration (numeric(18,2), indexes, FKs)
-**Next step:** Phase 2 Step 4 [BE] — `LeadService` + CRUD endpoints + status transition endpoint
+**Last completed:** Phase 2 Step 4 [BE] — `LeadService` + CRUD endpoints + status transition endpoint
+**Last commit:** Phase 2 Step 4 [BE]: LeadService + 8 endpoints + GlobalExceptionHandler + 12 tests
+**Next step:** Phase 2 Step 5 [BE] — Link `Lead → Measurement` (one-to-many)
 **Build BE:** ✅ 0 warnings, 0 errors
 **Build FE:** ✅ typecheck + lint + build passing
-**Tests:** ✅ BE 53/53 | FE 54/54
+**Tests:** ✅ BE 65/65 | FE 54/54
 **Updated:** 2026-06-04
 
 ## Completed Phases

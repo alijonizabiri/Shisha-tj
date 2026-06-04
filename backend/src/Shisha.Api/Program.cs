@@ -9,6 +9,7 @@ using Shisha.Api.Infrastructure;
 using QuestPDF.Infrastructure;
 using Shisha.Application.Abstractions;
 using Shisha.Application.Auth;
+using Shisha.Application.Leads;
 using Shisha.Application.Measurements;
 using Shisha.Infrastructure.Configuration;
 using Shisha.Infrastructure.Persistence;
@@ -65,6 +66,8 @@ builder.Services.AddSingleton<IPasswordHasher, PasswordHasher>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IMeasurementService, MeasurementService>();
 builder.Services.AddSingleton<IMeasurementPdfService, MeasurementPdfService>();
+builder.Services.AddScoped<ILeadStatusTransitionService, LeadStatusTransitionService>();
+builder.Services.AddScoped<ILeadService, LeadService>();
 
 // CORS — allow the Vite dev server in development
 builder.Services.AddCors(opts =>
@@ -75,6 +78,9 @@ builder.Services.AddCors(opts =>
 
 // Health checks
 builder.Services.AddHealthChecks();
+
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.AddProblemDetails();
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -116,6 +122,7 @@ builder.Services.AddSwaggerGen(opts =>
 var app = builder.Build();
 
 app.UseSerilogRequestLogging();
+app.UseExceptionHandler();
 
 if (app.Environment.IsDevelopment())
 {
