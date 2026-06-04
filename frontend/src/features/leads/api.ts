@@ -4,6 +4,7 @@ import { queryKeys } from '@/shared/api/queryKeys'
 import type { components } from '@/shared/api/types'
 
 export type Lead = components['schemas']['LeadSummaryResponse']
+export type LeadDetail = components['schemas']['LeadDetailResponse']
 export type PagedLeads = components['schemas']['PagedLeadsResponse']
 export type KanbanData = components['schemas']['KanbanResponse']
 export type PatchStatusRequest = components['schemas']['PatchStatusRequest']
@@ -35,6 +36,14 @@ export function useDeleteLead() {
   return useMutation({
     mutationFn: (id: string) => apiClient.delete(`/api/v1/leads/${id}`),
     onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.leads.all }),
+  })
+}
+
+export function useLead(id: string) {
+  return useQuery({
+    queryKey: queryKeys.leads.detail(id),
+    queryFn: () => apiClient.get<LeadDetail>(`/api/v1/leads/${id}`).then((r) => r.data),
+    enabled: !!id,
   })
 }
 

@@ -4,6 +4,7 @@ import { LoginPage } from '@/features/auth/LoginPage'
 import { DesignerPage } from '@/features/designer/DesignerPage'
 import { LeadsListPage } from '@/features/leads/LeadsListPage'
 import { LeadsKanbanPage } from '@/features/leads/LeadsKanbanPage'
+import { LeadDetailPage } from '@/features/leads/LeadDetailPage'
 import { AppShell } from './layout/AppShell'
 
 export const router = createBrowserRouter([
@@ -35,6 +36,10 @@ export const router = createBrowserRouter([
           {
             path: '/leads/kanban',
             element: <LeadsKanbanPage />,
+          },
+          {
+            path: '/leads/:id',
+            element: <LeadDetailPage />,
           },
           {
             path: '/designer',

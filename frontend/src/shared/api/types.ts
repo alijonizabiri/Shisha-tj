@@ -121,6 +121,37 @@ export interface components {
       address?: string | null
       promisedInstallDate?: string | null
     }
+    LeadMeasurementDto: {
+      id: string
+      configuration: string
+      glassColor: string
+      hardwareColor: string
+      measureMm: number
+      heightMm: number
+      measuredAt: string
+      createdAt: string
+    }
+    LeadDetailResponse: {
+      id: string
+      name: string
+      phone: string
+      address: string | null
+      product: string
+      status: string
+      source: string | null
+      note: string | null
+      refusalReasonId: string | null
+      refusalNote: string | null
+      callDate: string
+      promisedInstallDate: string | null
+      warrantyUntil: string | null
+      assignedMeasurerId: string | null
+      assignedMeasurerName: string | null
+      dealPriceTjs: number | null
+      createdAt: string
+      updatedAt: string
+      measurements: components['schemas']['LeadMeasurementDto'][]
+    }
   }
   responses: never
   parameters: never
