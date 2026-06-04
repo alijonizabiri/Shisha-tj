@@ -70,7 +70,7 @@ Update via `/done` command after each completed step.
 ## Phase 3 — Finances
 **Goal:** track factory orders, hardware, payments, profit per lead.
 
-- [ ] Step 1 [BE] — Entities: `FactoryOrder`, `FactoryOrderItem`, `Payment`, `Hardware`, `Expense`
+- [x] Step 1 [BE] — Entities: `FactoryOrder`, `FactoryOrderItem`, `Payment`, `Hardware`, `Expense`
 - [ ] Step 2 [BE] — Migration: `AddFinances`
 - [ ] Step 3 [BE] — `FactoryOrderService` (create batch from selected leads)
 - [ ] Step 4 [BE] — `PaymentService` (deposit + balance + refund)

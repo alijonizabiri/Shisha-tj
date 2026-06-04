@@ -31,4 +31,6 @@ public sealed class Lead : BaseEntity, ITenantOwned, ISoftDeletable
 
     public User? AssignedMeasurer { get; set; }
     public ICollection<Measurement> Measurements { get; set; } = [];
+    public ICollection<Payment> Payments { get; set; } = [];
+    public ICollection<Expense> Expenses { get; set; } = [];
 }

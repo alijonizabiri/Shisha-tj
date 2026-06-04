@@ -164,12 +164,12 @@ For `[FULL]` steps:
 ## Current Status
 
 **Phase:** 3 — Finances
-**Last completed:** Phase 2 Step 12 [QA] — Status transition validation (can't skip steps)
-**Last commit:** Phase 2 Step 12 [QA]: LeadStatusTransitionTests — 15 new integration tests; Phase 2 complete
-**Next step:** Phase 3 Step 1 [BE] — Entities: FactoryOrder, FactoryOrderItem, Payment, Hardware, Expense
+**Last completed:** Phase 3 Step 1 [BE] — Entities: FactoryOrder, FactoryOrderItem, Payment, Hardware, Expense
+**Last commit:** Phase 3 Step 1 [BE]: FactoryOrder, FactoryOrderItem, Payment, Hardware, Expense entities + EF configurations
+**Next step:** Phase 3 Step 2 [BE] — Migration: `AddFinances`
 **Build BE:** ✅ 0 warnings, 0 errors
 **Build FE:** ✅ typecheck + lint + build passing
-**Tests:** ✅ BE 80/80 | FE 73/73
+**Tests:** ✅ BE 78/78 | FE 73/73
 **Updated:** 2026-06-04
 
 ## Completed Phases

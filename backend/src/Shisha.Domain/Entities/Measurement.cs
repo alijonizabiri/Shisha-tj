@@ -27,4 +27,5 @@ public sealed class Measurement : BaseEntity, ITenantOwned, ISoftDeletable
     public User? Measurer { get; set; }
     public Lead? Lead { get; set; }
     public ICollection<Glass> Glasses { get; set; } = [];
+    public Hardware? Hardware { get; set; }
 }

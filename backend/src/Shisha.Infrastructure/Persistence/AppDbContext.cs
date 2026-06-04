@@ -19,6 +19,11 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options, ICurren
     public DbSet<Lead> Leads => Set<Lead>();
     public DbSet<RefusalReason> RefusalReasons => Set<RefusalReason>();
     public DbSet<Product> Products => Set<Product>();
+    public DbSet<FactoryOrder> FactoryOrders => Set<FactoryOrder>();
+    public DbSet<FactoryOrderItem> FactoryOrderItems => Set<FactoryOrderItem>();
+    public DbSet<Payment> Payments => Set<Payment>();
+    public DbSet<Hardware> Hardware => Set<Hardware>();
+    public DbSet<Expense> Expenses => Set<Expense>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
