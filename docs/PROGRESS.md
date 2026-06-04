@@ -59,7 +59,7 @@ Update via `/done` command after each completed step.
 - [x] Step 6 [FE] — Leads list page (table view) with filters
 - [x] Step 7 [FE] — Kanban view with dnd-kit (drag cards between status columns)
 - [x] Step 8 [FE] — Lead detail page (info, history, measurements, payments)
-- [ ] Step 9 [FE] — New lead form (operator)
+- [x] Step 9 [FE] — New lead form (operator)
 - [ ] Step 10 [FE] — Assign-measurer modal
 - [ ] Step 11 [FE] — Refusal modal (with reason selection)
 - [ ] Step 12 [QA] — Status transition validation (can't skip steps)

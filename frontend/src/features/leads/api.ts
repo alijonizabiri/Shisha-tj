@@ -8,6 +8,8 @@ export type LeadDetail = components['schemas']['LeadDetailResponse']
 export type PagedLeads = components['schemas']['PagedLeadsResponse']
 export type KanbanData = components['schemas']['KanbanResponse']
 export type PatchStatusRequest = components['schemas']['PatchStatusRequest']
+export type CreateLeadRequest = components['schemas']['CreateLeadRequest']
+export type ProductDto = components['schemas']['ProductDto']
 
 export interface LeadFilters {
   status?: string
@@ -51,6 +53,23 @@ export function useKanban() {
   return useQuery({
     queryKey: queryKeys.leads.kanban(),
     queryFn: () => apiClient.get<KanbanData>('/api/v1/leads/kanban').then((r) => r.data),
+  })
+}
+
+export function useCreateLead() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (body: CreateLeadRequest) =>
+      apiClient.post<LeadDetail>('/api/v1/leads', body).then((r) => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.leads.all }),
+  })
+}
+
+export function useProducts() {
+  return useQuery({
+    queryKey: ['products'],
+    queryFn: () => apiClient.get<ProductDto[]>('/api/v1/products').then((r) => r.data),
+    staleTime: 5 * 60 * 1000,
   })
 }
 

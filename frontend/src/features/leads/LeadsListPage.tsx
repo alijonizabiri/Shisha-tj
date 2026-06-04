@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { ChevronLeft, ChevronRight, Kanban, Search } from 'lucide-react'
 import { useLeads } from './api'
 import { LeadStatusBadge } from './components/LeadStatusBadge'
+import { NewLeadDialog } from './components/NewLeadDialog'
 import { LEAD_STATUS_META } from './lib/leadStatuses'
 import { Button } from '@/shared/ui/button'
 import { Input } from '@/shared/ui/input'
@@ -21,6 +22,7 @@ export function LeadsListPage() {
   const [searchInput, setSearchInput] = useState('')
   const [status, setStatus] = useState('')
   const [page, setPage] = useState(1)
+  const [newLeadOpen, setNewLeadOpen] = useState(false)
 
   const search = useDebounce(searchInput, 300)
 
@@ -58,8 +60,7 @@ export function LeadsListPage() {
             <Kanban className="mr-1 h-4 w-4" />
             Канбан
           </Link>
-          {/* New lead button wired in Step 9 */}
-          <Button disabled>+ Новый лид</Button>
+          <Button onClick={() => setNewLeadOpen(true)}>+ Новый лид</Button>
         </div>
       </div>
 
@@ -183,6 +184,8 @@ export function LeadsListPage() {
           </div>
         </div>
       )}
+
+      <NewLeadDialog open={newLeadOpen} onClose={() => setNewLeadOpen(false)} />
     </div>
   )
 }

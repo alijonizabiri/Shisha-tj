@@ -131,6 +131,20 @@ export interface components {
       measuredAt: string
       createdAt: string
     }
+    CreateLeadRequest: {
+      name: string
+      phone: string
+      address?: string | null
+      product: string
+      source?: string | null
+      note?: string | null
+      callDate: string
+    }
+    ProductDto: {
+      id: string
+      name: string
+      isActive: boolean
+    }
     LeadDetailResponse: {
       id: string
       name: string
