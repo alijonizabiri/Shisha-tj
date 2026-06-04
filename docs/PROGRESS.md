@@ -53,7 +53,7 @@ Update via `/done` command after each completed step.
 
 - [x] Step 1 [BE] — Entity `Lead` with status enum + transitions service
 - [x] Step 2 [BE] — Entity `RefusalReason` + `Product` (seed data)
-- [ ] Step 3 [BE] — Migration: `AddLeads`
+- [x] Step 3 [BE] — Migration: `AddLeads`
 - [ ] Step 4 [BE] — `LeadService` + CRUD endpoints + status transition endpoint
 - [ ] Step 5 [BE] — Link `Lead → Measurement` (one-to-many)
 - [ ] Step 6 [FE] — Leads list page (table view) with filters

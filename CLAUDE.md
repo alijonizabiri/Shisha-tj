@@ -164,13 +164,13 @@ For `[FULL]` steps:
 ## Current Status
 
 **Phase:** 2 — CRM Kanban
-**Last completed:** Phase 2 Step 2 [BE] — `RefusalReason` + `Product` entities + seed data
-**Last commit:** Phase 2 Step 2 [BE]: RefusalReason + Product entities + EF configs + dev seed
-**Next step:** Phase 2 Step 3 [BE] — Migration: `AddLeads`
-**Build BE:** ✅ 0 warnings, 0 errors (Domain/Application/Infrastructure; API locked by running process)
+**Last completed:** Phase 2 Step 3 [BE] — Migration: `AddLeads`
+**Last commit:** Phase 2 Step 3 [BE]: AddLeads migration + LeadConfiguration (numeric(18,2), indexes, FKs)
+**Next step:** Phase 2 Step 4 [BE] — `LeadService` + CRUD endpoints + status transition endpoint
+**Build BE:** ✅ 0 warnings, 0 errors
 **Build FE:** ✅ typecheck + lint + build passing
 **Tests:** ✅ BE 53/53 | FE 54/54
-**Updated:** 2026-06-03
+**Updated:** 2026-06-04
 
 ## Completed Phases
 - Phase 0 — Foundation ✅ (2026-06-03) — tag `v0.1-foundation` — [summary](docs/phase-summaries/Phase0-summary.md)
