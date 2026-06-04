@@ -12,6 +12,7 @@ using Shisha.Application.Auth;
 using Shisha.Application.FactoryOrders;
 using Shisha.Application.Leads;
 using Shisha.Application.Measurements;
+using Shisha.Application.Payments;
 using Shisha.Application.Users;
 using Shisha.Infrastructure.Configuration;
 using Shisha.Infrastructure.Persistence;
@@ -72,6 +73,7 @@ builder.Services.AddSingleton<IMeasurementPdfService, MeasurementPdfService>();
 builder.Services.AddScoped<ILeadStatusTransitionService, LeadStatusTransitionService>();
 builder.Services.AddScoped<ILeadService, LeadService>();
 builder.Services.AddScoped<IFactoryOrderService, FactoryOrderService>();
+builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<IUserService, UserService>();
 
 // CORS — allow the Vite dev server in development

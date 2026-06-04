@@ -164,9 +164,9 @@ For `[FULL]` steps:
 ## Current Status
 
 **Phase:** 3 — Finances
-**Last completed:** Phase 3 Step 3 [BE] — `FactoryOrderService` (create batch from selected leads)
-**Last commit:** Phase 3 Step 3 [BE]: FactoryOrderService + FactoryOrdersController — CRUD, send, receive, rework
-**Next step:** Phase 3 Step 4 [BE] — `PaymentService` (deposit + balance + refund)
+**Last completed:** Phase 3 Step 4 [BE] — `PaymentService` (deposit + balance + refund)
+**Last commit:** Phase 3 Step 4 [BE]: PaymentService + PaymentsController — POST + DELETE
+**Next step:** Phase 3 Step 5 [BE] — `ProfitCalculator` service
 **Build BE:** ✅ 0 warnings, 0 errors
 **Build FE:** ✅ typecheck + lint + build passing
 **Tests:** ✅ BE 78/78 | FE 73/73
