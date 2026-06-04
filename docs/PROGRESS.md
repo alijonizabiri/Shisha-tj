@@ -57,7 +57,7 @@ Update via `/done` command after each completed step.
 - [x] Step 4 [BE] — `LeadService` + CRUD endpoints + status transition endpoint
 - [x] Step 5 [BE] — Link `Lead → Measurement` (one-to-many)
 - [x] Step 6 [FE] — Leads list page (table view) with filters
-- [ ] Step 7 [FE] — Kanban view with dnd-kit (drag cards between status columns)
+- [x] Step 7 [FE] — Kanban view with dnd-kit (drag cards between status columns)
 - [ ] Step 8 [FE] — Lead detail page (info, history, measurements, payments)
 - [ ] Step 9 [FE] — New lead form (operator)
 - [ ] Step 10 [FE] — Assign-measurer modal

@@ -5,6 +5,8 @@ import type { components } from '@/shared/api/types'
 
 export type Lead = components['schemas']['LeadSummaryResponse']
 export type PagedLeads = components['schemas']['PagedLeadsResponse']
+export type KanbanData = components['schemas']['KanbanResponse']
+export type PatchStatusRequest = components['schemas']['PatchStatusRequest']
 
 export interface LeadFilters {
   status?: string
@@ -32,6 +34,22 @@ export function useDeleteLead() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => apiClient.delete(`/api/v1/leads/${id}`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.leads.all }),
+  })
+}
+
+export function useKanban() {
+  return useQuery({
+    queryKey: queryKeys.leads.kanban(),
+    queryFn: () => apiClient.get<KanbanData>('/api/v1/leads/kanban').then((r) => r.data),
+  })
+}
+
+export function usePatchLeadStatus() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body: PatchStatusRequest }) =>
+      apiClient.patch(`/api/v1/leads/${id}/status`, body),
     onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.leads.all }),
   })
 }

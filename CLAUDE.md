@@ -164,9 +164,9 @@ For `[FULL]` steps:
 ## Current Status
 
 **Phase:** 2 — CRM Kanban
-**Last completed:** Phase 2 Step 6 [FE] — Leads list page (table view) with filters
-**Last commit:** Phase 2 Step 6 [FE]: LeadsListPage + useLeads hook + LeadStatusBadge + 10 new tests
-**Next step:** Phase 2 Step 7 [FE] — Kanban view with dnd-kit (drag cards between status columns)
+**Last completed:** Phase 2 Step 7 [FE] — Kanban view with dnd-kit (drag cards between status columns)
+**Last commit:** Phase 2 Step 7 [FE]: LeadsKanbanPage + KanbanColumn + LeadCard + dnd-kit drag
+**Next step:** Phase 2 Step 8 [FE] — Lead detail page (info, history, measurements, payments)
 **Build BE:** ✅ 0 warnings, 0 errors
 **Build FE:** ✅ typecheck + lint + build passing
 **Tests:** ✅ BE 65/65 | FE 64/64

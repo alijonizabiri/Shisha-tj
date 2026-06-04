@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ChevronLeft, ChevronRight, Search } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Kanban, Search } from 'lucide-react'
 import { useLeads } from './api'
 import { LeadStatusBadge } from './components/LeadStatusBadge'
 import { LEAD_STATUS_META } from './lib/leadStatuses'
@@ -50,8 +50,17 @@ export function LeadsListPage() {
             </p>
           )}
         </div>
-        {/* New lead button wired in Step 9 */}
-        <Button disabled>+ Новый лид</Button>
+        <div className="flex items-center gap-2">
+          <Link
+            to="/leads/kanban"
+            className="inline-flex items-center h-9 rounded-md border border-input bg-background px-3 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors"
+          >
+            <Kanban className="mr-1 h-4 w-4" />
+            Канбан
+          </Link>
+          {/* New lead button wired in Step 9 */}
+          <Button disabled>+ Новый лид</Button>
+        </div>
       </div>
 
       {/* Filters */}

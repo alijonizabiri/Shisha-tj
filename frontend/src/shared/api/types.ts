@@ -105,6 +105,22 @@ export interface components {
       page: number
       pageSize: number
     }
+    KanbanColumn: {
+      status: string
+      items: components['schemas']['LeadSummaryResponse'][]
+    }
+    KanbanResponse: {
+      columns: components['schemas']['KanbanColumn'][]
+    }
+    PatchStatusRequest: {
+      status: string
+      refusalReasonId?: string | null
+      refusalNote?: string | null
+      dealPriceTjs?: number | null
+      assignedMeasurerId?: string | null
+      address?: string | null
+      promisedInstallDate?: string | null
+    }
   }
   responses: never
   parameters: never
