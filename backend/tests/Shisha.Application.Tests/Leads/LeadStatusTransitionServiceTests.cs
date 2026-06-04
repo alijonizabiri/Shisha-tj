@@ -57,17 +57,25 @@ public sealed class LeadStatusTransitionServiceTests
     // ── TransitionAsync — happy paths ───────────────────────────────────────
 
     [Fact]
-    public async Task Transition_NewToMeasurement_SetsAssigneeAndAddress()
+    public async Task Transition_NewToMeasurement_SetsAddress()
     {
         var lead = NewLead();
-        var measurerId = Guid.NewGuid();
 
         await _sut.TransitionAsync(lead, LeadStatus.Measurement,
-            new LeadTransitionArgs(AssignedMeasurerId: measurerId, Address: "ул. Рудаки 1"));
+            new LeadTransitionArgs(Address: "ул. Рудаки 1"));
 
         Assert.Equal(LeadStatus.Measurement, lead.Status);
-        Assert.Equal(measurerId, lead.AssignedMeasurerId);
         Assert.Equal("ул. Рудаки 1", lead.Address);
+    }
+
+    [Fact]
+    public async Task Transition_NewToMeasurement_WithoutAddress_StillSucceeds()
+    {
+        var lead = NewLead();
+
+        await _sut.TransitionAsync(lead, LeadStatus.Measurement, new LeadTransitionArgs());
+
+        Assert.Equal(LeadStatus.Measurement, lead.Status);
     }
 
     [Fact]
@@ -135,26 +143,6 @@ public sealed class LeadStatusTransitionServiceTests
     }
 
     // ── TransitionAsync — validation errors ──────────────────────────────────
-
-    [Fact]
-    public async Task Transition_NewToMeasurement_MissingMeasurer_Throws()
-    {
-        var lead = NewLead();
-
-        await Assert.ThrowsAsync<DomainValidationException>(() =>
-            _sut.TransitionAsync(lead, LeadStatus.Measurement,
-                new LeadTransitionArgs(Address: "ул. Рудаки 1")));
-    }
-
-    [Fact]
-    public async Task Transition_NewToMeasurement_MissingAddress_Throws()
-    {
-        var lead = NewLead();
-
-        await Assert.ThrowsAsync<DomainValidationException>(() =>
-            _sut.TransitionAsync(lead, LeadStatus.Measurement,
-                new LeadTransitionArgs(AssignedMeasurerId: Guid.NewGuid())));
-    }
 
     [Fact]
     public async Task Transition_ToRefused_MissingReasonId_Throws()

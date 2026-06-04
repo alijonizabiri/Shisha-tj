@@ -13,6 +13,15 @@ import { Label } from '@/shared/ui/label'
 const SELECT_CLASS =
   'flex h-10 w-full cursor-pointer rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50'
 
+const LEAD_SOURCES = [
+  'Instagram',
+  'Рекомендация',
+  'Google / Яндекс',
+  'Объявление (Avito / OLX)',
+  'Выставка',
+  'Другое',
+] as const
+
 interface Props {
   open: boolean
   onClose: () => void
@@ -159,11 +168,12 @@ export function NewLeadDialog({ open, onClose }: Props) {
           {/* Source */}
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="lead-source">Источник</Label>
-            <Input
-              id="lead-source"
-              placeholder="Instagram, рекомендация…"
-              {...register('source')}
-            />
+            <select id="lead-source" {...register('source')} className={SELECT_CLASS}>
+              <option value="">— Выберите —</option>
+              {LEAD_SOURCES.map((s) => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
           </div>
 
           {/* Note */}

@@ -49,12 +49,8 @@ public sealed class LeadStatusTransitionService : ILeadStatusTransitionService
         switch (to)
         {
             case LeadStatus.Measurement:
-                if (args.AssignedMeasurerId is null)
-                    throw new DomainValidationException("assignedMeasurerId", "Required for Measurement status.");
-                if (string.IsNullOrWhiteSpace(args.Address))
-                    throw new DomainValidationException("address", "Required for Measurement status.");
-                lead.AssignedMeasurerId = args.AssignedMeasurerId;
-                lead.Address = args.Address;
+                if (!string.IsNullOrWhiteSpace(args.Address))
+                    lead.Address = args.Address;
                 break;
 
             case LeadStatus.Buying:

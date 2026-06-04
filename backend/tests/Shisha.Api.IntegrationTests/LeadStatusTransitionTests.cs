@@ -112,11 +112,11 @@ public sealed class LeadStatusTransitionTests(ApiFactory factory)
         var client = await AuthClientAsync();
         var id = await CreateLeadAsync(client);
 
+        // Measurement no longer requires assignedMeasurerId
         var r1 = await client.PatchAsJsonAsync($"/api/v1/leads/{id}/status", new
         {
-            status             = "Measurement",
-            assignedMeasurerId = Guid.NewGuid(), // PatchStatus doesn't validate existence
-            address            = "ул. Рудаки 1",
+            status  = "Measurement",
+            address = "ул. Рудаки 1",
         });
         Assert.Equal(HttpStatusCode.NoContent, r1.StatusCode);
 
@@ -188,9 +188,8 @@ public sealed class LeadStatusTransitionTests(ApiFactory factory)
 
         await client.PatchAsJsonAsync($"/api/v1/leads/{id}/status", new
         {
-            status             = "Measurement",
-            assignedMeasurerId = Guid.NewGuid(),
-            address            = "ул. Рудаки 1",
+            status  = "Measurement",
+            address = "ул. Рудаки 1",
         });
 
         var resp = await client.PatchAsJsonAsync($"/api/v1/leads/{id}/status", new
@@ -215,26 +214,6 @@ public sealed class LeadStatusTransitionTests(ApiFactory factory)
         {
             status = "Refused",
             // refusalReasonId intentionally omitted
-        });
-
-        Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
-    }
-
-    // ── Missing required data for Measurement → 400 ──────────────────────────
-
-    [Fact]
-    public async Task PatchStatus_ToMeasurement_WithoutAddress_Returns400()
-    {
-        if (!factory.IsAvailable) return;
-
-        var client = await AuthClientAsync();
-        var id = await CreateLeadAsync(client);
-
-        var resp = await client.PatchAsJsonAsync($"/api/v1/leads/{id}/status", new
-        {
-            status             = "Measurement",
-            assignedMeasurerId = Guid.NewGuid(),
-            // address intentionally omitted
         });
 
         Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
