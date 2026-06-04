@@ -164,9 +164,9 @@ For `[FULL]` steps:
 ## Current Status
 
 **Phase:** 2 — CRM Kanban
-**Last completed:** Phase 2 Step 9 [FE] — New lead form (operator)
-**Last commit:** Phase 2 Step 9 [FE]: NewLeadDialog + useCreateLead + useProducts + schemas
-**Next step:** Phase 2 Step 10 [FE] — Assign-measurer modal
+**Last completed:** Phase 2 Step 10 [FULL] — Assign-measurer modal
+**Last commit:** Phase 2 Step 10 [FULL]: AssignMeasurerDialog + GET /users/measurers endpoint
+**Next step:** Phase 2 Step 11 [FE] — Refusal modal (with reason selection)
 **Build BE:** ✅ 0 warnings, 0 errors
 **Build FE:** ✅ typecheck + lint + build passing
 **Tests:** ✅ BE 65/65 | FE 64/64

@@ -10,6 +10,7 @@ export type KanbanData = components['schemas']['KanbanResponse']
 export type PatchStatusRequest = components['schemas']['PatchStatusRequest']
 export type CreateLeadRequest = components['schemas']['CreateLeadRequest']
 export type ProductDto = components['schemas']['ProductDto']
+export type MeasurerDto = components['schemas']['MeasurerDto']
 
 export interface LeadFilters {
   status?: string
@@ -61,6 +62,23 @@ export function useCreateLead() {
   return useMutation({
     mutationFn: (body: CreateLeadRequest) =>
       apiClient.post<LeadDetail>('/api/v1/leads', body).then((r) => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.leads.all }),
+  })
+}
+
+export function useMeasurers() {
+  return useQuery({
+    queryKey: ['measurers'],
+    queryFn: () => apiClient.get<MeasurerDto[]>('/api/v1/users/measurers').then((r) => r.data),
+    staleTime: 5 * 60 * 1000,
+  })
+}
+
+export function useAssignMeasurer() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, userId }: { id: string; userId: string }) =>
+      apiClient.post(`/api/v1/leads/${id}/assign-measurer`, { userId }),
     onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.leads.all }),
   })
 }

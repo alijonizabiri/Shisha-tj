@@ -1,7 +1,9 @@
+import { useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { ArrowLeft, Ruler } from 'lucide-react'
 import { useLead } from './api'
 import { LeadStatusBadge } from './components/LeadStatusBadge'
+import { AssignMeasurerDialog } from './components/AssignMeasurerDialog'
 import { formatDate } from '@/shared/lib/formatDate'
 import { formatMoney } from '@/shared/lib/formatMoney'
 
@@ -30,6 +32,7 @@ const CONFIG_LABELS: Record<string, string> = {
 export function LeadDetailPage() {
   const { id } = useParams<{ id: string }>()
   const { data: lead, isLoading, isError } = useLead(id ?? '')
+  const [assignOpen, setAssignOpen] = useState(false)
 
   if (isLoading) {
     return <div className="py-16 text-center text-muted-foreground">Загрузка…</div>
@@ -66,7 +69,6 @@ export function LeadDetailPage() {
           </div>
           <p className="mt-1 text-sm text-muted-foreground">{lead.phone}</p>
         </div>
-        {/* Action buttons wired in Steps 9–11 */}
         <div className="flex gap-2">
           <button
             disabled
@@ -74,12 +76,14 @@ export function LeadDetailPage() {
           >
             Редактировать
           </button>
-          <button
-            disabled
-            className="h-9 rounded-md border border-input bg-background px-3 text-sm opacity-50 cursor-not-allowed"
-          >
-            Назначить замерщика
-          </button>
+          {lead.status !== 'Closed' && lead.status !== 'Refused' && (
+            <button
+              onClick={() => setAssignOpen(true)}
+              className="h-9 rounded-md border border-input bg-background px-3 text-sm hover:bg-accent hover:text-accent-foreground transition-colors"
+            >
+              {lead.status === 'New' ? 'Отправить на замер' : 'Назначить замерщика'}
+            </button>
+          )}
         </div>
       </div>
 
@@ -203,6 +207,12 @@ export function LeadDetailPage() {
           </div>
         </div>
       </div>
+
+      <AssignMeasurerDialog
+        open={assignOpen}
+        onClose={() => setAssignOpen(false)}
+        lead={lead}
+      />
     </div>
   )
 }

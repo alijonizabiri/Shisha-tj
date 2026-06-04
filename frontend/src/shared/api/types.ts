@@ -131,6 +131,14 @@ export interface components {
       measuredAt: string
       createdAt: string
     }
+    MeasurerDto: {
+      id: string
+      fullName: string
+      email: string
+    }
+    AssignMeasurerRequest: {
+      userId: string
+    }
     CreateLeadRequest: {
       name: string
       phone: string
