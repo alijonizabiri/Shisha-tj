@@ -9,6 +9,7 @@ public sealed class Measurement : BaseEntity, ITenantOwned, ISoftDeletable
 
     /// <summary>The user who took this measurement (set from JWT on save).</summary>
     public Guid? MeasurerId { get; set; }
+    public Guid? LeadId { get; set; }
 
     public int MeasureMm { get; set; }
     public int HeightMm { get; set; }
@@ -24,5 +25,6 @@ public sealed class Measurement : BaseEntity, ITenantOwned, ISoftDeletable
     public Guid? DeletedByUserId { get; set; }
 
     public User? Measurer { get; set; }
+    public Lead? Lead { get; set; }
     public ICollection<Glass> Glasses { get; set; } = [];
 }

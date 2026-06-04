@@ -74,3 +74,34 @@ public record PagedLeadsResponse(
 public record KanbanColumn(string Status, IReadOnlyList<LeadSummaryResponse> Items);
 
 public record KanbanResponse(IReadOnlyList<KanbanColumn> Columns);
+
+public record LeadMeasurementDto(
+    Guid Id,
+    string Configuration,
+    string GlassColor,
+    string HardwareColor,
+    int MeasureMm,
+    int HeightMm,
+    DateTime MeasuredAt,
+    DateTime CreatedAt);
+
+public record LeadDetailResponse(
+    Guid Id,
+    string Name,
+    string Phone,
+    string? Address,
+    string Product,
+    string Status,
+    string? Source,
+    string? Note,
+    Guid? RefusalReasonId,
+    string? RefusalNote,
+    DateOnly CallDate,
+    DateOnly? PromisedInstallDate,
+    DateOnly? WarrantyUntil,
+    Guid? AssignedMeasurerId,
+    string? AssignedMeasurerName,
+    decimal? DealPriceTjs,
+    DateTime CreatedAt,
+    DateTime UpdatedAt,
+    IReadOnlyList<LeadMeasurementDto> Measurements);

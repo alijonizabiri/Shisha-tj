@@ -28,6 +28,7 @@ public sealed class MeasurementService(AppDbContext db, ICurrentUser currentUser
         var measurement = new Measurement
         {
             MeasurerId = currentUser.IsAuthenticated ? currentUser.UserId : null,
+            LeadId = request.LeadId,
             MeasureMm = request.MeasureMm,
             HeightMm = request.HeightMm,
             Configuration = config,

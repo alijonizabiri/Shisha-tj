@@ -77,10 +77,11 @@ public sealed class LeadService(
         return new KanbanResponse(columns);
     }
 
-    public async Task<LeadSummaryResponse> GetByIdAsync(Guid id, CancellationToken ct = default)
+    public async Task<LeadDetailResponse> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
         var lead = await db.Leads
             .Include(l => l.AssignedMeasurer)
+            .Include(l => l.Measurements)
             .AsNoTracking()
             .FirstOrDefaultAsync(l => l.Id == id, ct)
             ?? throw new NotFoundException($"Lead {id} not found.");
@@ -89,10 +90,10 @@ public sealed class LeadService(
             || (lead.Status != LeadStatus.Measurement && lead.Status != LeadStatus.Buying)))
             throw new NotFoundException($"Lead {id} not found.");
 
-        return ToSummary(lead);
+        return ToDetail(lead);
     }
 
-    public async Task<LeadSummaryResponse> CreateAsync(CreateLeadRequest request, CancellationToken ct = default)
+    public async Task<LeadDetailResponse> CreateAsync(CreateLeadRequest request, CancellationToken ct = default)
     {
         var lead = new Lead
         {
@@ -113,7 +114,7 @@ public sealed class LeadService(
         return await LoadLeadResponseAsync(lead.Id, ct);
     }
 
-    public async Task<LeadSummaryResponse> UpdateAsync(Guid id, UpdateLeadRequest request, CancellationToken ct = default)
+    public async Task<LeadDetailResponse> UpdateAsync(Guid id, UpdateLeadRequest request, CancellationToken ct = default)
     {
         var lead = await db.Leads.FindAsync([id], ct)
             ?? throw new NotFoundException($"Lead {id} not found.");
@@ -187,14 +188,15 @@ public sealed class LeadService(
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
-    private async Task<LeadSummaryResponse> LoadLeadResponseAsync(Guid id, CancellationToken ct)
+    private async Task<LeadDetailResponse> LoadLeadResponseAsync(Guid id, CancellationToken ct)
     {
         var lead = await db.Leads
             .Include(l => l.AssignedMeasurer)
+            .Include(l => l.Measurements)
             .AsNoTracking()
             .FirstAsync(l => l.Id == id, ct);
 
-        return ToSummary(lead);
+        return ToDetail(lead);
     }
 
     private static LeadSummaryResponse ToSummary(Lead l) => new(
@@ -216,4 +218,36 @@ public sealed class LeadService(
         l.DealPriceTjs,
         l.CreatedAt,
         l.UpdatedAt);
+
+    private static LeadDetailResponse ToDetail(Lead l) => new(
+        l.Id,
+        l.Name,
+        l.Phone,
+        l.Address,
+        l.Product,
+        l.Status.ToString(),
+        l.Source,
+        l.Note,
+        l.RefusalReasonId,
+        l.RefusalNote,
+        l.CallDate,
+        l.PromisedInstallDate,
+        l.WarrantyUntil,
+        l.AssignedMeasurerId,
+        l.AssignedMeasurer?.FullName,
+        l.DealPriceTjs,
+        l.CreatedAt,
+        l.UpdatedAt,
+        l.Measurements
+            .OrderByDescending(m => m.MeasuredAt)
+            .Select(m => new LeadMeasurementDto(
+                m.Id,
+                m.Configuration.ToString(),
+                m.GlassColor.ToString(),
+                m.HardwareColor.ToString(),
+                m.MeasureMm,
+                m.HeightMm,
+                m.MeasuredAt,
+                m.CreatedAt))
+            .ToList());
 }

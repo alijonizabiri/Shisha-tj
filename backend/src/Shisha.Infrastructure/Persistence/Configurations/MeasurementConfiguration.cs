@@ -34,6 +34,13 @@ public sealed class MeasurementConfiguration : IEntityTypeConfiguration<Measurem
             .IsRequired();
 
         builder.HasIndex(m => m.TenantId);
+        builder.HasIndex(m => m.LeadId);
+
+        builder.HasOne(m => m.Lead)
+            .WithMany(l => l.Measurements)
+            .HasForeignKey(m => m.LeadId)
+            .OnDelete(DeleteBehavior.Restrict)
+            .IsRequired(false);
 
         // PostgreSQL xmin system column as optimistic concurrency token
         builder.Property<uint>("xmin")

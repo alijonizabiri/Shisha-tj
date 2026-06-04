@@ -30,4 +30,5 @@ public sealed class Lead : BaseEntity, ITenantOwned, ISoftDeletable
     public Guid? DeletedByUserId { get; set; }
 
     public User? AssignedMeasurer { get; set; }
+    public ICollection<Measurement> Measurements { get; set; } = [];
 }

@@ -34,14 +34,14 @@ public sealed class LeadsController(ILeadService leadService) : ControllerBase
 
     [HttpGet("{id:guid}")]
     [Authorize(Roles = "Admin,Operator,Measurer")]
-    public async Task<ActionResult<LeadSummaryResponse>> GetById(Guid id, CancellationToken ct)
+    public async Task<ActionResult<LeadDetailResponse>> GetById(Guid id, CancellationToken ct)
     {
         return Ok(await leadService.GetByIdAsync(id, ct));
     }
 
     [HttpPost]
     [Authorize(Roles = "Admin,Operator")]
-    public async Task<ActionResult<LeadSummaryResponse>> Create(
+    public async Task<ActionResult<LeadDetailResponse>> Create(
         CreateLeadRequest request, CancellationToken ct)
     {
         var result = await leadService.CreateAsync(request, ct);
@@ -50,7 +50,7 @@ public sealed class LeadsController(ILeadService leadService) : ControllerBase
 
     [HttpPut("{id:guid}")]
     [Authorize(Roles = "Admin,Operator")]
-    public async Task<ActionResult<LeadSummaryResponse>> Update(
+    public async Task<ActionResult<LeadDetailResponse>> Update(
         Guid id, UpdateLeadRequest request, CancellationToken ct)
     {
         return Ok(await leadService.UpdateAsync(id, request, ct));
