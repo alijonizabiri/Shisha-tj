@@ -77,6 +77,34 @@ export interface components {
       errorCode?: string
       errors?: Record<string, string[]>
     }
+    LeadSummaryResponse: {
+      id: string
+      name: string
+      phone: string
+      address: string | null
+      product: string
+      /** LeadStatus enum value as string */
+      status: string
+      source: string | null
+      note: string | null
+      refusalReasonId: string | null
+      refusalNote: string | null
+      /** DateOnly: "YYYY-MM-DD" */
+      callDate: string
+      promisedInstallDate: string | null
+      warrantyUntil: string | null
+      assignedMeasurerId: string | null
+      assignedMeasurerName: string | null
+      dealPriceTjs: number | null
+      createdAt: string
+      updatedAt: string
+    }
+    PagedLeadsResponse: {
+      items: components['schemas']['LeadSummaryResponse'][]
+      totalCount: number
+      page: number
+      pageSize: number
+    }
   }
   responses: never
   parameters: never

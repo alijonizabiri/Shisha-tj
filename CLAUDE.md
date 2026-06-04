@@ -164,12 +164,12 @@ For `[FULL]` steps:
 ## Current Status
 
 **Phase:** 2 — CRM Kanban
-**Last completed:** Phase 2 Step 5 [BE] — Link `Lead → Measurement` (one-to-many)
-**Last commit:** Phase 2 Step 5 [BE]: Lead→Measurement FK + LeadDetailResponse + AddLeadToMeasurement migration
-**Next step:** Phase 2 Step 6 [FE] — Leads list page (table view) with filters
+**Last completed:** Phase 2 Step 6 [FE] — Leads list page (table view) with filters
+**Last commit:** Phase 2 Step 6 [FE]: LeadsListPage + useLeads hook + LeadStatusBadge + 10 new tests
+**Next step:** Phase 2 Step 7 [FE] — Kanban view with dnd-kit (drag cards between status columns)
 **Build BE:** ✅ 0 warnings, 0 errors
 **Build FE:** ✅ typecheck + lint + build passing
-**Tests:** ✅ BE 65/65 | FE 54/54
+**Tests:** ✅ BE 65/65 | FE 64/64
 **Updated:** 2026-06-04
 
 ## Completed Phases
