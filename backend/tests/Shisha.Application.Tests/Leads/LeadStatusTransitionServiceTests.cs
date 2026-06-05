@@ -98,7 +98,11 @@ public sealed class LeadStatusTransitionServiceTests
         var lead = NewLead(LeadStatus.Measurement);
 
         await _sut.TransitionAsync(lead, LeadStatus.Buying,
-            new LeadTransitionArgs(DealPriceTjs: 1500.00m, PromisedInstallDate: DateOnly.FromDateTime(DateTime.UtcNow)));
+            new LeadTransitionArgs(
+                DealPriceTjs: 1500.00m,
+                PromisedInstallDate: DateOnly.FromDateTime(DateTime.UtcNow),
+                MeasurementCount: 1,
+                TotalDepositTjs: LeadBusinessRules.MinDepositTjs));
 
         Assert.Equal(LeadStatus.Buying, lead.Status);
         Assert.Equal(1500.00m, lead.DealPriceTjs);
@@ -186,8 +190,89 @@ public sealed class LeadStatusTransitionServiceTests
     {
         var lead = NewLead(LeadStatus.GlassArrived);
         lead.PromisedInstallDate = null;
+        lead.DealPriceTjs = 1000m;
 
-        await _sut.TransitionAsync(lead, LeadStatus.Installed, new LeadTransitionArgs());
+        await _sut.TransitionAsync(lead, LeadStatus.Installed,
+            new LeadTransitionArgs(TotalPaidTjs: 1000m));
+
+        Assert.Equal(LeadStatus.Installed, lead.Status);
+    }
+
+    // ── Step 8: stricter transition guards ──────────────────────────────────────
+
+    [Fact]
+    public async Task Transition_ToThinking_NoMeasurement_Throws()
+    {
+        var lead = NewLead(LeadStatus.Measurement);
+
+        var ex = await Assert.ThrowsAsync<DomainValidationException>(() =>
+            _sut.TransitionAsync(lead, LeadStatus.Thinking,
+                new LeadTransitionArgs(MeasurementCount: 0)));
+
+        Assert.True(ex.Errors.ContainsKey("measurement"));
+    }
+
+    [Fact]
+    public async Task Transition_ToBuying_NoMeasurement_Throws()
+    {
+        var lead = NewLead(LeadStatus.Measurement);
+
+        var ex = await Assert.ThrowsAsync<DomainValidationException>(() =>
+            _sut.TransitionAsync(lead, LeadStatus.Buying,
+                new LeadTransitionArgs(DealPriceTjs: 1000m, MeasurementCount: 0, TotalDepositTjs: 100m)));
+
+        Assert.True(ex.Errors.ContainsKey("measurement"));
+    }
+
+    [Fact]
+    public async Task Transition_ToBuying_DepositTooLow_Throws()
+    {
+        var lead = NewLead(LeadStatus.Measurement);
+
+        var ex = await Assert.ThrowsAsync<DomainValidationException>(() =>
+            _sut.TransitionAsync(lead, LeadStatus.Buying,
+                new LeadTransitionArgs(DealPriceTjs: 1000m, MeasurementCount: 1, TotalDepositTjs: 50m)));
+
+        Assert.True(ex.Errors.ContainsKey("deposit"));
+        Assert.Contains("DEPOSIT_BELOW_MINIMUM", ex.Errors["deposit"][0]);
+    }
+
+    [Fact]
+    public async Task Transition_ToBuying_ExactMinimumDeposit_Succeeds()
+    {
+        var lead = NewLead(LeadStatus.Measurement);
+
+        await _sut.TransitionAsync(lead, LeadStatus.Buying,
+            new LeadTransitionArgs(
+                DealPriceTjs: 1000m,
+                MeasurementCount: 1,
+                TotalDepositTjs: LeadBusinessRules.MinDepositTjs));
+
+        Assert.Equal(LeadStatus.Buying, lead.Status);
+    }
+
+    [Fact]
+    public async Task Transition_ToInstalled_BalanceNotPaid_Throws()
+    {
+        var lead = NewLead(LeadStatus.GlassArrived);
+        lead.DealPriceTjs = 2000m;
+
+        var ex = await Assert.ThrowsAsync<DomainValidationException>(() =>
+            _sut.TransitionAsync(lead, LeadStatus.Installed,
+                new LeadTransitionArgs(TotalPaidTjs: 1000m)));
+
+        Assert.True(ex.Errors.ContainsKey("balance"));
+        Assert.Contains("BALANCE_NOT_PAID", ex.Errors["balance"][0]);
+    }
+
+    [Fact]
+    public async Task Transition_ToInstalled_FullyPaid_Succeeds()
+    {
+        var lead = NewLead(LeadStatus.GlassArrived);
+        lead.DealPriceTjs = 2000m;
+
+        await _sut.TransitionAsync(lead, LeadStatus.Installed,
+            new LeadTransitionArgs(TotalPaidTjs: 2000m));
 
         Assert.Equal(LeadStatus.Installed, lead.Status);
     }

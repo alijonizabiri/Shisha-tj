@@ -16,7 +16,7 @@ import { LeadCard } from './components/LeadCard'
 import { NewLeadDialog } from './components/NewLeadDialog'
 import { LeadDetailDrawer } from './components/LeadDetailDrawer'
 import { RefuseLeadDialog } from './components/RefuseLeadDialog'
-import { SetDealPriceDialog } from './components/SetDealPriceDialog'
+import { BuyingTransitionDialog } from './components/BuyingTransitionDialog'
 import { LEAD_STATUS_META } from './lib/leadStatuses'
 import { Button } from '@/shared/ui/button'
 
@@ -153,12 +153,12 @@ export function LeadsKanbanPage() {
 
       <LeadDetailDrawer leadId={selectedLeadId} onClose={() => setSelectedLeadId(null)} />
 
-      <SetDealPriceDialog
-        open={pending?.targetStatus === 'Buying'}
-        leadId={pending?.leadId ?? ''}
-        leadName={pending?.leadName ?? ''}
-        onClose={() => setPending(null)}
-      />
+      {pending?.targetStatus === 'Buying' && (
+        <BuyingTransitionDialog
+          leadId={pending.leadId}
+          onClose={() => setPending(null)}
+        />
+      )}
 
       <RefuseLeadDialog
         open={pending?.targetStatus === 'Refused'}

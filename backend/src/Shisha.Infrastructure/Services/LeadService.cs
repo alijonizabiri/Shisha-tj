@@ -150,15 +150,22 @@ public sealed class LeadService(
                       or LeadStatus.Closed)
             throw new ForbiddenException($"Operators cannot set status to {target}.");
 
+        var measurementCount = await db.Measurements.CountAsync(m => m.LeadId == lead.Id, ct);
+        var payments = await db.Payments.Where(p => p.LeadId == lead.Id).ToListAsync(ct);
+        var totalDepositTjs = payments.Where(p => p.Kind == PaymentKind.Deposit).Sum(p => p.AmountTjs);
+        var totalPaidTjs    = payments.Sum(p => p.AmountTjs);
+
         var args = new LeadTransitionArgs(
             AssignedMeasurerId: request.AssignedMeasurerId,
             Address: request.Address,
             RefusalReasonId: request.RefusalReasonId,
             RefusalNote: request.RefusalNote,
             DealPriceTjs: request.DealPriceTjs,
-            PromisedInstallDate: request.PromisedInstallDate);
+            PromisedInstallDate: request.PromisedInstallDate,
+            MeasurementCount: measurementCount,
+            TotalDepositTjs: totalDepositTjs,
+            TotalPaidTjs: totalPaidTjs);
 
-        // Payment side-effects (→ Buying, → Installed) will be added in Phase 3
         await transitionService.TransitionAsync(lead, target, args, ct);
         await db.SaveChangesAsync(ct);
     }

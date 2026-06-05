@@ -42,6 +42,32 @@ public sealed class LeadStatusTransitionTests(ApiFactory factory)
         return body.GetProperty("id").GetString()!;
     }
 
+    private async Task AddMeasurementAsync(HttpClient client, string leadId)
+    {
+        var resp = await client.PostAsJsonAsync("/api/v1/measurements", new
+        {
+            leadId       = Guid.Parse(leadId),
+            measureMm    = 1560,
+            heightMm     = 2000,
+            configuration = "TwoGlass",
+            glassColor    = "Transparent",
+            hardwareColor = "BlackMatte",
+        });
+        resp.EnsureSuccessStatusCode();
+    }
+
+    private async Task AddDepositAsync(HttpClient client, string leadId, decimal amount)
+    {
+        var resp = await client.PostAsJsonAsync("/api/v1/payments", new
+        {
+            leadId    = Guid.Parse(leadId),
+            amountTjs = amount,
+            kind      = "Deposit",
+            paidAt    = "2026-06-05",
+        });
+        resp.EnsureSuccessStatusCode();
+    }
+
     // ── Skip-step transitions from New ────────────────────────────────────────
 
     [Theory]
@@ -112,13 +138,15 @@ public sealed class LeadStatusTransitionTests(ApiFactory factory)
         var client = await AuthClientAsync();
         var id = await CreateLeadAsync(client);
 
-        // Measurement no longer requires assignedMeasurerId
         var r1 = await client.PatchAsJsonAsync($"/api/v1/leads/{id}/status", new
         {
             status  = "Measurement",
             address = "ул. Рудаки 1",
         });
         Assert.Equal(HttpStatusCode.NoContent, r1.StatusCode);
+
+        // Step 8: Thinking requires at least one saved measurement
+        await AddMeasurementAsync(client, id);
 
         var r2 = await client.PatchAsJsonAsync($"/api/v1/leads/{id}/status", new
         {
@@ -217,6 +245,53 @@ public sealed class LeadStatusTransitionTests(ApiFactory factory)
         });
 
         Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
+    }
+
+    // ── Step 8: deposit gate ─────────────────────────────────────────────────
+
+    [Fact]
+    public async Task PatchStatus_ToBuying_WithoutDeposit_Returns400_DepositBelowMinimum()
+    {
+        if (!factory.IsAvailable) return;
+
+        var client = await AuthClientAsync();
+        var id = await CreateLeadAsync(client);
+
+        await client.PatchAsJsonAsync($"/api/v1/leads/{id}/status", new { status = "Measurement" });
+        await AddMeasurementAsync(client, id);
+        // No deposit payment — should fail
+
+        var resp = await client.PatchAsJsonAsync($"/api/v1/leads/{id}/status", new
+        {
+            status        = "Buying",
+            dealPriceTjs  = 2000m,
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
+        var body = await resp.Content.ReadFromJsonAsync<JsonElement>(JsonOpts);
+        var errors = body.GetProperty("errors");
+        Assert.True(errors.TryGetProperty("deposit", out _));
+    }
+
+    [Fact]
+    public async Task PatchStatus_ToBuying_WithMeasurementAndDeposit_Returns204()
+    {
+        if (!factory.IsAvailable) return;
+
+        var client = await AuthClientAsync();
+        var id = await CreateLeadAsync(client);
+
+        await client.PatchAsJsonAsync($"/api/v1/leads/{id}/status", new { status = "Measurement" });
+        await AddMeasurementAsync(client, id);
+        await AddDepositAsync(client, id, 100m);
+
+        var resp = await client.PatchAsJsonAsync($"/api/v1/leads/{id}/status", new
+        {
+            status       = "Buying",
+            dealPriceTjs = 2000m,
+        });
+
+        Assert.Equal(HttpStatusCode.NoContent, resp.StatusCode);
     }
 
     // ── Lookups: GET /api/v1/refusal-reasons and /products ───────────────────

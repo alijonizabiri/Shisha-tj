@@ -12,4 +12,5 @@ public record LeadFinancesDto(
     decimal TotalCostTjs,
     decimal? ProfitTjs,
     decimal TotalPaidTjs,
+    decimal TotalDepositTjs,
     decimal? BalanceDueTjs);

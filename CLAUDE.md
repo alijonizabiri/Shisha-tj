@@ -164,12 +164,12 @@ For `[FULL]` steps:
 ## Current Status
 
 **Phase:** 4 — Analytics
-**Last completed:** Phase 3.5 Step 7 [QA] — End-to-end flow verified
-**Last commit:** Phase 3.5 Step 7 [QA]: phase complete — tag v0.4.1-ux-polish
+**Last completed:** Phase 3.5 Step 8 [FULL] — Ужесточение правил перехода статусов
+**Last commit:** Phase 3.5 Step 8 [FULL]: stricter status transitions + BuyingTransitionDialog
 **Next step:** Phase 4 Step 1 [BE] — Endpoints: dashboard, funnel, refusals, by-product, by-color, by-measurer
 **Build BE:** ✅ 0 warnings, 0 errors
 **Build FE:** ✅ typecheck + lint + build passing
-**Tests:** ✅ BE 82/82 | FE 73/73
+**Tests:** ✅ BE 90/90 | FE 73/73
 **Updated:** 2026-06-05
 
 ## Completed Phases

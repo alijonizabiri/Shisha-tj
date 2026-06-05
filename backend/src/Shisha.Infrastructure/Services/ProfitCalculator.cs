@@ -69,6 +69,9 @@ public sealed class ProfitCalculator(AppDbContext db) : IProfitCalculator
             : (decimal?)null;
 
         var totalPaid = lead.Payments.Sum(p => p.AmountTjs);
+        var totalDeposit = lead.Payments
+            .Where(p => p.Kind == PaymentKind.Deposit)
+            .Sum(p => p.AmountTjs);
 
         var balanceDue = lead.DealPriceTjs.HasValue
             ? lead.DealPriceTjs.Value - totalPaid
@@ -86,6 +89,7 @@ public sealed class ProfitCalculator(AppDbContext db) : IProfitCalculator
             totalCost,
             profit,
             totalPaid,
+            totalDeposit,
             balanceDue);
     }
 }

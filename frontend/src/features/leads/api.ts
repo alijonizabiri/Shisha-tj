@@ -22,7 +22,10 @@ export interface UpdateLeadRequest {
 }
 export type ProductDto = components['schemas']['ProductDto']
 export type RefusalReasonDto = components['schemas']['RefusalReasonDto']
-export type LeadFinances = components['schemas']['LeadFinancesDto']
+// LeadFinancesDto extended with Step 8 field (not yet in generated types)
+export type LeadFinances = components['schemas']['LeadFinancesDto'] & {
+  totalDepositTjs: number
+}
 
 export interface LeadFilters {
   status?: string

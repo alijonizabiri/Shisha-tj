@@ -2,10 +2,12 @@ import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { ArrowUpRight, Pencil, Ruler, X } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { useLead } from '../api'
+import { useLead, useLeadFinances } from '../api'
 import { LeadStatusBadge } from './LeadStatusBadge'
 import { LeadFinancesPanel } from './LeadFinancesPanel'
 import { EditLeadDialog } from './EditLeadDialog'
+import { BuyingTransitionDialog } from './BuyingTransitionDialog'
+import { TransitionRequirements } from './TransitionRequirements'
 import { formatDate } from '@/shared/lib/formatDate'
 import { formatMoney } from '@/shared/lib/formatMoney'
 
@@ -37,18 +39,23 @@ const CONFIG_LABELS: Record<string, string> = {
   ThreeGlass: '3 стекла',
 }
 
+const BUYING_FROM = new Set(['Measurement', 'Thinking'])
+const MIN_DEPOSIT = 100
+
 export function LeadDetailDrawer({ leadId, onClose }: Props) {
   const { data: lead, isLoading } = useLead(leadId ?? '')
+  const { data: finances } = useLeadFinances(leadId ?? '')
   const [editOpen, setEditOpen] = useState(false)
+  const [buyingOpen, setBuyingOpen] = useState(false)
 
   useEffect(() => {
     if (!leadId) return
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !editOpen) onClose()
+      if (e.key === 'Escape' && !editOpen && !buyingOpen) onClose()
     }
     document.addEventListener('keydown', handler)
     return () => document.removeEventListener('keydown', handler)
-  }, [leadId, onClose, editOpen])
+  }, [leadId, onClose, editOpen, buyingOpen])
 
   if (!leadId) return null
 
@@ -190,6 +197,36 @@ export function LeadDetailDrawer({ leadId, onClose }: Props) {
                 )}
               </section>
 
+              {/* Status transitions */}
+              {BUYING_FROM.has(lead.status) && (() => {
+                const hasMeasurement = lead.measurements.length > 0
+                const hasDealPrice   = lead.dealPriceTjs != null && lead.dealPriceTjs > 0
+                const totalDeposit   = finances?.totalDepositTjs ?? 0
+                const depositOk      = totalDeposit >= MIN_DEPOSIT
+                const canBuy         = hasMeasurement && hasDealPrice && depositOk
+                return (
+                  <section className="rounded-lg border border-border bg-card p-4">
+                    <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Действия
+                    </h3>
+                    <button
+                      onClick={() => setBuyingOpen(true)}
+                      disabled={!canBuy}
+                      className="w-full rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Перевести в «Покупает»
+                    </button>
+                    {!canBuy && (
+                      <TransitionRequirements
+                        hasMeasurement={hasMeasurement}
+                        hasDealPrice={hasDealPrice}
+                        totalDepositTjs={totalDeposit}
+                      />
+                    )}
+                  </section>
+                )
+              })()}
+
               {/* Finances */}
               <LeadFinancesPanel leadId={lead.id} />
             </div>
@@ -205,6 +242,9 @@ export function LeadDetailDrawer({ leadId, onClose }: Props) {
       {panel}
       {lead && editOpen && (
         <EditLeadDialog lead={lead} onClose={() => setEditOpen(false)} />
+      )}
+      {lead && buyingOpen && (
+        <BuyingTransitionDialog leadId={lead.id} onClose={() => setBuyingOpen(false)} />
       )}
     </>
   )

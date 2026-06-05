@@ -17,30 +17,38 @@
 |------|-----|---------------|
 | New | Measurement | `assignedMeasurerId`, `address` |
 | New | Refused | `refusalReasonId` |
-| Measurement | Thinking | — |
-| Measurement | Buying | `dealPriceTjs`, deposit payment created |
+| Measurement | Thinking | lead has ≥ 1 saved Measurement |
+| Measurement | Buying | lead has ≥ 1 Measurement + `dealPriceTjs` > 0 + deposit payments ≥ 100 TJS |
 | Measurement | Refused | `refusalReasonId` |
-| Thinking | Buying | `dealPriceTjs`, deposit payment created |
+| Thinking | Buying | lead has ≥ 1 Measurement + `dealPriceTjs` > 0 + deposit payments ≥ 100 TJS |
 | Thinking | Refused | `refusalReasonId` |
-| Buying | OrderedAtFactory | lead's glasses must be in a non-Draft factory order |
-| OrderedAtFactory | GlassArrived | factory order received |
-| GlassArrived | Installed | `promisedInstallDate` ≤ today; balance payment created |
-| Installed | Closed | warranty date set |
-| Refused | New | (re-open scenario) |
+| Buying | OrderedAtFactory | lead's glasses in a factory order with status ≥ Sent |
+| OrderedAtFactory | GlassArrived | factory order status = Received |
+| GlassArrived | Installed | total payments ≥ `dealPriceTjs` |
+| Installed | Closed | `warrantyUntil` set (auto: +12 months) |
+| Refused | New | re-open: clears refusal data |
 | any | (same) | — (no-op, return 204) |
+
+**Constant:** `LeadBusinessRules.MinDepositTjs = 100m` — single source of truth for deposit minimum.
+
+### Error codes returned on 400
+
+| Code | Field | Condition |
+|------|-------|-----------|
+| `MEASUREMENT_REQUIRED` | `measurement` | No measurements linked when moving to Thinking or Buying |
+| `DEAL_PRICE_REQUIRED` | `dealPriceTjs` | `dealPriceTjs` is null or ≤ 0 when moving to Buying |
+| `DEPOSIT_BELOW_MINIMUM` | `deposit` | Sum of Deposit payments < 100 TJS when moving to Buying |
+| `BALANCE_NOT_PAID` | `balance` | Total payments < `dealPriceTjs` when moving to Installed |
 
 ### Forbidden transitions
 - Skipping more than one step (e.g. New → Buying directly) → 409 Conflict
 - Forward from `Closed` → 409 (use re-open if needed)
 
 ### API enforcement
-- `LeadStatusTransitionService.CanTransition(from, to)` → bool + reason
-- `LeadStatusTransitionService.Transition(lead, to, args, ct)` → applies side effects:
-  - On → Buying: validates `dealPriceTjs` not null, creates `Deposit` payment
-  - On → Refused: validates `refusalReasonId`
-  - On → OrderedAtFactory: validates glass-in-batch
-  - On → Installed: creates `Balance` payment
-  - On → Closed: sets `warrantyUntil = installedAt + 12 months` (configurable)
+- `LeadStatusTransitionService.CanTransition(from, to)` → bool
+- `LeadService.PatchStatusAsync` pre-fetches `MeasurementCount`, `TotalDepositTjs`, `TotalPaidTjs` from DB and passes them via `LeadTransitionArgs` before calling `TransitionAsync`
+- `LeadStatusTransitionService.TransitionAsync` validates args and mutates `lead`; no side effects (payments created separately via `POST /api/v1/payments`)
+- On → Closed: sets `warrantyUntil = today + 12 months`
 
 ---
 

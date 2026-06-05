@@ -53,9 +53,22 @@ public sealed class LeadStatusTransitionService : ILeadStatusTransitionService
                     lead.Address = args.Address;
                 break;
 
+            case LeadStatus.Thinking:
+                if (args.MeasurementCount == 0)
+                    throw new DomainValidationException("measurement",
+                        "MEASUREMENT_REQUIRED: Lead must have at least one saved measurement.");
+                break;
+
             case LeadStatus.Buying:
-                if (args.DealPriceTjs is null)
-                    throw new DomainValidationException("dealPriceTjs", "Required for Buying status.");
+                if (args.MeasurementCount == 0)
+                    throw new DomainValidationException("measurement",
+                        "MEASUREMENT_REQUIRED: Lead must have at least one saved measurement.");
+                if (args.DealPriceTjs is null or <= 0)
+                    throw new DomainValidationException("dealPriceTjs",
+                        "DEAL_PRICE_REQUIRED: Deal price must be greater than zero.");
+                if (args.TotalDepositTjs < LeadBusinessRules.MinDepositTjs)
+                    throw new DomainValidationException("deposit",
+                        $"DEPOSIT_BELOW_MINIMUM: Deposit must be at least {LeadBusinessRules.MinDepositTjs} TJS. Current: {args.TotalDepositTjs:F2} TJS.");
                 lead.DealPriceTjs = args.DealPriceTjs;
                 if (args.PromisedInstallDate.HasValue)
                     lead.PromisedInstallDate = args.PromisedInstallDate;
@@ -74,6 +87,10 @@ public sealed class LeadStatusTransitionService : ILeadStatusTransitionService
                     throw new DomainValidationException(
                         "promisedInstallDate",
                         $"Promised install date {lead.PromisedInstallDate} has not yet arrived.");
+                if (lead.DealPriceTjs.HasValue && args.TotalPaidTjs < lead.DealPriceTjs.Value)
+                    throw new DomainValidationException(
+                        "balance",
+                        $"BALANCE_NOT_PAID: Full payment required. Deal: {lead.DealPriceTjs.Value:F2} TJS, Paid: {args.TotalPaidTjs:F2} TJS.");
                 break;
 
             case LeadStatus.Closed:

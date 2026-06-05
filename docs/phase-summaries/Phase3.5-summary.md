@@ -18,14 +18,26 @@
 - **CreateBatchDialog cleanup** — removed "с замерами" caveat from empty state text
 
 ### Backend
-- **`MeasurementService.CreateAsync`** — added lead-status validation: if `leadId` provided, lead must be in `{Measurement, Buying, OrderedAtFactory, GlassArrived}`; rejects with `400 { leadId: "..." }` otherwise
+- **`MeasurementService.CreateAsync`** — lead-status validation: if `leadId` provided, lead must be in `{Measurement, Buying, OrderedAtFactory, GlassArrived}`
+- **`LeadBusinessRules.cs`** — `MinDepositTjs = 100m` constant; single source of truth
+- **`LeadTransitionArgs`** — extended with `MeasurementCount`, `TotalDepositTjs`, `TotalPaidTjs` (pre-fetched by `LeadService`)
+- **`LeadStatusTransitionService`** — new guards: `→Thinking` requires ≥1 measurement; `→Buying` requires measurement + dealPrice + deposit ≥ 100 TJS; `→Installed` requires full payment
+- **`LeadService.PatchStatusAsync`** — queries measurement count and payment sums before calling `TransitionAsync`
+- **`FinanceDtos.LeadFinancesDto`** — added `TotalDepositTjs` field
+- **`ProfitCalculator`** — computes and returns `totalDepositTjs`
 
 ## Key Files
 
 ### Backend
 | File | Purpose |
 |------|---------|
+| `backend/src/Shisha.Application/Leads/LeadBusinessRules.cs` | `MinDepositTjs = 100m` constant |
+| `backend/src/Shisha.Application/Leads/LeadTransitionArgs.cs` | Pre-fetched DB counts for transition validation |
+| `backend/src/Shisha.Application/Leads/LeadStatusTransitionService.cs` | Stricter guards for → Thinking, → Buying, → Installed |
+| `backend/src/Shisha.Infrastructure/Services/LeadService.cs` | Queries counts before calling `TransitionAsync` |
 | `backend/src/Shisha.Infrastructure/Services/MeasurementService.cs` | Lead-status guard in `CreateAsync` |
+| `backend/src/Shisha.Application/Finances/FinanceDtos.cs` | Added `TotalDepositTjs` |
+| `backend/src/Shisha.Infrastructure/Services/ProfitCalculator.cs` | Computes `totalDepositTjs` |
 
 ### Frontend
 | File | Purpose |
@@ -36,29 +48,34 @@
 | `frontend/src/features/designer/api.ts` | Added `useDesignerLeads` hook |
 | `frontend/src/features/designer/schemas.ts` | Added `leadId` (required), removed client fields |
 | `frontend/src/features/designer/components/MeasurementForm.tsx` | Lead selector dropdown, removed Клиент section |
+| `frontend/src/features/leads/components/BuyingTransitionDialog.tsx` | Dialog for → Покупает: deal price + inline deposit form |
+| `frontend/src/features/leads/components/TransitionRequirements.tsx` | Checklist showing what blocks the transition |
 | `frontend/src/features/factory-orders/components/CreateBatchDialog.tsx` | Removed "с замерами" empty-state caveat |
 
 ## Migrations Applied
 
-None — Phase 3.5 was FE-only (+ one BE service change, no schema changes).
+None — Phase 3.5 had no schema changes.
 
 ## Architecture Decisions
 
-1. **Drawer over navigation for lead detail** — clicking a Kanban card / list row no longer navigates to `/leads/{id}`; the full-page route remains accessible via the `↗` icon in the drawer header. Keeps the user's context (Kanban position, list page) intact.
-2. **`leadId` required at FE, validated at BE** — rather than making the DB column NOT NULL (which would require a migration and potentially break existing data), validation lives in the Application service. The column stays nullable for legacy/admin-created records.
-3. **`useDesignerLeads` uses the kanban endpoint** — avoids 4 separate paginated calls (one per allowed status). Kanban already loads all leads; filtering to 4 statuses is free.
-4. **Removed `clientName`/`clientPhone`/`clientAddress` from Designer schema** — these fields were never sent to the backend (not in `CreateMeasurementRequest`) and are now fully redundant since every measurement is linked to a lead that carries the client data.
-5. **Escape-key guard in drawer** — drawer's Escape handler checks `editOpen` before closing, so Escape in the EditLeadDialog only closes the dialog, not the drawer underneath.
+1. **Drawer over navigation for lead detail** — clicking a Kanban card / list row no longer navigates to `/leads/{id}`; the full-page route remains accessible via the `↗` icon. Keeps the user's context (Kanban position, list page) intact.
+2. **`leadId` required at FE, validated at BE** — rather than making the DB column NOT NULL (migration + legacy data risk), validation lives in `LeadStatusTransitionService`. The column stays nullable for backward compat.
+3. **Transition counts passed via `LeadTransitionArgs`** — `LeadStatusTransitionService` stays a pure in-memory Application-layer service with no DB dependency. `LeadService` pre-fetches `MeasurementCount`, `TotalDepositTjs`, `TotalPaidTjs` and passes them as args, keeping full unit-testability.
+4. **No auto-deposit/balance creation in transition service** — the spec described this as a planned side-effect but it was never implemented. Step 8 formalizes the correct flow: payments are created separately via `POST /api/v1/payments` BEFORE the status transition. ⚠️ **Breaking change** for any client that expected auto-deposit on `→ Buying`.
+5. **`SetDealPriceDialog` replaced by `BuyingTransitionDialog`** — the new dialog is a superset: it includes deal price, deposit status, and an inline mini-payment form. Old dialog deleted.
+6. **`useDesignerLeads` uses the kanban endpoint** — avoids 4 separate paginated calls. Kanban returns all leads; filtering to 4 statuses is O(n).
+7. **Removed `clientName`/`clientPhone`/`clientAddress` from Designer schema** — these were FE-only fields never sent to the backend, now fully redundant since every measurement is linked to a lead.
 
 ## Known Issues / Tech Debt
 
-- **Designer does not load existing measurement from `?measurementId` URL param** — the drawer links to `/designer?measurementId=xxx` but the Designer page ignores this param. Planned for Phase 4 or a future polish step.
-- **No measurement count in CreateBatchDialog** — `LeadSummaryResponse` has no measurement count field; showing a count per lead would require either a backend addition or N+1 fetches. Acceptable for now since Step 5 guarantees counts ≥ 1.
+- **Designer does not load existing measurement from `?measurementId` URL param** — the drawer links to `/designer?measurementId=xxx` but the Designer ignores this param. Planned for Phase 4 or later.
+- **No per-lead measurement count in `CreateBatchDialog`** — `LeadSummaryResponse` has no count; adding it requires a backend change or N+1 fetches. Acceptable since Step 5 guarantees counts ≥ 1.
+- **`InstalledTransitionDialog` not implemented** — the BE rejects with `BALANCE_NOT_PAID`; the FE shows the error inline. A dedicated dialog is a future polish item.
 
 ## Test Coverage
 
-- **BE (82 tests):** Domain transitions, Application service unit tests, Integration tests covering lead CRUD, status transitions, finances, factory orders — includes the new lead-status guard in `MeasurementService`
-- **FE (73 tests):** Designer page (incl. lead selector field assertion), DrawingCanvas, Hole drag, computePanels, defaultHoles, LeadStatusBadge, RefuseLeadDialog
+- **BE (90 tests):** Domain transitions (unit), Application service unit tests (+6 new Step 8 guards), Integration tests for CRUD, status transitions (+2 deposit-gate tests), finances (+`totalDepositTjs` assertion), factory orders
+- **FE (73 tests):** Designer page (lead selector), DrawingCanvas, Hole drag, computePanels, defaultHoles, LeadStatusBadge, RefuseLeadDialog
 
 ## Next Phase Overview
 
