@@ -164,9 +164,9 @@ For `[FULL]` steps:
 ## Current Status
 
 **Phase:** 3.5 — UX Polish
-**Last completed:** Phase 3.5 Step 5 [FULL] — В Дизайнере обязательный селектор лида; BE валидирует lead.status ∈ {Measurement, Buying, OrderedAtFactory, GlassArrived}
-**Last commit:** Phase 3.5 Step 5 [FULL]: required lead selector in Designer + BE lead-status validation
-**Next step:** Phase 3.5 Step 6 [FE] — CreateBatchDialog: после Step 5 у Buying-лидов есть замеры, "нет замеров" исчезает
+**Last completed:** Phase 3.5 Step 6 [FE] — CreateBatchDialog: "нет замеров" исчезает
+**Last commit:** Phase 3.5 Step 6 [FE]: remove "no measurements" caveat from CreateBatchDialog
+**Next step:** Phase 3.5 Step 7 [QA] — End-to-end: создать лид → Замер → Дизайнер → сохранить замер → Покупает → создать заказ на завод
 **Build BE:** ✅ 0 warnings, 0 errors
 **Build FE:** ✅ typecheck + lint + build passing
 **Tests:** ✅ BE 82/82 | FE 73/73

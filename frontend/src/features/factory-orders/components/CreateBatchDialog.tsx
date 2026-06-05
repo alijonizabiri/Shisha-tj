@@ -74,7 +74,7 @@ export function CreateBatchDialog({ onClose }: Props) {
         {/* Body */}
         <div className="flex flex-col overflow-y-auto">
           <p className="px-5 pt-4 text-sm text-muted-foreground">
-            Выберите лидов в статусе «Покупка» — их стёкла войдут в одну партию заказа на завод.
+            Выберите лидов в статусе «Покупка» — стёкла по их замерам войдут в одну партию.
           </p>
 
           {isLoading && (
@@ -83,7 +83,7 @@ export function CreateBatchDialog({ onClose }: Props) {
 
           {!isLoading && leads.length === 0 && (
             <p className="px-5 py-6 text-sm text-muted-foreground">
-              Нет лидов в статусе «Покупка» с замерами.
+              Нет лидов в статусе «Покупка».
             </p>
           )}
 
