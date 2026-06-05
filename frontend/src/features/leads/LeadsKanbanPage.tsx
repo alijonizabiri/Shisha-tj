@@ -13,7 +13,15 @@ import { List } from 'lucide-react'
 import { useKanban, usePatchLeadStatus, type Lead } from './api'
 import { KanbanColumn } from './components/KanbanColumn'
 import { LeadCard } from './components/LeadCard'
+import { RefuseLeadDialog } from './components/RefuseLeadDialog'
+import { SetDealPriceDialog } from './components/SetDealPriceDialog'
 import { LEAD_STATUS_META } from './lib/leadStatuses'
+
+interface PendingTransition {
+  leadId: string
+  leadName: string
+  targetStatus: 'Buying' | 'Refused'
+}
 
 // Ordered list of status keys for column display
 const COLUMN_ORDER = Object.keys(LEAD_STATUS_META)
@@ -24,6 +32,7 @@ export function LeadsKanbanPage() {
 
   const [activeId, setActiveId] = useState<string | null>(null)
   const [dragError, setDragError] = useState<string | null>(null)
+  const [pending, setPending] = useState<PendingTransition | null>(null)
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -58,6 +67,12 @@ export function LeadsKanbanPage() {
     // Find current status of the dragged lead
     const lead = Object.values(columnMap).flat().find((l) => l.id === leadId)
     if (!lead || lead.status === targetStatus) return
+
+    // Statuses that require extra data — show a dialog instead of patching immediately
+    if (targetStatus === 'Buying' || targetStatus === 'Refused') {
+      setPending({ leadId, leadName: lead.name, targetStatus })
+      return
+    }
 
     try {
       await patchStatus.mutateAsync({ id: leadId, body: { status: targetStatus } })
@@ -126,6 +141,20 @@ export function LeadsKanbanPage() {
           {activeLead ? <LeadCard lead={activeLead} isDragOverlay /> : null}
         </DragOverlay>
       </DndContext>
+
+      <SetDealPriceDialog
+        open={pending?.targetStatus === 'Buying'}
+        leadId={pending?.leadId ?? ''}
+        leadName={pending?.leadName ?? ''}
+        onClose={() => setPending(null)}
+      />
+
+      <RefuseLeadDialog
+        open={pending?.targetStatus === 'Refused'}
+        leadId={pending?.leadId ?? ''}
+        leadName={pending?.leadName ?? ''}
+        onClose={() => setPending(null)}
+      />
     </div>
   )
 }
