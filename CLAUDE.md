@@ -163,10 +163,10 @@ For `[FULL]` steps:
 
 ## Current Status
 
-**Phase:** 3.5 — UX Polish
-**Last completed:** Phase 3.5 Step 6 [FE] — CreateBatchDialog: "нет замеров" исчезает
-**Last commit:** Phase 3.5 Step 6 [FE]: remove "no measurements" caveat from CreateBatchDialog
-**Next step:** Phase 3.5 Step 7 [QA] — End-to-end: создать лид → Замер → Дизайнер → сохранить замер → Покупает → создать заказ на завод
+**Phase:** 4 — Analytics
+**Last completed:** Phase 3.5 Step 7 [QA] — End-to-end flow verified
+**Last commit:** Phase 3.5 Step 7 [QA]: phase complete — tag v0.4.1-ux-polish
+**Next step:** Phase 4 Step 1 [BE] — Endpoints: dashboard, funnel, refusals, by-product, by-color, by-measurer
 **Build BE:** ✅ 0 warnings, 0 errors
 **Build FE:** ✅ typecheck + lint + build passing
 **Tests:** ✅ BE 82/82 | FE 73/73
@@ -177,3 +177,4 @@ For `[FULL]` steps:
 - Phase 1 — Designer ✅ (2026-06-03) — tag `v0.2-designer` — [summary](docs/phase-summaries/Phase1-summary.md)
 - Phase 2 — CRM Kanban ✅ (2026-06-04) — tag `v0.3-crm` — [summary](docs/phase-summaries/Phase2-summary.md)
 - Phase 3 — Finances ✅ (2026-06-05) — tag `v0.4-finances` — [summary](docs/phase-summaries/Phase3-summary.md)
+- Phase 3.5 — UX Polish ✅ (2026-06-05) — tag `v0.4.1-ux-polish` — [summary](docs/phase-summaries/Phase3.5-summary.md)

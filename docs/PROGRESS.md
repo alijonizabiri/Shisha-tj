@@ -85,7 +85,7 @@ Update via `/done` command after each completed step.
 
 ---
 
-## Phase 3.5 — UX Polish
+## Phase 3.5 — UX Polish ✅ Complete — 2026-06-05
 **Цель:** все действия с лидом из одного drawer; замеры реально привязаны к лидам.
 
 - [x] Step 1 [FE] — Кнопка "+ Новый лид" в шапке Канбана (как в LeadsListPage)
@@ -94,8 +94,8 @@ Update via `/done` command after each completed step.
 - [x] Step 4 [FE] — В drawer: кнопка "Редактировать" (EditLeadDialog), inline AddPaymentDialog, секция замеров со ссылкой "Открыть в Дизайнере"
 - [x] Step 5 [FULL] — В Дизайнере обязательный селектор лида; BE валидирует lead.status ∈ {Measurement, Buying, OrderedAtFactory, GlassArrived}
 - [x] Step 6 [FE] — CreateBatchDialog: после Step 5 у Buying-лидов есть замеры, "нет замеров" исчезает
-- [ ] Step 7 [QA] — End-to-end: создать лид → Замер → открыть Дизайнер с этим лидом → сохранить замер → Покупает → создать заказ на завод
-- [ ] **Phase 3.5 complete** → tag `v0.4.1-ux-polish`
+- [x] Step 7 [QA] — End-to-end: создать лид → Замер → открыть Дизайнер с этим лидом → сохранить замер → Покупает → создать заказ на завод
+- [x] **Phase 3.5 complete** → tag `v0.4.1-ux-polish`
 
 ---
 
