@@ -4,6 +4,7 @@ export const queryKeys = {
     list: (filters: unknown) => ['leads', 'list', filters] as const,
     detail: (id: string) => ['leads', 'detail', id] as const,
     kanban: () => ['leads', 'kanban'] as const,
+    finances: (id: string) => ['leads', id, 'finances'] as const,
   },
   measurements: {
     detail: (id: string) => ['measurements', id] as const,

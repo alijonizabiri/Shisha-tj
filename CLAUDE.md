@@ -164,9 +164,9 @@ For `[FULL]` steps:
 ## Current Status
 
 **Phase:** 3 — Finances
-**Last completed:** Phase 3 Step 8 [FE] — Factory orders page (list + create batch flow)
-**Last commit:** Phase 3 Step 8 [FE]: FactoryOrdersPage + CreateBatchDialog + sidebar nav
-**Next step:** Phase 3 Step 9 [FE] — Lead finances panel (in detail page)
+**Last completed:** Phase 3 Step 9 [FE] — Lead finances panel (in detail page)
+**Last commit:** Phase 3 Step 9 [FE]: LeadFinancesPanel — cost breakdown + profit + balance
+**Next step:** Phase 3 Step 10 [FE] — Payment forms (deposit, balance, rework)
 **Build BE:** ✅ 0 warnings, 0 errors
 **Build FE:** ✅ typecheck + lint + build passing
 **Tests:** ✅ BE 82/82 | FE 73/73

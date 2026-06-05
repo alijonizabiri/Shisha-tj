@@ -11,6 +11,7 @@ export type PatchStatusRequest = components['schemas']['PatchStatusRequest']
 export type CreateLeadRequest = components['schemas']['CreateLeadRequest']
 export type ProductDto = components['schemas']['ProductDto']
 export type RefusalReasonDto = components['schemas']['RefusalReasonDto']
+export type LeadFinances = components['schemas']['LeadFinancesDto']
 
 export interface LeadFilters {
   status?: string
@@ -80,6 +81,15 @@ export function useRefusalReasons() {
     queryFn: () =>
       apiClient.get<RefusalReasonDto[]>('/api/v1/refusal-reasons').then((r) => r.data),
     staleTime: 10 * 60 * 1000,
+  })
+}
+
+export function useLeadFinances(leadId: string) {
+  return useQuery({
+    queryKey: queryKeys.leads.finances(leadId),
+    queryFn: () =>
+      apiClient.get<LeadFinances>(`/api/v1/leads/${leadId}/finances`).then((r) => r.data),
+    enabled: !!leadId,
   })
 }
 

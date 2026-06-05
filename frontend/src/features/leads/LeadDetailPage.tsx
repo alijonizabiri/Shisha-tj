@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom'
 import { ArrowLeft, Ruler } from 'lucide-react'
 import { useLead } from './api'
 import { LeadStatusBadge } from './components/LeadStatusBadge'
+import { LeadFinancesPanel } from './components/LeadFinancesPanel'
 import { RefuseLeadDialog } from './components/RefuseLeadDialog'
 import { formatDate } from '@/shared/lib/formatDate'
 import { formatMoney } from '@/shared/lib/formatMoney'
@@ -170,13 +171,8 @@ export function LeadDetailPage() {
             )}
           </div>
 
-          {/* Payments — Phase 3 placeholder */}
-          <div className="rounded-lg border border-dashed border-border bg-muted/20 p-5">
-            <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-              Платежи
-            </h2>
-            <p className="text-sm text-muted-foreground">Появится в Phase 3.</p>
-          </div>
+          {/* Finances panel */}
+          <LeadFinancesPanel leadId={lead.id} />
         </div>
 
         {/* Right sidebar */}
