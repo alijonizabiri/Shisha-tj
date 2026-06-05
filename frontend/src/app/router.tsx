@@ -5,6 +5,7 @@ import { DesignerPage } from '@/features/designer/DesignerPage'
 import { LeadsListPage } from '@/features/leads/LeadsListPage'
 import { LeadsKanbanPage } from '@/features/leads/LeadsKanbanPage'
 import { LeadDetailPage } from '@/features/leads/LeadDetailPage'
+import { FactoryOrdersPage } from '@/features/factory-orders/FactoryOrdersPage'
 import { AppShell } from './layout/AppShell'
 
 export const router = createBrowserRouter([
@@ -40,6 +41,10 @@ export const router = createBrowserRouter([
           {
             path: '/leads/:id',
             element: <LeadDetailPage />,
+          },
+          {
+            path: '/factory-orders',
+            element: <FactoryOrdersPage />,
           },
           {
             path: '/designer',

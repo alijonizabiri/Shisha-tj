@@ -1,6 +1,6 @@
 import type { ComponentType } from 'react'
 import { NavLink } from 'react-router-dom'
-import { BarChart3, ClipboardList, LayoutDashboard, Ruler, Users } from 'lucide-react'
+import { BarChart3, ClipboardList, LayoutDashboard, Package2, Ruler, Users } from 'lucide-react'
 import { cn } from '@/shared/lib/cn'
 import { useAuth } from '@/features/auth/useAuth'
 
@@ -14,6 +14,7 @@ interface NavItem {
 const NAV: NavItem[] = [
   { label: 'Главная', to: '/', icon: LayoutDashboard },
   { label: 'Лиды', to: '/leads', icon: ClipboardList, roles: ['Admin', 'Operator'] },
+  { label: 'Заказы на завод', to: '/factory-orders', icon: Package2, roles: ['Admin', 'Operator'] },
   { label: 'Дизайнер', to: '/designer', icon: Ruler },
   { label: 'Аналитика', to: '/analytics', icon: BarChart3, roles: ['Admin'] },
   { label: 'Пользователи', to: '/users', icon: Users, roles: ['Admin'] },

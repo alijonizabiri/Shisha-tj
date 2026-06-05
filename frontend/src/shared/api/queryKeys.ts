@@ -10,6 +10,7 @@ export const queryKeys = {
   },
   factoryOrders: {
     all: ['factory-orders'] as const,
+    list: (filters: unknown) => ['factory-orders', 'list', filters] as const,
     detail: (id: string) => ['factory-orders', id] as const,
   },
 }

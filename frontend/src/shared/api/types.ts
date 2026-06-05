@@ -178,6 +178,61 @@ export interface components {
       updatedAt: string
       measurements: components['schemas']['LeadMeasurementDto'][]
     }
+    FactoryOrderItemDto: {
+      id: string
+      glassId: string
+      widthMm: number
+      heightMm: number
+      isDoor: boolean
+      position: number
+      glassCostTjs: number | null
+      isRework: boolean
+      reworkReason: string | null
+      leadId: string | null
+      leadName: string | null
+    }
+    FactoryOrderSummaryResponse: {
+      id: string
+      /** Draft | Sent | Received | Closed */
+      status: string
+      /** DateOnly "YYYY-MM-DD" */
+      orderedAt: string | null
+      receivedAt: string | null
+      factoryTotalTjs: number | null
+      note: string | null
+      itemCount: number
+      createdAt: string
+    }
+    PagedFactoryOrdersResponse: {
+      items: components['schemas']['FactoryOrderSummaryResponse'][]
+      totalCount: number
+      page: number
+      pageSize: number
+    }
+    FactoryOrderDetailResponse: {
+      id: string
+      status: string
+      orderedAt: string | null
+      receivedAt: string | null
+      factoryTotalTjs: number | null
+      note: string | null
+      createdAt: string
+      items: components['schemas']['FactoryOrderItemDto'][]
+    }
+    LeadFinancesDto: {
+      leadId: string
+      dealPriceTjs: number | null
+      glassCostTjs: number
+      reworkCostTjs: number
+      hardwareCostTjs: number
+      masterFeeTjs: number
+      deliveryCostTjs: number
+      otherCostsTjs: number
+      totalCostTjs: number
+      profitTjs: number | null
+      totalPaidTjs: number
+      balanceDueTjs: number | null
+    }
   }
   responses: never
   parameters: never

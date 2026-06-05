@@ -164,9 +164,9 @@ For `[FULL]` steps:
 ## Current Status
 
 **Phase:** 3 — Finances
-**Last completed:** Phase 3 Step 7 [BE] — PDF for factory order
-**Last commit:** Phase 3 Step 7 [BE]: GET /api/v1/factory-orders/{id}/pdf — FactoryOrderPdfService
-**Next step:** Phase 3 Step 8 [FE] — Factory orders page (list + create batch flow)
+**Last completed:** Phase 3 Step 8 [FE] — Factory orders page (list + create batch flow)
+**Last commit:** Phase 3 Step 8 [FE]: FactoryOrdersPage + CreateBatchDialog + sidebar nav
+**Next step:** Phase 3 Step 9 [FE] — Lead finances panel (in detail page)
 **Build BE:** ✅ 0 warnings, 0 errors
 **Build FE:** ✅ typecheck + lint + build passing
 **Tests:** ✅ BE 82/82 | FE 73/73

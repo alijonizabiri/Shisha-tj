@@ -77,7 +77,7 @@ Update via `/done` command after each completed step.
 - [x] Step 5 [BE] — `ProfitCalculator` service (price − glass − hardware − master − reworks)
 - [x] Step 6 [BE] — Endpoint: `GET /api/v1/leads/{id}/finances` — full picture
 - [x] Step 7 [BE] — PDF for factory order (list of all glasses in batch with codes, sizes, holes)
-- [ ] Step 8 [FE] — Factory orders page (list + create batch flow)
+- [x] Step 8 [FE] — Factory orders page (list + create batch flow)
 - [ ] Step 9 [FE] — Lead finances panel (in detail page)
 - [ ] Step 10 [FE] — Payment forms (deposit, balance, rework)
 - [ ] Step 11 [FE] — Hardware form (cost per order)
