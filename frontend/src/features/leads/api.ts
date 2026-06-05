@@ -9,6 +9,17 @@ export type PagedLeads = components['schemas']['PagedLeadsResponse']
 export type KanbanData = components['schemas']['KanbanResponse']
 export type PatchStatusRequest = components['schemas']['PatchStatusRequest']
 export type CreateLeadRequest = components['schemas']['CreateLeadRequest']
+
+export interface UpdateLeadRequest {
+  name: string
+  phone: string
+  address?: string | null
+  product: string
+  source?: string | null
+  note?: string | null
+  callDate: string
+  promisedInstallDate?: string | null
+}
 export type ProductDto = components['schemas']['ProductDto']
 export type RefusalReasonDto = components['schemas']['RefusalReasonDto']
 export type LeadFinances = components['schemas']['LeadFinancesDto']
@@ -55,6 +66,15 @@ export function useKanban() {
   return useQuery({
     queryKey: queryKeys.leads.kanban(),
     queryFn: () => apiClient.get<KanbanData>('/api/v1/leads/kanban').then((r) => r.data),
+  })
+}
+
+export function useUpdateLead(id: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (body: UpdateLeadRequest) =>
+      apiClient.put<LeadDetail>(`/api/v1/leads/${id}`, body).then((r) => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.leads.all }),
   })
 }
 

@@ -1,10 +1,11 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { ArrowUpRight, Ruler, X } from 'lucide-react'
+import { ArrowUpRight, Pencil, Ruler, X } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useLead } from '../api'
 import { LeadStatusBadge } from './LeadStatusBadge'
 import { LeadFinancesPanel } from './LeadFinancesPanel'
+import { EditLeadDialog } from './EditLeadDialog'
 import { formatDate } from '@/shared/lib/formatDate'
 import { formatMoney } from '@/shared/lib/formatMoney'
 
@@ -38,17 +39,20 @@ const CONFIG_LABELS: Record<string, string> = {
 
 export function LeadDetailDrawer({ leadId, onClose }: Props) {
   const { data: lead, isLoading } = useLead(leadId ?? '')
+  const [editOpen, setEditOpen] = useState(false)
 
   useEffect(() => {
     if (!leadId) return
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !editOpen) onClose()
+    }
     document.addEventListener('keydown', handler)
     return () => document.removeEventListener('keydown', handler)
-  }, [leadId, onClose])
+  }, [leadId, onClose, editOpen])
 
   if (!leadId) return null
 
-  return createPortal(
+  const panel = createPortal(
     <div className="fixed inset-0 z-40 flex justify-end">
       {/* Dimmed backdrop */}
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
@@ -68,13 +72,22 @@ export function LeadDetailDrawer({ leadId, onClose }: Props) {
           )}
           <div className="flex items-center gap-1 ml-3 shrink-0">
             {lead && (
-              <Link
-                to={`/leads/${lead.id}`}
-                title="Открыть страницу лида"
-                className="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
-              >
-                <ArrowUpRight className="h-4 w-4" />
-              </Link>
+              <>
+                <button
+                  onClick={() => setEditOpen(true)}
+                  title="Редактировать лид"
+                  className="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+                >
+                  <Pencil className="h-4 w-4" />
+                </button>
+                <Link
+                  to={`/leads/${lead.id}`}
+                  title="Открыть страницу лида"
+                  className="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+                >
+                  <ArrowUpRight className="h-4 w-4" />
+                </Link>
+              </>
             )}
             <button
               onClick={onClose}
@@ -169,7 +182,7 @@ export function LeadDetailDrawer({ leadId, onClose }: Props) {
                           to={`/designer?measurementId=${m.id}`}
                           className="shrink-0 ml-3 text-xs text-primary hover:underline"
                         >
-                          Дизайнер →
+                          Открыть в Дизайнере →
                         </Link>
                       </div>
                     ))}
@@ -185,5 +198,14 @@ export function LeadDetailDrawer({ leadId, onClose }: Props) {
       </div>
     </div>,
     document.body,
+  )
+
+  return (
+    <>
+      {panel}
+      {lead && editOpen && (
+        <EditLeadDialog lead={lead} onClose={() => setEditOpen(false)} />
+      )}
+    </>
   )
 }
