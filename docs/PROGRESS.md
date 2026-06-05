@@ -74,7 +74,7 @@ Update via `/done` command after each completed step.
 - [x] Step 2 [BE] — Migration: `AddFinances`
 - [x] Step 3 [BE] — `FactoryOrderService` (create batch from selected leads)
 - [x] Step 4 [BE] — `PaymentService` (deposit + balance + refund)
-- [ ] Step 5 [BE] — `ProfitCalculator` service (price − glass − hardware − master − reworks)
+- [x] Step 5 [BE] — `ProfitCalculator` service (price − glass − hardware − master − reworks)
 - [ ] Step 6 [BE] — Endpoint: `GET /api/v1/leads/{id}/finances` — full picture
 - [ ] Step 7 [BE] — PDF for factory order (list of all glasses in batch with codes, sizes, holes)
 - [ ] Step 8 [FE] — Factory orders page (list + create batch flow)
