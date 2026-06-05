@@ -14,18 +14,18 @@ vi.mock('./api', () => ({
     data: undefined,
     error: null,
   }),
+  useDesignerLeads: () => ({ data: [], isLoading: false }),
   downloadMeasurementPdf: vi.fn(),
 }))
 
 describe('DesignerPage', () => {
   it('renders all form fields', () => {
     render(<DesignerPage />)
+    expect(screen.getByLabelText('Клиент *')).toBeTruthy()
     expect(screen.getByLabelText('Ширина проёма (мм)')).toBeTruthy()
     expect(screen.getByLabelText('Высота (мм)')).toBeTruthy()
     expect(screen.getByLabelText('Цвет стекла')).toBeTruthy()
     expect(screen.getByLabelText('Цвет фурнитуры')).toBeTruthy()
-    expect(screen.getByLabelText('ФИО')).toBeTruthy()
-    expect(screen.getByLabelText('Телефон')).toBeTruthy()
   })
 
   it('hides canvas when measure is empty', () => {

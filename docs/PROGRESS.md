@@ -92,7 +92,7 @@ Update via `/done` command after each completed step.
 - [x] Step 2 [FE] — LeadDetailDrawer (slide-in panel справа, ~640px) вместо страницы /leads/{id} при клике из списка/канбана
 - [x] Step 3 [FE] — Карточка в Канбане и строка в таблице открывают drawer, а не навигируют
 - [x] Step 4 [FE] — В drawer: кнопка "Редактировать" (EditLeadDialog), inline AddPaymentDialog, секция замеров со ссылкой "Открыть в Дизайнере"
-- [ ] Step 5 [FULL] — В Дизайнере обязательный селектор лида; BE валидирует lead.status ∈ {Measurement, Buying, OrderedAtFactory, GlassArrived}
+- [x] Step 5 [FULL] — В Дизайнере обязательный селектор лида; BE валидирует lead.status ∈ {Measurement, Buying, OrderedAtFactory, GlassArrived}
 - [ ] Step 6 [FE] — CreateBatchDialog: после Step 5 у Buying-лидов есть замеры, "нет замеров" исчезает
 - [ ] Step 7 [QA] — End-to-end: создать лид → Замер → открыть Дизайнер с этим лидом → сохранить замер → Покупает → создать заказ на завод
 - [ ] **Phase 3.5 complete** → tag `v0.4.1-ux-polish`

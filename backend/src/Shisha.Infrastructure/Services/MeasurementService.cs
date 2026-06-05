@@ -23,6 +23,18 @@ public sealed class MeasurementService(AppDbContext db, ICurrentUser currentUser
         ValidateRange(request.MeasureMm, 600, 3000, "measureMm");
         ValidateRange(request.HeightMm, 1500, 2500, "heightMm");
 
+        if (request.LeadId.HasValue)
+        {
+            var lead = await db.Leads.FindAsync([request.LeadId.Value], ct)
+                ?? throw new NotFoundException($"Lead {request.LeadId.Value} not found.");
+
+            if (lead.Status is not (LeadStatus.Measurement or LeadStatus.Buying
+                    or LeadStatus.OrderedAtFactory or LeadStatus.GlassArrived))
+                throw new DomainValidationException(
+                    "leadId",
+                    $"Lead must be in Measurement, Buying, OrderedAtFactory, or GlassArrived status. Got: {lead.Status}.");
+        }
+
         var panels = PanelComputer.Compute(request.MeasureMm, request.HeightMm, config);
 
         var measurement = new Measurement

@@ -5,7 +5,7 @@ import { computeMetrics, computePanels } from './lib/computePanels'
 import { defaultHoles } from './lib/defaultHoles'
 import type { Hole } from './lib/types'
 import { measurementFormSchema, type MeasurementFormValues } from './schemas'
-import { downloadMeasurementPdf, useSaveMeasurement, type HoleRequest } from './api'
+import { downloadMeasurementPdf, useDesignerLeads, useSaveMeasurement, type HoleRequest } from './api'
 import { CalculationSidebar } from './components/CalculationSidebar'
 import { DrawingCanvas } from './components/DrawingCanvas'
 import { MeasurementForm } from './components/MeasurementForm'
@@ -24,20 +24,20 @@ function flattenHoles(holesByPanel: Hole[][]): HoleRequest[] {
 }
 
 export function DesignerPage() {
+  const { data: leads = [] } = useDesignerLeads()
+
   const form = useForm<MeasurementFormValues>({
     resolver: zodResolver(measurementFormSchema),
     mode: 'onBlur',
     defaultValues: {
-      measureMm: '' as unknown as number,
-      heightMm: 2000,
+      leadId:        '',
+      measureMm:     '' as unknown as number,
+      heightMm:      2000,
       configuration: 'TwoGlass',
-      glassColor: 'Transparent',
+      glassColor:    'Transparent',
       hardwareColor: 'BlackMatte',
-      clientName: '',
-      clientPhone: '',
-      clientAddress: '',
-      deliveryTjs: 100,
-      depositTjs: 0,
+      deliveryTjs:   100,
+      depositTjs:    0,
     },
   })
 
@@ -111,12 +111,13 @@ export function DesignerPage() {
   function handleSave(values: MeasurementFormValues): void {
     saveMutation.mutate(
       {
-        measureMm: values.measureMm,
-        heightMm: values.heightMm,
+        leadId:        values.leadId,
+        measureMm:     values.measureMm,
+        heightMm:      values.heightMm,
         configuration: values.configuration,
-        glassColor: values.glassColor,
+        glassColor:    values.glassColor,
         hardwareColor: values.hardwareColor,
-        holes: flattenHoles(currentHoles),
+        holes:         flattenHoles(currentHoles),
       },
       {
         onSuccess: (data) =>
@@ -138,6 +139,7 @@ export function DesignerPage() {
           <MeasurementForm
             form={form}
             onSubmit={handleSave}
+            leads={leads}
             isLoading={saveMutation.isPending}
           />
 

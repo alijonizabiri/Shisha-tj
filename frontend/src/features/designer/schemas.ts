@@ -10,16 +10,14 @@ export const GlassColorValues: readonly GlassColor[] = ['Transparent', 'Matte', 
 export const HardwareColorValues: readonly HardwareColor[] = ['BlackMatte', 'Gold', 'Nickel', 'MatteGold', 'WetAsphalt']
 
 export const measurementFormSchema = z.object({
-  measureMm: z.number().min(600, 'Мин. 600 мм').max(3000, 'Макс. 3000 мм'),
-  heightMm: z.number().min(1500, 'Мин. 1500 мм').max(2500, 'Макс. 2500 мм'),
+  leadId:        z.string().min(1, 'Выберите лид'),
+  measureMm:     z.number().min(600, 'Мин. 600 мм').max(3000, 'Макс. 3000 мм'),
+  heightMm:      z.number().min(1500, 'Мин. 1500 мм').max(2500, 'Макс. 2500 мм'),
   configuration: z.enum(['TwoGlass', 'ThreeGlass']),
-  glassColor: glassColorSchema,
+  glassColor:    glassColorSchema,
   hardwareColor: hardwareColorSchema,
-  clientName: z.string().min(2, 'Мин. 2 символа').max(100),
-  clientPhone: z.string().regex(/^\+?\d{9,15}$/, 'Формат: +992xxxxxxxxx'),
-  clientAddress: z.string().max(200).optional(),
-  deliveryTjs: z.number().min(0, 'Мин. 0 сом'),
-  depositTjs: z.number().min(0, 'Мин. 0 сом'),
+  deliveryTjs:   z.number().min(0, 'Мин. 0 сом'),
+  depositTjs:    z.number().min(0, 'Мин. 0 сом'),
 })
 
 export type MeasurementFormValues = z.infer<typeof measurementFormSchema>

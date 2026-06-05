@@ -10,6 +10,14 @@ import {
   GlassColorValues,
   HardwareColorValues,
 } from '../schemas'
+import type { DesignerLeadOption } from '../api'
+
+const STATUS_LABELS: Record<string, string> = {
+  Measurement:      'Замер',
+  Buying:           'Покупает',
+  OrderedAtFactory: 'Заказ на завод',
+  GlassArrived:     'Стекло пришло',
+}
 
 const SELECT_CLASS =
   'flex h-10 w-full cursor-pointer rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50'
@@ -17,10 +25,11 @@ const SELECT_CLASS =
 interface Props {
   form: UseFormReturn<MeasurementFormValues>
   onSubmit: (values: MeasurementFormValues) => void
+  leads: DesignerLeadOption[]
   isLoading?: boolean
 }
 
-export function MeasurementForm({ form, onSubmit, isLoading = false }: Props) {
+export function MeasurementForm({ form, onSubmit, leads, isLoading = false }: Props) {
   const {
     register,
     handleSubmit,
@@ -32,6 +41,26 @@ export function MeasurementForm({ form, onSubmit, isLoading = false }: Props) {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5" noValidate>
+
+      {/* Lead selector */}
+      <section className="flex flex-col gap-3">
+        <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          Лид
+        </h2>
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="leadId">Клиент *</Label>
+          <select id="leadId" {...register('leadId')} className={SELECT_CLASS}>
+            <option value="">— Выберите лид —</option>
+            {leads.map((l) => (
+              <option key={l.id} value={l.id}>
+                {l.name} · {STATUS_LABELS[l.status] ?? l.status}
+              </option>
+            ))}
+          </select>
+          {errors.leadId && <p className="text-xs text-destructive">{errors.leadId.message}</p>}
+        </div>
+      </section>
+
       <section className="flex flex-col gap-3">
         <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Размеры
@@ -121,47 +150,6 @@ export function MeasurementForm({ form, onSubmit, isLoading = false }: Props) {
               </option>
             ))}
           </select>
-        </div>
-      </section>
-
-      <section className="flex flex-col gap-3">
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Клиент
-        </h2>
-
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="clientName">ФИО</Label>
-          <Input
-            id="clientName"
-            placeholder="Иванов Иван Иванович"
-            {...register('clientName')}
-          />
-          {errors.clientName && (
-            <p className="text-xs text-destructive">{errors.clientName.message}</p>
-          )}
-        </div>
-
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="clientPhone">Телефон</Label>
-          <Input
-            id="clientPhone"
-            type="tel"
-            inputMode="tel"
-            placeholder="+992xxxxxxxxx"
-            {...register('clientPhone')}
-          />
-          {errors.clientPhone && (
-            <p className="text-xs text-destructive">{errors.clientPhone.message}</p>
-          )}
-        </div>
-
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="clientAddress">Адрес</Label>
-          <Input
-            id="clientAddress"
-            placeholder="ул. Рудаки 1"
-            {...register('clientAddress')}
-          />
         </div>
       </section>
 
