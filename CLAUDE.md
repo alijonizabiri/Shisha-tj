@@ -163,10 +163,10 @@ For `[FULL]` steps:
 
 ## Current Status
 
-**Phase:** 3 — Finances
-**Last completed:** Phase 3 Step 10 [FE] — Payment forms (deposit, balance, rework)
-**Last commit:** Phase 3 Step 10 [FE]: AddPaymentDialog + useCreatePayment + panel button
-**Next step:** Phase 3 Step 11 [FE] — Hardware form (cost per order)
+**Phase:** 4 — Analytics
+**Last completed:** Phase 3 Step 11 [FE] — Hardware form (cost per order) — Phase 3 complete
+**Last commit:** Phase 3 Step 11 [FE]: AddHardwareDialog + useCreateHardware — Phase 3 complete
+**Next step:** Phase 4 Step 1 [BE] — Analytics endpoints (dashboard, funnel, refusals, by-product, by-color, by-measurer)
 **Build BE:** ✅ 0 warnings, 0 errors
 **Build FE:** ✅ typecheck + lint + build passing
 **Tests:** ✅ BE 82/82 | FE 73/73
@@ -176,3 +176,4 @@ For `[FULL]` steps:
 - Phase 0 — Foundation ✅ (2026-06-03) — tag `v0.1-foundation` — [summary](docs/phase-summaries/Phase0-summary.md)
 - Phase 1 — Designer ✅ (2026-06-03) — tag `v0.2-designer` — [summary](docs/phase-summaries/Phase1-summary.md)
 - Phase 2 — CRM Kanban ✅ (2026-06-04) — tag `v0.3-crm` — [summary](docs/phase-summaries/Phase2-summary.md)
+- Phase 3 — Finances ✅ (2026-06-05) — tag `v0.4-finances` — [summary](docs/phase-summaries/Phase3-summary.md)

@@ -4,6 +4,7 @@ import { ArrowLeft, Ruler } from 'lucide-react'
 import { useLead } from './api'
 import { LeadStatusBadge } from './components/LeadStatusBadge'
 import { LeadFinancesPanel } from './components/LeadFinancesPanel'
+import { AddHardwareDialog } from './components/AddHardwareDialog'
 import { RefuseLeadDialog } from './components/RefuseLeadDialog'
 import { formatDate } from '@/shared/lib/formatDate'
 import { formatMoney } from '@/shared/lib/formatMoney'
@@ -34,6 +35,7 @@ export function LeadDetailPage() {
   const { id } = useParams<{ id: string }>()
   const { data: lead, isLoading, isError } = useLead(id ?? '')
   const [refuseOpen, setRefuseOpen] = useState(false)
+  const [hwMeasurementId, setHwMeasurementId] = useState<string | null>(null)
 
   const canRefuse = ['New', 'Measurement', 'Thinking'].includes(lead?.status ?? '')
 
@@ -154,7 +156,7 @@ export function LeadDetailPage() {
                         </p>
                       </div>
                     </div>
-                    <div className="text-right">
+                    <div className="flex flex-col items-end gap-1">
                       <p className="text-xs text-muted-foreground">
                         {formatDate(m.measuredAt)}
                       </p>
@@ -164,6 +166,12 @@ export function LeadDetailPage() {
                       >
                         Открыть в дизайнере
                       </Link>
+                      <button
+                        onClick={() => setHwMeasurementId(m.id)}
+                        className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        + Фурнитура
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -209,6 +217,17 @@ export function LeadDetailPage() {
         leadId={lead.id}
         leadName={lead.name}
       />
+
+      {hwMeasurementId && (
+        <AddHardwareDialog
+          measurementId={hwMeasurementId}
+          defaultColor={
+            lead.measurements.find((m) => m.id === hwMeasurementId)?.hardwareColor ?? 'BlackMatte'
+          }
+          leadId={lead.id}
+          onClose={() => setHwMeasurementId(null)}
+        />
+      )}
     </div>
   )
 }

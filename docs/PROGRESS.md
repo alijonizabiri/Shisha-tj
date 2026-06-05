@@ -67,7 +67,7 @@ Update via `/done` command after each completed step.
 
 ---
 
-## Phase 3 — Finances
+## Phase 3 — Finances ✅ Complete — 2026-06-05
 **Goal:** track factory orders, hardware, payments, profit per lead.
 
 - [x] Step 1 [BE] — Entities: `FactoryOrder`, `FactoryOrderItem`, `Payment`, `Hardware`, `Expense`
@@ -80,8 +80,8 @@ Update via `/done` command after each completed step.
 - [x] Step 8 [FE] — Factory orders page (list + create batch flow)
 - [x] Step 9 [FE] — Lead finances panel (in detail page)
 - [x] Step 10 [FE] — Payment forms (deposit, balance, rework)
-- [ ] Step 11 [FE] — Hardware form (cost per order)
-- [ ] **Phase 3 complete** → tag `v0.4-finances`
+- [x] Step 11 [FE] — Hardware form (cost per order)
+- [x] **Phase 3 complete** → tag `v0.4-finances`
 
 ---
 

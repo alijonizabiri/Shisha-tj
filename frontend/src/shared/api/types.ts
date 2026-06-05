@@ -219,6 +219,21 @@ export interface components {
       createdAt: string
       items: components['schemas']['FactoryOrderItemDto'][]
     }
+    CreateHardwareRequest: {
+      measurementId: string
+      /** HardwareColor enum value as string */
+      color: string
+      costTjs: number
+      /** DateOnly "YYYY-MM-DD" */
+      purchasedAt?: string | null
+    }
+    HardwareDto: {
+      id: string
+      measurementId: string
+      color: string
+      costTjs: number
+      purchasedAt: string | null
+    }
     LeadFinancesDto: {
       leadId: string
       dealPriceTjs: number | null

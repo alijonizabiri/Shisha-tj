@@ -109,6 +109,17 @@ export function useCreatePayment(leadId: string) {
   })
 }
 
+export function useCreateHardware(leadId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (body: components['schemas']['CreateHardwareRequest']) =>
+      apiClient
+        .post<components['schemas']['HardwareDto']>('/api/v1/hardware', body)
+        .then((r) => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.leads.finances(leadId) }),
+  })
+}
+
 export function useDeletePayment(leadId: string) {
   const qc = useQueryClient()
   return useMutation({
