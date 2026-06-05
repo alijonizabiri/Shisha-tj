@@ -164,9 +164,9 @@ For `[FULL]` steps:
 ## Current Status
 
 **Phase:** 3 — Finances
-**Last completed:** Phase 3 Step 6 [BE] — `GET /api/v1/leads/{id}/finances` endpoint
-**Last commit:** Phase 3 Step 6 [BE]: GET /api/v1/leads/{id}/finances + FinancesTests (4 tests)
-**Next step:** Phase 3 Step 7 [BE] — PDF for factory order
+**Last completed:** Phase 3 Step 7 [BE] — PDF for factory order
+**Last commit:** Phase 3 Step 7 [BE]: GET /api/v1/factory-orders/{id}/pdf — FactoryOrderPdfService
+**Next step:** Phase 3 Step 8 [FE] — Factory orders page (list + create batch flow)
 **Build BE:** ✅ 0 warnings, 0 errors
 **Build FE:** ✅ typecheck + lint + build passing
 **Tests:** ✅ BE 82/82 | FE 73/73

@@ -7,7 +7,9 @@ namespace Shisha.Api.Controllers;
 [ApiController]
 [Route("api/v1/factory-orders")]
 [Authorize]
-public sealed class FactoryOrdersController(IFactoryOrderService factoryOrderService) : ControllerBase
+public sealed class FactoryOrdersController(
+    IFactoryOrderService factoryOrderService,
+    IFactoryOrderPdfService factoryOrderPdfService) : ControllerBase
 {
     [HttpGet]
     [Authorize(Roles = "Admin,Operator")]
@@ -61,5 +63,14 @@ public sealed class FactoryOrdersController(IFactoryOrderService factoryOrderSer
         Guid id, Guid itemId, ReworkItemRequest request, CancellationToken ct)
     {
         return Ok(await factoryOrderService.AddReworkItemAsync(id, itemId, request, ct));
+    }
+
+    [HttpGet("{id:guid}/pdf")]
+    [Authorize(Roles = "Admin,Operator")]
+    public async Task<IActionResult> GetPdf(Guid id, CancellationToken ct)
+    {
+        var bytes = await factoryOrderPdfService.GenerateAsync(id, ct);
+        var filename = $"factory-order-{id.ToString("N")[..8].ToUpperInvariant()}.pdf";
+        return File(bytes, "application/pdf", filename);
     }
 }

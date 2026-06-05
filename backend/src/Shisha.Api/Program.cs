@@ -74,6 +74,7 @@ builder.Services.AddSingleton<IMeasurementPdfService, MeasurementPdfService>();
 builder.Services.AddScoped<ILeadStatusTransitionService, LeadStatusTransitionService>();
 builder.Services.AddScoped<ILeadService, LeadService>();
 builder.Services.AddScoped<IFactoryOrderService, FactoryOrderService>();
+builder.Services.AddScoped<IFactoryOrderPdfService, FactoryOrderPdfService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<IProfitCalculator, ProfitCalculator>();
 builder.Services.AddScoped<IUserService, UserService>();
