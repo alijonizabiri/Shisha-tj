@@ -7,9 +7,10 @@ import type { Lead } from '../api'
 interface Props {
   status: string
   leads: Lead[]
+  onSelectLead?: (id: string) => void
 }
 
-export function KanbanColumn({ status, leads }: Props) {
+export function KanbanColumn({ status, leads, onSelectLead }: Props) {
   const { isOver, setNodeRef } = useDroppable({ id: status })
 
   return (
@@ -31,7 +32,7 @@ export function KanbanColumn({ status, leads }: Props) {
         )}
       >
         {leads.map((lead) => (
-          <LeadCard key={lead.id} lead={lead} />
+          <LeadCard key={lead.id} lead={lead} onSelect={onSelectLead} />
         ))}
         {leads.length === 0 && (
           <p className="text-center text-xs text-muted-foreground py-4">Пусто</p>

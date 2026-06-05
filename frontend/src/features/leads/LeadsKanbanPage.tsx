@@ -14,6 +14,7 @@ import { useKanban, usePatchLeadStatus, type Lead } from './api'
 import { KanbanColumn } from './components/KanbanColumn'
 import { LeadCard } from './components/LeadCard'
 import { NewLeadDialog } from './components/NewLeadDialog'
+import { LeadDetailDrawer } from './components/LeadDetailDrawer'
 import { RefuseLeadDialog } from './components/RefuseLeadDialog'
 import { SetDealPriceDialog } from './components/SetDealPriceDialog'
 import { LEAD_STATUS_META } from './lib/leadStatuses'
@@ -36,6 +37,7 @@ export function LeadsKanbanPage() {
   const [dragError, setDragError] = useState<string | null>(null)
   const [pending, setPending] = useState<PendingTransition | null>(null)
   const [newLeadOpen, setNewLeadOpen] = useState(false)
+  const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null)
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -137,6 +139,7 @@ export function LeadsKanbanPage() {
               key={status}
               status={status}
               leads={columnMap[status] ?? []}
+              onSelectLead={setSelectedLeadId}
             />
           ))}
         </div>
@@ -147,6 +150,8 @@ export function LeadsKanbanPage() {
       </DndContext>
 
       <NewLeadDialog open={newLeadOpen} onClose={() => setNewLeadOpen(false)} />
+
+      <LeadDetailDrawer leadId={selectedLeadId} onClose={() => setSelectedLeadId(null)} />
 
       <SetDealPriceDialog
         open={pending?.targetStatus === 'Buying'}

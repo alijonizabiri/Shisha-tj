@@ -164,9 +164,9 @@ For `[FULL]` steps:
 ## Current Status
 
 **Phase:** 3.5 — UX Polish
-**Last completed:** Phase 3.5 Step 2 [FE] — LeadDetailDrawer (slide-in panel, 640px)
-**Last commit:** Phase 3.5 Step 2 [FE]: LeadDetailDrawer — portal panel with info + measurements + finances
-**Next step:** Phase 3.5 Step 3 [FE] — Карточка в Канбане и строка в таблице открывают drawer
+**Last completed:** Phase 3.5 Step 3 [FE] — Карточка в Канбане и строка в таблице открывают drawer
+**Last commit:** Phase 3.5 Step 3 [FE]: Kanban cards + list rows open LeadDetailDrawer (not navigate)
+**Next step:** Phase 3.5 Step 4 [FE] — В drawer: EditLeadDialog, платежи, кнопки по статусу
 **Build BE:** ✅ 0 warnings, 0 errors
 **Build FE:** ✅ typecheck + lint + build passing
 **Tests:** ✅ BE 82/82 | FE 73/73

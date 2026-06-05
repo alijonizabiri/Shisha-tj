@@ -1,6 +1,5 @@
 import { useDraggable } from '@dnd-kit/core'
 import { CSS } from '@dnd-kit/utilities'
-import { Link } from 'react-router-dom'
 import { cn } from '@/shared/lib/cn'
 import { formatMoney } from '@/shared/lib/formatMoney'
 import type { Lead } from '../api'
@@ -8,9 +7,10 @@ import type { Lead } from '../api'
 interface Props {
   lead: Lead
   isDragOverlay?: boolean
+  onSelect?: (id: string) => void
 }
 
-export function LeadCard({ lead, isDragOverlay = false }: Props) {
+export function LeadCard({ lead, isDragOverlay = false, onSelect }: Props) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: lead.id,
     data: { lead },
@@ -33,14 +33,14 @@ export function LeadCard({ lead, isDragOverlay = false }: Props) {
         isDragOverlay && 'shadow-lg rotate-1 cursor-grabbing',
       )}
     >
-      <Link
-        to={`/leads/${lead.id}`}
-        className="block text-sm font-medium text-foreground hover:underline"
-        onClick={(e) => e.stopPropagation()}
+      <button
+        type="button"
+        className="block text-left text-sm font-medium text-foreground hover:underline w-full"
+        onClick={(e) => { e.stopPropagation(); onSelect?.(lead.id) }}
         onPointerDown={(e) => e.stopPropagation()}
       >
         {lead.name}
-      </Link>
+      </button>
       <p className="mt-0.5 text-xs text-muted-foreground">{lead.phone}</p>
       <p className="mt-1 text-xs text-muted-foreground truncate">{lead.product}</p>
       {lead.dealPriceTjs != null && (

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { ChevronLeft, ChevronRight, Kanban, Search } from 'lucide-react'
 import { useLeads } from './api'
 import { LeadStatusBadge } from './components/LeadStatusBadge'
+import { LeadDetailDrawer } from './components/LeadDetailDrawer'
 import { NewLeadDialog } from './components/NewLeadDialog'
 import { LEAD_STATUS_META } from './lib/leadStatuses'
 import { Button } from '@/shared/ui/button'
@@ -23,6 +24,7 @@ export function LeadsListPage() {
   const [status, setStatus] = useState('')
   const [page, setPage] = useState(1)
   const [newLeadOpen, setNewLeadOpen] = useState(false)
+  const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null)
 
   const search = useDebounce(searchInput, 300)
 
@@ -129,12 +131,13 @@ export function LeadsListPage() {
                 className="hover:bg-muted/30 transition-colors"
               >
                 <td className="px-4 py-3">
-                  <Link
-                    to={`/leads/${lead.id}`}
-                    className="font-medium text-foreground hover:underline"
+                  <button
+                    type="button"
+                    onClick={() => setSelectedLeadId(lead.id)}
+                    className="font-medium text-foreground hover:underline text-left"
                   >
                     {lead.name}
-                  </Link>
+                  </button>
                   <p className="text-xs text-muted-foreground">{lead.phone}</p>
                 </td>
                 <td className="px-4 py-3 text-muted-foreground">{lead.product}</td>
@@ -186,6 +189,8 @@ export function LeadsListPage() {
       )}
 
       <NewLeadDialog open={newLeadOpen} onClose={() => setNewLeadOpen(false)} />
+
+      <LeadDetailDrawer leadId={selectedLeadId} onClose={() => setSelectedLeadId(null)} />
     </div>
   )
 }
