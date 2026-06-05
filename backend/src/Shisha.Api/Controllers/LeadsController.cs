@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Shisha.Application.Finances;
 using Shisha.Application.Leads;
 
 namespace Shisha.Api.Controllers;
@@ -7,7 +8,7 @@ namespace Shisha.Api.Controllers;
 [ApiController]
 [Route("api/v1/leads")]
 [Authorize]
-public sealed class LeadsController(ILeadService leadService) : ControllerBase
+public sealed class LeadsController(ILeadService leadService, IProfitCalculator profitCalculator) : ControllerBase
 {
     [HttpGet]
     [Authorize(Roles = "Admin,Operator,Measurer")]
@@ -37,6 +38,13 @@ public sealed class LeadsController(ILeadService leadService) : ControllerBase
     public async Task<ActionResult<LeadDetailResponse>> GetById(Guid id, CancellationToken ct)
     {
         return Ok(await leadService.GetByIdAsync(id, ct));
+    }
+
+    [HttpGet("{id:guid}/finances")]
+    [Authorize(Roles = "Admin,Operator")]
+    public async Task<ActionResult<LeadFinancesDto>> GetFinances(Guid id, CancellationToken ct)
+    {
+        return Ok(await profitCalculator.CalculateAsync(id, ct));
     }
 
     [HttpPost]

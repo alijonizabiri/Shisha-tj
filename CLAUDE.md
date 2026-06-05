@@ -164,12 +164,12 @@ For `[FULL]` steps:
 ## Current Status
 
 **Phase:** 3 — Finances
-**Last completed:** Phase 3 Step 5 [BE] — `ProfitCalculator` service
-**Last commit:** Phase 3 Step 5 [BE]: ProfitCalculator service — LeadFinancesDto breakdown
-**Next step:** Phase 3 Step 6 [BE] — `GET /api/v1/leads/{id}/finances` endpoint
+**Last completed:** Phase 3 Step 6 [BE] — `GET /api/v1/leads/{id}/finances` endpoint
+**Last commit:** Phase 3 Step 6 [BE]: GET /api/v1/leads/{id}/finances + FinancesTests (4 tests)
+**Next step:** Phase 3 Step 7 [BE] — PDF for factory order
 **Build BE:** ✅ 0 warnings, 0 errors
 **Build FE:** ✅ typecheck + lint + build passing
-**Tests:** ✅ BE 78/78 | FE 73/73
+**Tests:** ✅ BE 82/82 | FE 73/73
 **Updated:** 2026-06-05
 
 ## Completed Phases
