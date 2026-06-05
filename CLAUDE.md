@@ -163,10 +163,10 @@ For `[FULL]` steps:
 
 ## Current Status
 
-**Phase:** 4 — Analytics
-**Last completed:** Phase 3 Step 11 [FE] — Hardware form (cost per order) — Phase 3 complete
-**Last commit:** Phase 3 Step 11 [FE]: AddHardwareDialog + useCreateHardware — Phase 3 complete
-**Next step:** Phase 4 Step 1 [BE] — Analytics endpoints (dashboard, funnel, refusals, by-product, by-color, by-measurer)
+**Phase:** 3.5 — UX Polish
+**Last completed:** Phase 3.5 Step 1 [FE] — Кнопка "+ Новый лид" в шапке Канбана
+**Last commit:** Phase 3.5 Step 1 [FE]: "+ Новый лид" button in Kanban header
+**Next step:** Phase 3.5 Step 2 [FE] — LeadDetailDrawer (slide-in panel, 640px)
 **Build BE:** ✅ 0 warnings, 0 errors
 **Build FE:** ✅ typecheck + lint + build passing
 **Tests:** ✅ BE 82/82 | FE 73/73

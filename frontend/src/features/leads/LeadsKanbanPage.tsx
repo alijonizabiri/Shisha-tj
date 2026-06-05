@@ -13,9 +13,11 @@ import { List } from 'lucide-react'
 import { useKanban, usePatchLeadStatus, type Lead } from './api'
 import { KanbanColumn } from './components/KanbanColumn'
 import { LeadCard } from './components/LeadCard'
+import { NewLeadDialog } from './components/NewLeadDialog'
 import { RefuseLeadDialog } from './components/RefuseLeadDialog'
 import { SetDealPriceDialog } from './components/SetDealPriceDialog'
 import { LEAD_STATUS_META } from './lib/leadStatuses'
+import { Button } from '@/shared/ui/button'
 
 interface PendingTransition {
   leadId: string
@@ -33,6 +35,7 @@ export function LeadsKanbanPage() {
   const [activeId, setActiveId] = useState<string | null>(null)
   const [dragError, setDragError] = useState<string | null>(null)
   const [pending, setPending] = useState<PendingTransition | null>(null)
+  const [newLeadOpen, setNewLeadOpen] = useState(false)
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -118,6 +121,7 @@ export function LeadsKanbanPage() {
             <List className="mr-1 h-4 w-4" />
             Таблица
           </Link>
+          <Button onClick={() => setNewLeadOpen(true)}>+ Новый лид</Button>
         </div>
       </div>
 
@@ -141,6 +145,8 @@ export function LeadsKanbanPage() {
           {activeLead ? <LeadCard lead={activeLead} isDragOverlay /> : null}
         </DragOverlay>
       </DndContext>
+
+      <NewLeadDialog open={newLeadOpen} onClose={() => setNewLeadOpen(false)} />
 
       <SetDealPriceDialog
         open={pending?.targetStatus === 'Buying'}
