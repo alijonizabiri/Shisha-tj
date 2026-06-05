@@ -164,9 +164,9 @@ For `[FULL]` steps:
 ## Current Status
 
 **Phase:** 3 — Finances
-**Last completed:** Phase 3 Step 9 [FE] — Lead finances panel (in detail page)
-**Last commit:** Phase 3 Step 9 [FE]: LeadFinancesPanel — cost breakdown + profit + balance
-**Next step:** Phase 3 Step 10 [FE] — Payment forms (deposit, balance, rework)
+**Last completed:** Phase 3 Step 10 [FE] — Payment forms (deposit, balance, rework)
+**Last commit:** Phase 3 Step 10 [FE]: AddPaymentDialog + useCreatePayment + panel button
+**Next step:** Phase 3 Step 11 [FE] — Hardware form (cost per order)
 **Build BE:** ✅ 0 warnings, 0 errors
 **Build FE:** ✅ typecheck + lint + build passing
 **Tests:** ✅ BE 82/82 | FE 73/73

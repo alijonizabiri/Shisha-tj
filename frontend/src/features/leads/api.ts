@@ -93,6 +93,30 @@ export function useLeadFinances(leadId: string) {
   })
 }
 
+interface CreatePaymentBody {
+  leadId: string
+  amountTjs: number
+  kind: string
+  paidAt: string
+  note?: string | null
+}
+
+export function useCreatePayment(leadId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (body: CreatePaymentBody) => apiClient.post('/api/v1/payments', body),
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.leads.finances(leadId) }),
+  })
+}
+
+export function useDeletePayment(leadId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (paymentId: string) => apiClient.delete(`/api/v1/payments/${paymentId}`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.leads.finances(leadId) }),
+  })
+}
+
 export function usePatchLeadStatus() {
   const qc = useQueryClient()
   return useMutation({

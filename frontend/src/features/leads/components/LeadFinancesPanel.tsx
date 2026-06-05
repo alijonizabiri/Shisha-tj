@@ -1,4 +1,7 @@
+import { useState } from 'react'
 import { useLeadFinances } from '../api'
+import { AddPaymentDialog } from './AddPaymentDialog'
+import { Button } from '@/shared/ui/button'
 import { formatMoney } from '@/shared/lib/formatMoney'
 import { cn } from '@/shared/lib/cn'
 
@@ -46,6 +49,7 @@ function Divider() {
 
 export function LeadFinancesPanel({ leadId }: Props) {
   const { data, isLoading, isError } = useLeadFinances(leadId)
+  const [addPaymentOpen, setAddPaymentOpen] = useState(false)
 
   return (
     <div className="rounded-lg border border-border bg-card p-5">
@@ -110,7 +114,17 @@ export function LeadFinancesPanel({ leadId }: Props) {
             bold={data.balanceDueTjs != null && data.balanceDueTjs > 0}
             highlight="balance"
           />
+
+          <div className="mt-3 pt-3 border-t border-border">
+            <Button size="sm" variant="outline" onClick={() => setAddPaymentOpen(true)}>
+              + Добавить платёж
+            </Button>
+          </div>
         </div>
+      )}
+
+      {addPaymentOpen && (
+        <AddPaymentDialog leadId={leadId} onClose={() => setAddPaymentOpen(false)} />
       )}
     </div>
   )
