@@ -32,14 +32,15 @@ const KIND_LABELS: Record<'Deposit' | 'Balance' | 'Refund', string> = {
 
 interface Props {
   leadId: string
+  hasMeasurements: boolean
   onClose: () => void
 }
 
 // Conditionally rendered in parent — mounts fresh each time
-export function AddPaymentDialog({ leadId, onClose }: Props) {
+export function AddPaymentDialog({ leadId, hasMeasurements, onClose }: Props) {
   const createPayment = useCreatePayment(leadId)
 
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormValues>({
+  const { register, handleSubmit, watch, formState: { errors, isSubmitting } } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
       kind:      'Deposit',
@@ -48,6 +49,8 @@ export function AddPaymentDialog({ leadId, onClose }: Props) {
       note:      '',
     },
   })
+
+  const selectedKind = watch('kind')
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
@@ -66,6 +69,14 @@ export function AddPaymentDialog({ leadId, onClose }: Props) {
     })
     onClose()
   }
+
+  const depositBlocked = !hasMeasurements && selectedKind === 'Deposit'
+
+  // Extract server error code for race-condition guard
+  const serverErrorCode = createPayment.isError
+    ? (createPayment.error as { response?: { data?: { errorCode?: string } } })
+        ?.response?.data?.errorCode
+    : undefined
 
   return createPortal(
     <div
@@ -92,9 +103,16 @@ export function AddPaymentDialog({ leadId, onClose }: Props) {
             <Label htmlFor="pay-kind">Тип платежа</Label>
             <select id="pay-kind" {...register('kind')} className={SELECT_CLASS}>
               {(Object.entries(KIND_LABELS) as [FormValues['kind'], string][]).map(([v, label]) => (
-                <option key={v} value={v}>{label}</option>
+                <option key={v} value={v} disabled={v === 'Deposit' && !hasMeasurements}>
+                  {label}{v === 'Deposit' && !hasMeasurements ? ' (нет замера)' : ''}
+                </option>
               ))}
             </select>
+            {!hasMeasurements && selectedKind === 'Deposit' && (
+              <p className="text-xs text-muted-foreground">
+                Сначала создайте замер в Дизайнере.
+              </p>
+            )}
           </div>
 
           {/* Amount */}
@@ -130,7 +148,9 @@ export function AddPaymentDialog({ leadId, onClose }: Props) {
 
           {createPayment.isError && (
             <p className="text-sm text-destructive">
-              Ошибка создания платежа. Попробуйте снова.
+              {serverErrorCode === 'MEASUREMENT_REQUIRED_FOR_DEPOSIT'
+                ? 'Нельзя принять депозит: у лида нет замера. Создайте замер в Дизайнере.'
+                : 'Ошибка создания платежа. Попробуйте снова.'}
             </p>
           )}
 
@@ -139,7 +159,11 @@ export function AddPaymentDialog({ leadId, onClose }: Props) {
             <Button type="button" variant="outline" onClick={onClose} className="flex-1">
               Отмена
             </Button>
-            <Button type="submit" disabled={isSubmitting} className="flex-1">
+            <Button
+              type="submit"
+              disabled={isSubmitting || depositBlocked}
+              className="flex-1"
+            >
               {isSubmitting ? 'Сохранение…' : 'Добавить'}
             </Button>
           </div>

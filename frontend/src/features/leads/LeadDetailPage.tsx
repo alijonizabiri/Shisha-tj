@@ -180,7 +180,7 @@ export function LeadDetailPage() {
           </div>
 
           {/* Finances panel */}
-          <LeadFinancesPanel leadId={lead.id} />
+          <LeadFinancesPanel leadId={lead.id} hasMeasurements={lead.measurements.length > 0} />
         </div>
 
         {/* Right sidebar */}

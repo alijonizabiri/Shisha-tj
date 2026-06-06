@@ -14,12 +14,30 @@ vi.mock('./api', () => ({
     data: undefined,
     error: null,
   }),
-  useDesignerLeads: () => ({ data: [], isLoading: false }),
+  useDesignerLeads: () => ({
+    data: [{ id: 'lead-abc', name: 'Иван', status: 'Measurement' }],
+    isLoading: false,
+  }),
   downloadMeasurementPdf: vi.fn(),
 }))
 
+// ── Mock react-router-dom so tests don't need a Router context ───────────────
+
+const mockNavigate = vi.fn()
+let mockSearchParams = new URLSearchParams()
+
+vi.mock('react-router-dom', () => ({
+  useSearchParams: () => [mockSearchParams, vi.fn()],
+  useNavigate: () => mockNavigate,
+}))
+
+// ── Mock sonner so toast calls are silent in tests ────────────────────────────
+
+vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
+
 describe('DesignerPage', () => {
   it('renders all form fields', () => {
+    mockSearchParams = new URLSearchParams()
     render(<DesignerPage />)
     expect(screen.getByLabelText('Клиент *')).toBeTruthy()
     expect(screen.getByLabelText('Ширина проёма (мм)')).toBeTruthy()
@@ -29,11 +47,13 @@ describe('DesignerPage', () => {
   })
 
   it('hides canvas when measure is empty', () => {
+    mockSearchParams = new URLSearchParams()
     const { container } = render(<DesignerPage />)
     expect(container.querySelector('svg')).toBeNull()
   })
 
   it('shows canvas after entering a valid measureMm', () => {
+    mockSearchParams = new URLSearchParams()
     const { container } = render(<DesignerPage />)
     fireEvent.change(screen.getByLabelText('Ширина проёма (мм)'), {
       target: { value: '1560' },
@@ -42,6 +62,7 @@ describe('DesignerPage', () => {
   })
 
   it('warns when TwoGlass fixed panel exceeds 1500 mm', () => {
+    mockSearchParams = new URLSearchParams()
     render(<DesignerPage />)
     // measureMm=2500 → totalWidth=2540 → fixedMm=1740 > 1500
     fireEvent.change(screen.getByLabelText('Ширина проёма (мм)'), {
@@ -52,6 +73,7 @@ describe('DesignerPage', () => {
   })
 
   it('shows no warning for normal TwoGlass width', () => {
+    mockSearchParams = new URLSearchParams()
     render(<DesignerPage />)
     fireEvent.change(screen.getByLabelText('Ширина проёма (мм)'), {
       target: { value: '1560' },
@@ -60,11 +82,13 @@ describe('DesignerPage', () => {
   })
 
   it('shows placeholder dashes before dimensions are entered', () => {
+    mockSearchParams = new URLSearchParams()
     render(<DesignerPage />)
     expect(screen.getAllByText('—').length).toBeGreaterThan(0)
   })
 
   it('shows area after entering valid dimensions', () => {
+    mockSearchParams = new URLSearchParams()
     render(<DesignerPage />)
     fireEvent.change(screen.getByLabelText('Ширина проёма (мм)'), {
       target: { value: '1560' },
@@ -74,12 +98,14 @@ describe('DesignerPage', () => {
   })
 
   it('delivery defaults to 100', () => {
+    mockSearchParams = new URLSearchParams()
     render(<DesignerPage />)
     const deliveryInput = screen.getByLabelText('Доставка') as HTMLInputElement
     expect(Number(deliveryInput.value)).toBe(100)
   })
 
   it('balance = masterFee + delivery − deposit', () => {
+    mockSearchParams = new URLSearchParams()
     render(<DesignerPage />)
     fireEvent.change(screen.getByLabelText('Ширина проёма (мм)'), {
       target: { value: '1560' },
@@ -92,6 +118,7 @@ describe('DesignerPage', () => {
   })
 
   it('renders 3 rects after switching to ThreeGlass', async () => {
+    mockSearchParams = new URLSearchParams()
     const user = userEvent.setup()
     const { container } = render(<DesignerPage />)
     fireEvent.change(screen.getByLabelText('Ширина проёма (мм)'), {
@@ -104,6 +131,7 @@ describe('DesignerPage', () => {
   })
 
   it('save button is present and enabled by default', () => {
+    mockSearchParams = new URLSearchParams()
     render(<DesignerPage />)
     const btn = screen.getByRole('button', { name: /сохранить/i })
     expect(btn).toBeTruthy()
@@ -111,7 +139,30 @@ describe('DesignerPage', () => {
   })
 
   it('PDF buttons are not shown before save', () => {
+    mockSearchParams = new URLSearchParams()
     render(<DesignerPage />)
     expect(screen.queryByText(/Скачать PDF/i)).toBeNull()
+  })
+
+  // ── ?leadId=… behaviour ──────────────────────────────────────────────────────
+
+  it('lead selector is disabled when ?leadId is in URL', () => {
+    mockSearchParams = new URLSearchParams('leadId=lead-abc')
+    render(<DesignerPage />)
+    const select = screen.getByLabelText('Клиент *') as HTMLSelectElement
+    expect(select.disabled).toBe(true)
+  })
+
+  it('lead selector is pre-selected when ?leadId matches an eligible lead', () => {
+    mockSearchParams = new URLSearchParams('leadId=lead-abc')
+    render(<DesignerPage />)
+    const select = screen.getByLabelText('Клиент *') as HTMLSelectElement
+    expect(select.value).toBe('lead-abc')
+  })
+
+  it('shows ineligible banner when ?leadId is not in eligible list', () => {
+    mockSearchParams = new URLSearchParams('leadId=unknown-lead')
+    render(<DesignerPage />)
+    expect(screen.getByText(/Лид не в подходящем статусе/i)).toBeTruthy()
   })
 })

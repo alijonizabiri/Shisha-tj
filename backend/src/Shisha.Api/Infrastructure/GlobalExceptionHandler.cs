@@ -13,12 +13,13 @@ public sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logge
     {
         var (status, errorCode, title) = exception switch
         {
-            NotFoundException         => (404, "NOT_FOUND",        "Not found"),
-            ForbiddenException        => (403, "FORBIDDEN",        "Access denied"),
-            ConflictException         => (409, "CONFLICT",         "Conflict"),
-            DomainValidationException => (400, "VALIDATION_FAILED","Validation failed"),
-            UnauthorizedException     => (401, "UNAUTHORIZED",     "Unauthorized"),
-            _                         => (500, "SERVER_ERROR",     "An unexpected error occurred"),
+            NotFoundException         => (404, "NOT_FOUND",              "Not found"),
+            ForbiddenException        => (403, "FORBIDDEN",              "Access denied"),
+            ConflictException         => (409, "CONFLICT",               "Conflict"),
+            DomainValidationException => (400, "VALIDATION_FAILED",      "Validation failed"),
+            UnauthorizedException     => (401, "UNAUTHORIZED",           "Unauthorized"),
+            BusinessRuleException bre => (400, bre.ErrorCode,            "Нарушение бизнес-правила"),
+            _                         => (500, "SERVER_ERROR",           "An unexpected error occurred"),
         };
 
         if (status == 500)

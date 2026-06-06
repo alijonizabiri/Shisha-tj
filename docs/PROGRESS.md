@@ -96,6 +96,7 @@ Update via `/done` command after each completed step.
 - [x] Step 6 [FE] — CreateBatchDialog: после Step 5 у Buying-лидов есть замеры, "нет замеров" исчезает
 - [x] Step 7 [QA] — End-to-end: создать лид → Замер → открыть Дизайнер с этим лидом → сохранить замер → Покупает → создать заказ на завод
 - [x] Step 8 [FULL] — Ужесточение правил перехода статусов: Measurement→Thinking требует замер; →Buying требует замер + dealPriceTjs + депозит ≥ 100 TJS; →Installed требует полную оплату; удалить автосоздание платежей из transition service
+- [x] Step 8.1 [FULL] — Депозит запрещён без замера (BE BusinessRuleException + FE guard); кнопка "+ Создать замер" в drawer; DesignerPage принимает ?leadId= (prefill + disable + back-navigate)
 - [x] **Phase 3.5 complete** → tag `v0.4.1-ux-polish`
 
 ---

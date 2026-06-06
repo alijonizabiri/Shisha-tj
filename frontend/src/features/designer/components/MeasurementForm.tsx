@@ -27,9 +27,10 @@ interface Props {
   onSubmit: (values: MeasurementFormValues) => void
   leads: DesignerLeadOption[]
   isLoading?: boolean
+  disableLeadSelector?: boolean
 }
 
-export function MeasurementForm({ form, onSubmit, leads, isLoading = false }: Props) {
+export function MeasurementForm({ form, onSubmit, leads, isLoading = false, disableLeadSelector = false }: Props) {
   const {
     register,
     handleSubmit,
@@ -49,7 +50,12 @@ export function MeasurementForm({ form, onSubmit, leads, isLoading = false }: Pr
         </h2>
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="leadId">Клиент *</Label>
-          <select id="leadId" {...register('leadId')} className={SELECT_CLASS}>
+          <select
+            id="leadId"
+            {...register('leadId')}
+            className={SELECT_CLASS}
+            disabled={disableLeadSelector}
+          >
             <option value="">— Выберите лид —</option>
             {leads.map((l) => (
               <option key={l.id} value={l.id}>

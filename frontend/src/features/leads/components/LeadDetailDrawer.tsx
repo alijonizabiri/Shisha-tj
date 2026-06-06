@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { ArrowUpRight, Pencil, Ruler, X } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { ArrowUpRight, Pencil, Plus, Ruler, X } from 'lucide-react'
+import { Link, useNavigate } from 'react-router-dom'
 import { useLead, useLeadFinances } from '../api'
 import { LeadStatusBadge } from './LeadStatusBadge'
 import { LeadFinancesPanel } from './LeadFinancesPanel'
@@ -47,6 +47,7 @@ export function LeadDetailDrawer({ leadId, onClose }: Props) {
   const { data: finances } = useLeadFinances(leadId ?? '')
   const [editOpen, setEditOpen] = useState(false)
   const [buyingOpen, setBuyingOpen] = useState(false)
+  const navigate = useNavigate()
 
   useEffect(() => {
     if (!leadId) return
@@ -162,7 +163,16 @@ export function LeadDetailDrawer({ leadId, onClose }: Props) {
                   Замеры ({lead.measurements.length})
                 </h3>
                 {lead.measurements.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">Замеров нет</p>
+                  <div className="flex flex-col gap-3">
+                    <p className="text-sm text-muted-foreground">Замеров нет</p>
+                    <button
+                      onClick={() => navigate(`/designer?leadId=${lead.id}`)}
+                      className="flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors w-fit"
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                      Создать замер
+                    </button>
+                  </div>
                 ) : (
                   <div className="flex flex-col gap-2">
                     {lead.measurements.map((m) => (
@@ -193,6 +203,13 @@ export function LeadDetailDrawer({ leadId, onClose }: Props) {
                         </Link>
                       </div>
                     ))}
+                    <button
+                      onClick={() => navigate(`/designer?leadId=${lead.id}`)}
+                      className="flex items-center gap-1.5 mt-1 rounded-md border border-border px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors w-fit"
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                      Добавить замер
+                    </button>
                   </div>
                 )}
               </section>
@@ -228,7 +245,10 @@ export function LeadDetailDrawer({ leadId, onClose }: Props) {
               })()}
 
               {/* Finances */}
-              <LeadFinancesPanel leadId={lead.id} />
+              <LeadFinancesPanel
+                leadId={lead.id}
+                hasMeasurements={lead.measurements.length > 0}
+              />
             </div>
           )}
         </div>

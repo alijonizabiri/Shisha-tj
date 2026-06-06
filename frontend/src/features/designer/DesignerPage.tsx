@@ -1,6 +1,8 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { toast } from 'sonner'
 import { computeMetrics, computePanels } from './lib/computePanels'
 import { defaultHoles } from './lib/defaultHoles'
 import type { Hole } from './lib/types'
@@ -24,7 +26,11 @@ function flattenHoles(holesByPanel: Hole[][]): HoleRequest[] {
 }
 
 export function DesignerPage() {
-  const { data: leads = [] } = useDesignerLeads()
+  const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
+  const leadIdFromUrl = searchParams.get('leadId')
+
+  const { data: leads = [], isLoading: leadsLoading } = useDesignerLeads()
 
   const form = useForm<MeasurementFormValues>({
     resolver: zodResolver(measurementFormSchema),
@@ -40,6 +46,17 @@ export function DesignerPage() {
       depositTjs:    0,
     },
   })
+
+  // Prefill lead selector when coming from drawer
+  useEffect(() => {
+    if (leadIdFromUrl) {
+      form.setValue('leadId', leadIdFromUrl, { shouldValidate: false })
+    }
+  }, [leadIdFromUrl, form])
+
+  // Ineligible: URL has a leadId but it's not in eligible leads after loading
+  const leadIneligible =
+    !!leadIdFromUrl && !leadsLoading && !leads.some((l) => l.id === leadIdFromUrl)
 
   const saveMutation = useSaveMeasurement()
 
@@ -120,13 +137,18 @@ export function DesignerPage() {
         holes:         flattenHoles(currentHoles),
       },
       {
-        onSuccess: (data) =>
+        onSuccess: (data) => {
           setSavedSnapshot({
             id: data.id,
             measureMm: values.measureMm,
             heightMm: values.heightMm,
             configuration: values.configuration,
-          }),
+          })
+          if (leadIdFromUrl) {
+            toast.success('Замер сохранён')
+            navigate(-1)
+          }
+        },
       },
     )
   }
@@ -136,18 +158,40 @@ export function DesignerPage() {
       <aside className="w-72 shrink-0 overflow-y-auto border-r border-border bg-card">
         <div className="p-4">
           <h1 className="mb-4 text-lg font-semibold">Дизайнер</h1>
+
+          {/* Ineligible lead banner */}
+          {leadIneligible && (
+            <div
+              role="alert"
+              className="mb-4 rounded-md border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-800 dark:border-yellow-800 dark:bg-yellow-950 dark:text-yellow-200"
+            >
+              <p className="font-medium">Лид не в подходящем статусе</p>
+              <p className="mt-1 text-xs">
+                Замер можно создать только для лидов в статусах: Замер, Покупает, Заказ на завод, Стекло пришло.
+              </p>
+              <button
+                onClick={() => navigate(-1)}
+                className="mt-2 text-xs font-medium underline hover:no-underline"
+              >
+                ← Назад к лиду
+              </button>
+            </div>
+          )}
+
           <MeasurementForm
             form={form}
             onSubmit={handleSave}
             leads={leads}
             isLoading={saveMutation.isPending}
+            disableLeadSelector={!!leadIdFromUrl}
           />
 
           {saveMutation.isError && (
             <p className="mt-2 text-sm text-destructive">Ошибка сохранения. Попробуйте ещё раз.</p>
           )}
 
-          {savedId && (
+          {/* Show inline success only when NOT navigating back (no leadIdFromUrl) */}
+          {savedId && !leadIdFromUrl && (
             <div className="mt-3 flex flex-col gap-2">
               <p className="text-sm font-medium text-green-600 dark:text-green-400">
                 Замер сохранён ✓
@@ -173,7 +217,7 @@ export function DesignerPage() {
         </div>
       </aside>
 
-      <main className="flex flex-1 flex-col overflow-hidden bg-background">
+      <main className="flex-1 flex flex-col overflow-hidden bg-background">
         {warning && (
           <div
             role="alert"

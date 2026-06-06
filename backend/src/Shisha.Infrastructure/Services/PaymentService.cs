@@ -18,6 +18,16 @@ public sealed class PaymentService(AppDbContext db, ICurrentUser currentUser) : 
         if (!Enum.TryParse<PaymentKind>(request.Kind, out var kind))
             throw new DomainValidationException("kind", $"Unknown payment kind '{request.Kind}'.");
 
+        if (kind == PaymentKind.Deposit)
+        {
+            var hasMeasurement = await db.Measurements
+                .AnyAsync(m => m.LeadId == request.LeadId, ct);
+            if (!hasMeasurement)
+                throw new BusinessRuleException(
+                    "MEASUREMENT_REQUIRED_FOR_DEPOSIT",
+                    "Нельзя принять депозит: у лида нет замера. Создайте замер в Дизайнере.");
+        }
+
         if (request.AmountTjs == 0)
             throw new DomainValidationException("amountTjs", "Amount must not be zero.");
 
