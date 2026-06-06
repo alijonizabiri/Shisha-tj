@@ -21,6 +21,9 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
 
     public const string AdminEmail = "admin@integration.test";
     public const string AdminPassword = "Integration-Pass-123!";
+    public const string MeasurerEmail = "measurer@integration.test";
+
+    public Guid MeasurerId { get; private set; }
 
     public async Task InitializeAsync()
     {
@@ -46,7 +49,7 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         db.Tenants.Add(tenant);
         await db.SaveChangesAsync();
 
-        var user = new User
+        var admin = new User
         {
             TenantId = tenant.Id,
             Email = AdminEmail,
@@ -55,9 +58,21 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
             Role = UserRole.Admin,
             IsActive = true,
         };
-        db.Users.Add(user);
+        db.Users.Add(admin);
+
+        var measurer = new User
+        {
+            TenantId = tenant.Id,
+            Email = MeasurerEmail,
+            PasswordHash = hasher.Hash(AdminPassword),
+            FullName = "Integration Measurer",
+            Role = UserRole.Measurer,
+            IsActive = true,
+        };
+        db.Users.Add(measurer);
         await db.SaveChangesAsync();
 
+        MeasurerId = measurer.Id;
         IsAvailable = true;
     }
 

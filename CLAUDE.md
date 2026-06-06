@@ -164,12 +164,12 @@ For `[FULL]` steps:
 ## Current Status
 
 **Phase:** 4 — Analytics
-**Last completed:** Phase 3.5 Step 8.1 fix2 [FULL] — No payments at all without measurement
-**Last commit:** Phase 3.5 Step 8.1 fix2 [FULL]: no payments at all without measurement
-**Next step:** Phase 4 Step 1 [BE] — Endpoints: dashboard, funnel, refusals, by-product, by-color, by-measurer
+**Last completed:** Phase 4 Step 1 [BE] — Analytics endpoints (dashboard, funnel, refusals, by-product, by-color, by-measurer)
+**Last commit:** Phase 4 Step 1 [BE]: analytics endpoints — dashboard, funnel, refusals, by-product, by-color, by-measurer
+**Next step:** Phase 4 Step 2 [BE] — Caching (5–15 min in-memory)
 **Build BE:** ✅ 0 warnings, 0 errors
 **Build FE:** ✅ typecheck + lint + build passing
-**Tests:** ✅ BE 90/90 | FE 89/89
+**Tests:** ✅ BE 101/101 | FE 89/89
 **Updated:** 2026-06-06
 
 ## Completed Phases

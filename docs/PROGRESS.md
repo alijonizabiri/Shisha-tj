@@ -104,7 +104,7 @@ Update via `/done` command after each completed step.
 ## Phase 4 — Analytics
 **Goal:** admin sees what's happening business-wide.
 
-- [ ] Step 1 [BE] — Endpoints: dashboard, funnel, refusals, by-product, by-color, by-measurer
+- [x] Step 1 [BE] — Endpoints: dashboard, funnel, refusals, by-product, by-color, by-measurer
 - [ ] Step 2 [BE] — Caching (5–15 min in-memory)
 - [ ] Step 3 [FE] — Dashboard page (KPIs + revenue chart)
 - [ ] Step 4 [FE] — Funnel visualization (horizontal bar)

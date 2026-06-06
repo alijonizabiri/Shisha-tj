@@ -12,6 +12,7 @@ using Shisha.Application.Auth;
 using Shisha.Application.FactoryOrders;
 using Shisha.Application.Leads;
 using Shisha.Application.Measurements;
+using Shisha.Application.Analytics;
 using Shisha.Application.Finances;
 using Shisha.Application.Payments;
 using Shisha.Application.Users;
@@ -78,6 +79,7 @@ builder.Services.AddScoped<IFactoryOrderPdfService, FactoryOrderPdfService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<IProfitCalculator, ProfitCalculator>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IAnalyticsService, AnalyticsService>();
 
 // CORS — allow the Vite dev server in development
 builder.Services.AddCors(opts =>
