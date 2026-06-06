@@ -1,13 +1,15 @@
 import { formatMoney } from '@/shared/lib/formatMoney'
-import { useAnalyticsDashboard, useAnalyticsByProduct, useAnalyticsFunnel } from './api'
+import { useAnalyticsDashboard, useAnalyticsByProduct, useAnalyticsFunnel, useAnalyticsRefusals } from './api'
 import { KpiCard } from './components/KpiCard'
 import { RevenueByProductChart } from './components/RevenueByProductChart'
 import { FunnelChart } from './components/FunnelChart'
+import { RefusalsTable } from './components/RefusalsTable'
 
 export function AnalyticsDashboardPage() {
   const { data: dash, isLoading: dashLoading } = useAnalyticsDashboard()
   const { data: byProduct, isLoading: productLoading } = useAnalyticsByProduct()
   const { data: funnel, isLoading: funnelLoading } = useAnalyticsFunnel()
+  const { data: refusals, isLoading: refusalsLoading } = useAnalyticsRefusals()
 
   return (
     <div className="space-y-8 p-6">
@@ -71,6 +73,18 @@ export function AnalyticsDashboardPage() {
             <FunnelChart data={funnel?.statuses ?? []} />
           )}
         </div>
+      </div>
+
+      {/* ── Refusal reasons ───────────────────────────────────────────────── */}
+      <div className="rounded-lg border border-border bg-card p-5">
+        <h2 className="mb-4 text-base font-medium">Причины отказов</h2>
+        {refusalsLoading ? (
+          <div className="h-32 animate-pulse rounded-md bg-muted" />
+        ) : (
+          <RefusalsTable
+            data={refusals ?? { reasons: [], totalRefused: 0 }}
+          />
+        )}
       </div>
     </div>
   )
