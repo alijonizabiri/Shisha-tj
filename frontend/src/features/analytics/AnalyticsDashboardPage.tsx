@@ -1,43 +1,48 @@
+import { useState } from 'react'
 import { formatMoney } from '@/shared/lib/formatMoney'
-import { useAnalyticsDashboard, useAnalyticsByProduct, useAnalyticsFunnel, useAnalyticsRefusals, useAnalyticsByColor } from './api'
+import {
+  useAnalyticsDashboard,
+  useAnalyticsByProduct,
+  useAnalyticsFunnel,
+  useAnalyticsRefusals,
+  useAnalyticsByColor,
+} from './api'
 import { KpiCard } from './components/KpiCard'
 import { RevenueByProductChart } from './components/RevenueByProductChart'
 import { FunnelChart } from './components/FunnelChart'
 import { RefusalsTable } from './components/RefusalsTable'
 import { ColorPieChart } from './components/ColorPieChart'
+import { DateRangeFilter, type DateRange } from './components/DateRangeFilter'
 
 export function AnalyticsDashboardPage() {
-  const { data: dash, isLoading: dashLoading } = useAnalyticsDashboard()
-  const { data: byProduct, isLoading: productLoading } = useAnalyticsByProduct()
-  const { data: funnel, isLoading: funnelLoading } = useAnalyticsFunnel()
-  const { data: refusals, isLoading: refusalsLoading } = useAnalyticsRefusals()
-  const { data: byColor, isLoading: colorLoading } = useAnalyticsByColor()
+  const [range, setRange] = useState<DateRange>({})
+
+  const { data: dash, isLoading: dashLoading } = useAnalyticsDashboard(range)
+  const { data: byProduct, isLoading: productLoading } = useAnalyticsByProduct(range)
+  const { data: funnel, isLoading: funnelLoading } = useAnalyticsFunnel(range)
+  const { data: refusals, isLoading: refusalsLoading } = useAnalyticsRefusals(range)
+  const { data: byColor, isLoading: colorLoading } = useAnalyticsByColor(range)
 
   return (
-    <div className="space-y-8 p-6">
-      <h1 className="text-2xl font-semibold">Аналитика</h1>
+    <div className="space-y-6 p-6">
+      {/* ── Header + filter ───────────────────────────────────────────────── */}
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <h1 className="text-2xl font-semibold">Аналитика</h1>
+        <DateRangeFilter onChange={setRange} />
+      </div>
 
       {/* ── KPI cards ─────────────────────────────────────────────────────── */}
       {dashLoading ? (
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
           {Array.from({ length: 5 }).map((_, i) => (
             <div key={i} className="h-24 animate-pulse rounded-lg bg-muted" />
           ))}
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
-          <KpiCard
-            label="Всего лидов"
-            value={String(dash?.totalLeads ?? 0)}
-          />
-          <KpiCard
-            label="Активных"
-            value={String(dash?.activeLeads ?? 0)}
-          />
-          <KpiCard
-            label="Выручка"
-            value={formatMoney(dash?.revenueTjs ?? 0)}
-          />
+          <KpiCard label="Всего лидов" value={String(dash?.totalLeads ?? 0)} />
+          <KpiCard label="Активных" value={String(dash?.activeLeads ?? 0)} />
+          <KpiCard label="Выручка" value={formatMoney(dash?.revenueTjs ?? 0)} />
           <KpiCard
             label="Конверсия"
             value={dash?.conversionRate != null ? `${dash.conversionRate}%` : '—'}
@@ -56,7 +61,7 @@ export function AnalyticsDashboardPage() {
         </div>
       )}
 
-      {/* ── Two-column charts ─────────────────────────────────────────────── */}
+      {/* ── Revenue + Funnel ──────────────────────────────────────────────── */}
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="rounded-lg border border-border bg-card p-5">
           <h2 className="mb-4 text-base font-medium">Выручка по продуктам</h2>
@@ -77,7 +82,7 @@ export function AnalyticsDashboardPage() {
         </div>
       </div>
 
-      {/* ── Refusals + Colors row ─────────────────────────────────────────── */}
+      {/* ── Refusals + Colors ─────────────────────────────────────────────── */}
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="rounded-lg border border-border bg-card p-5">
           <h2 className="mb-4 text-base font-medium">Причины отказов</h2>

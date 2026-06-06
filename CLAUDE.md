@@ -164,9 +164,9 @@ For `[FULL]` steps:
 ## Current Status
 
 **Phase:** 4 — Analytics
-**Last completed:** Phase 4 Step 6 [FE] — Color popularity pie charts (glass + hardware, donut style)
-**Last commit:** Phase 4 Step 6 [FE]: color popularity donut pie charts with legend
-**Next step:** Phase 4 Step 7 [FE] — Date range filter (month / quarter / year / custom)
+**Last completed:** Phase 4 Step 7 [FE] — Date range filter; Phase 4 complete
+**Last commit:** Phase 4 Step 7 [FE]: date range filter — presets + custom period
+**Next step:** Phase 5 Step 1 [DEV] — Dockerfile (BE) + Dockerfile (FE with nginx)
 **Build BE:** ✅ 0 warnings, 0 errors
 **Build FE:** ✅ typecheck + lint + build passing
 **Tests:** ✅ BE 101/101 | FE 89/89
@@ -178,3 +178,4 @@ For `[FULL]` steps:
 - Phase 2 — CRM Kanban ✅ (2026-06-04) — tag `v0.3-crm` — [summary](docs/phase-summaries/Phase2-summary.md)
 - Phase 3 — Finances ✅ (2026-06-05) — tag `v0.4-finances` — [summary](docs/phase-summaries/Phase3-summary.md)
 - Phase 3.5 — UX Polish ✅ (2026-06-05) — tag `v0.4.1-ux-polish` — [summary](docs/phase-summaries/Phase3.5-summary.md)
+- Phase 4 — Analytics ✅ (2026-06-06) — tag `v0.5-analytics` — [summary](docs/phase-summaries/Phase4-summary.md)
