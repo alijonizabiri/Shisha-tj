@@ -118,7 +118,7 @@ Update via `/done` command after each completed step.
 ## Phase 5 — Production Polish
 **Goal:** ship to real users.
 
-- [ ] Step 1 [DEV] — Dockerfile (BE) + Dockerfile (FE with nginx)
+- [x] Step 1 [DEV] — Dockerfile (BE) + Dockerfile (FE with nginx)
 - [ ] Step 2 [DEV] — docker-compose.prod.yml + nginx reverse proxy + SSL
 - [ ] Step 3 [DEV] — GitHub Actions: build + test on PR, deploy on main
 - [ ] Step 4 [DEV] — Daily pg_dump → MinIO/S3

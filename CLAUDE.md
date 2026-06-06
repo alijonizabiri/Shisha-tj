@@ -164,9 +164,9 @@ For `[FULL]` steps:
 ## Current Status
 
 **Phase:** 4 — Analytics
-**Last completed:** Phase 4 Step 7 [FE] — Date range filter; Phase 4 complete
-**Last commit:** Phase 4 Step 7 [FE]: date range filter — presets + custom period
-**Next step:** Phase 5 Step 1 [DEV] — Dockerfile (BE) + Dockerfile (FE with nginx)
+**Last completed:** Phase 5 Step 1 [DEV] — Dockerfiles (BE alpine multi-stage + FE nginx multi-stage)
+**Last commit:** Phase 5 Step 1 [DEV]: Dockerfiles — BE (dotnet/aspnet:8.0-alpine) + FE (nginx:1.27-alpine)
+**Next step:** Phase 5 Step 2 [DEV] — docker-compose.prod.yml + nginx reverse proxy + SSL
 **Build BE:** ✅ 0 warnings, 0 errors
 **Build FE:** ✅ typecheck + lint + build passing
 **Tests:** ✅ BE 101/101 | FE 89/89

@@ -1,0 +1,13 @@
+**/.vs
+**/.vscode
+**/.idea
+**/bin
+**/obj
+**/logs
+tests/
+*.user
+*.suo
+.git
+.gitignore
+Dockerfile
+.dockerignore
