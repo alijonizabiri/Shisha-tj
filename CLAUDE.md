@@ -164,9 +164,9 @@ For `[FULL]` steps:
 ## Current Status
 
 **Phase:** 4 — Analytics
-**Last completed:** Phase 5 Step 2 [DEV] — docker-compose.prod.yml + SSL via Let's Encrypt template
-**Last commit:** Phase 5 Step 2 [DEV]: docker-compose.prod.yml + nginx SSL template + .env.prod.example
-**Next step:** Phase 5 Step 3 [DEV] — GitHub Actions: build + test on PR, deploy on main
+**Last completed:** Phase 5 Step 3 [DEV] — GitHub Actions CI/CD (build+test on PR, push images + SSH deploy on main)
+**Last commit:** Phase 5 Step 3 [DEV]: GitHub Actions CI/CD workflow
+**Next step:** Phase 5 Step 4 [DEV] — Daily pg_dump → MinIO/S3
 **Build BE:** ✅ 0 warnings, 0 errors
 **Build FE:** ✅ typecheck + lint + build passing
 **Tests:** ✅ BE 101/101 | FE 89/89

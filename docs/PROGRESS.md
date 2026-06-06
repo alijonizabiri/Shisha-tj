@@ -120,7 +120,7 @@ Update via `/done` command after each completed step.
 
 - [x] Step 1 [DEV] — Dockerfile (BE) + Dockerfile (FE with nginx)
 - [x] Step 2 [DEV] — docker-compose.prod.yml + nginx reverse proxy + SSL
-- [ ] Step 3 [DEV] — GitHub Actions: build + test on PR, deploy on main
+- [x] Step 3 [DEV] — GitHub Actions: build + test on PR, deploy on main
 - [ ] Step 4 [DEV] — Daily pg_dump → MinIO/S3
 - [ ] Step 5 [FE] — PWA manifest + service worker (offline Designer)
 - [ ] Step 6 [BE] — Rate limiting + security audit
