@@ -43,8 +43,25 @@ public sealed class PaymentTests(ApiFactory factory)
         return id;
     }
 
-    [Fact]
-    public async Task CreateDeposit_WithoutMeasurement_Returns400WithErrorCode()
+    private async Task AddMeasurementAsync(HttpClient client, string leadId)
+    {
+        var resp = await client.PostAsJsonAsync("/api/v1/measurements", new
+        {
+            leadId        = Guid.Parse(leadId),
+            measureMm     = 1560,
+            heightMm      = 2000,
+            configuration = "TwoGlass",
+            glassColor    = "Transparent",
+            hardwareColor = "BlackMatte",
+        });
+        resp.EnsureSuccessStatusCode();
+    }
+
+    [Theory]
+    [InlineData("Deposit")]
+    [InlineData("Balance")]
+    [InlineData("Refund")]
+    public async Task CreatePayment_WithoutMeasurement_Returns400ForAllKinds(string kind)
     {
         if (!factory.IsAvailable) return;
 
@@ -55,37 +72,26 @@ public sealed class PaymentTests(ApiFactory factory)
         {
             leadId    = Guid.Parse(id),
             amountTjs = 500m,
-            kind      = "Deposit",
+            kind,
             paidAt    = "2026-06-06",
         });
 
         Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
 
         var body = await resp.Content.ReadFromJsonAsync<JsonElement>(JsonOpts);
-        Assert.Equal("MEASUREMENT_REQUIRED_FOR_DEPOSIT",
+        Assert.Equal("MEASUREMENT_REQUIRED_FOR_PAYMENT",
             body.GetProperty("errorCode").GetString());
     }
 
     [Fact]
-    public async Task CreateDeposit_AfterMeasurementCreated_Returns201()
+    public async Task CreatePayment_WithMeasurement_Returns201()
     {
         if (!factory.IsAvailable) return;
 
         var client = await AuthClientAsync();
         var id = await CreateLeadInMeasurementAsync(client);
+        await AddMeasurementAsync(client, id);
 
-        // Create measurement first
-        await client.PostAsJsonAsync("/api/v1/measurements", new
-        {
-            leadId        = Guid.Parse(id),
-            measureMm     = 1560,
-            heightMm      = 2000,
-            configuration = "TwoGlass",
-            glassColor    = "Transparent",
-            hardwareColor = "BlackMatte",
-        });
-
-        // Now deposit should succeed
         var resp = await client.PostAsJsonAsync("/api/v1/payments", new
         {
             leadId    = Guid.Parse(id),

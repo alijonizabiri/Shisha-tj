@@ -33,18 +33,17 @@ const KIND_LABELS: Record<'Deposit' | 'Balance' | 'Refund', string> = {
 
 interface Props {
   leadId: string
-  hasMeasurements: boolean
   onClose: () => void
 }
 
 // Conditionally rendered in parent — mounts fresh each time
-export function AddPaymentDialog({ leadId, hasMeasurements, onClose }: Props) {
+export function AddPaymentDialog({ leadId, onClose }: Props) {
   const createPayment = useCreatePayment(leadId)
 
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
-      kind:      hasMeasurements ? 'Deposit' : 'Balance',
+      kind:      'Deposit',
       amountStr: '',
       paidAt:    new Date().toISOString().split('T')[0],
       note:      '',
@@ -69,9 +68,10 @@ export function AddPaymentDialog({ leadId, hasMeasurements, onClose }: Props) {
       })
       onClose()
     } catch (err) {
-      const detail = (err as { response?: { data?: { detail?: string } } })
-        ?.response?.data?.detail
-      toast.error(detail ?? 'Ошибка создания платежа. Попробуйте снова.')
+      const data = (err as { response?: { data?: { detail?: string; errorCode?: string } } })
+        ?.response?.data
+      toast.error(data?.detail ?? 'Ошибка создания платежа. Попробуйте снова.')
+      if (data?.errorCode === 'MEASUREMENT_REQUIRED_FOR_PAYMENT') onClose()
     }
   }
 
@@ -100,14 +100,7 @@ export function AddPaymentDialog({ leadId, hasMeasurements, onClose }: Props) {
             <Label htmlFor="pay-kind">Тип платежа</Label>
             <select id="pay-kind" {...register('kind')} className={SELECT_CLASS}>
               {(Object.entries(KIND_LABELS) as [FormValues['kind'], string][]).map(([v, label]) => (
-                <option
-                  key={v}
-                  value={v}
-                  disabled={v === 'Deposit' && !hasMeasurements}
-                  title={v === 'Deposit' && !hasMeasurements ? 'Сначала создайте замер' : undefined}
-                >
-                  {label}
-                </option>
+                <option key={v} value={v}>{label}</option>
               ))}
             </select>
           </div>

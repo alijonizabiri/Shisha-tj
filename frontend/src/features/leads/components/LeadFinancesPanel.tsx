@@ -117,9 +117,17 @@ export function LeadFinancesPanel({ leadId, hasMeasurements }: Props) {
           />
 
           <div className="mt-3 pt-3 border-t border-border">
-            <Button size="sm" variant="outline" onClick={() => setAddPaymentOpen(true)}>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={!hasMeasurements}
+              onClick={() => setAddPaymentOpen(true)}
+            >
               + Добавить платёж
             </Button>
+            {!hasMeasurements && (
+              <p className="mt-1.5 text-xs text-muted-foreground">Сначала создайте замер</p>
+            )}
           </div>
         </div>
       )}
@@ -127,7 +135,6 @@ export function LeadFinancesPanel({ leadId, hasMeasurements }: Props) {
       {addPaymentOpen && (
         <AddPaymentDialog
           leadId={leadId}
-          hasMeasurements={hasMeasurements}
           onClose={() => setAddPaymentOpen(false)}
         />
       )}

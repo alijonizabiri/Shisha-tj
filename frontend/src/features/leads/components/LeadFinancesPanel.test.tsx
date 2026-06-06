@@ -41,16 +41,27 @@ describe('LeadFinancesPanel — Добавить платёж button', () => {
     } as ReturnType<typeof api.useLeadFinances>)
   })
 
-  it('button is present and not disabled when hasMeasurements=false', () => {
+  it('button is disabled and hint is shown when hasMeasurements=false', () => {
     render(<LeadFinancesPanel leadId="lead-1" hasMeasurements={false} />)
     const btn = screen.getByRole('button', { name: /Добавить платёж/i })
-    expect(btn).toBeTruthy()
+    expect((btn as HTMLButtonElement).disabled).toBe(true)
+    expect(screen.getByText('Сначала создайте замер')).toBeTruthy()
+  })
+
+  it('button is enabled when hasMeasurements=true', () => {
+    render(<LeadFinancesPanel leadId="lead-1" hasMeasurements={true} />)
+    const btn = screen.getByRole('button', { name: /Добавить платёж/i })
     expect((btn as HTMLButtonElement).disabled).toBe(false)
   })
 
-  it('clicking button opens AddPaymentDialog', async () => {
+  it('hint is not shown when hasMeasurements=true', () => {
+    render(<LeadFinancesPanel leadId="lead-1" hasMeasurements={true} />)
+    expect(screen.queryByText('Сначала создайте замер')).toBeNull()
+  })
+
+  it('clicking button opens AddPaymentDialog when hasMeasurements=true', async () => {
     const user = userEvent.setup()
-    render(<LeadFinancesPanel leadId="lead-1" hasMeasurements={false} />)
+    render(<LeadFinancesPanel leadId="lead-1" hasMeasurements={true} />)
 
     await user.click(screen.getByRole('button', { name: /Добавить платёж/i }))
 

@@ -5,7 +5,9 @@ import { AddPaymentDialog } from './AddPaymentDialog'
 import * as api from '../api'
 
 vi.mock('../api')
-vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
+
+const mockToast = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }))
+vi.mock('sonner', () => ({ toast: mockToast }))
 
 const mockUseCreatePayment = vi.mocked(api.useCreatePayment)
 
@@ -16,10 +18,8 @@ const DEFAULT_MUTATION = {
   error: null,
 }
 
-function renderDialog(hasMeasurements: boolean, onClose = vi.fn()) {
-  return render(
-    <AddPaymentDialog leadId="lead-1" hasMeasurements={hasMeasurements} onClose={onClose} />,
-  )
+function renderDialog(onClose = vi.fn()) {
+  return render(<AddPaymentDialog leadId="lead-1" onClose={onClose} />)
 }
 
 describe('AddPaymentDialog', () => {
@@ -30,80 +30,77 @@ describe('AddPaymentDialog', () => {
     )
   })
 
-  describe('without measurements (hasMeasurements=false)', () => {
-    it('defaults to Balance, not Deposit', () => {
-      renderDialog(false)
-      const select = screen.getByLabelText('Тип платежа') as HTMLSelectElement
-      expect(select.value).toBe('Balance')
-    })
-
-    it('Deposit option is disabled', () => {
-      renderDialog(false)
-      const depositOption = screen.getByRole('option', { name: 'Аванс' }) as HTMLOptionElement
-      expect(depositOption.disabled).toBe(true)
-    })
-
-    it('Deposit option has a title hint', () => {
-      renderDialog(false)
-      const depositOption = screen.getByRole('option', { name: 'Аванс' }) as HTMLOptionElement
-      expect(depositOption.title).toBe('Сначала создайте замер')
-    })
-
-    it('submit button is enabled by default (Balance selected)', () => {
-      renderDialog(false)
-      const btn = screen.getByRole('button', { name: /Добавить/i })
-      expect((btn as HTMLButtonElement).disabled).toBe(false)
-    })
-
-    it('Balance option is enabled and submittable', async () => {
-      const user = userEvent.setup()
-      renderDialog(false)
-
-      await user.type(screen.getByLabelText('Сумма (сом)'), '500')
-      await user.click(screen.getByRole('button', { name: /Добавить/i }))
-
-      expect(DEFAULT_MUTATION.mutateAsync).toHaveBeenCalledWith(
-        expect.objectContaining({ kind: 'Balance', amountTjs: 500 }),
-      )
-    })
-
-    it('Refund option is enabled and submittable', async () => {
-      const user = userEvent.setup()
-      renderDialog(false)
-
-      await user.selectOptions(screen.getByLabelText('Тип платежа'), 'Refund')
-      await user.type(screen.getByLabelText('Сумма (сом)'), '200')
-      await user.click(screen.getByRole('button', { name: /Добавить/i }))
-
-      expect(DEFAULT_MUTATION.mutateAsync).toHaveBeenCalledWith(
-        expect.objectContaining({ kind: 'Refund', amountTjs: -200 }),
-      )
-    })
+  it('defaults to Deposit', () => {
+    renderDialog()
+    const select = screen.getByLabelText('Тип платежа') as HTMLSelectElement
+    expect(select.value).toBe('Deposit')
   })
 
-  describe('with measurements (hasMeasurements=true)', () => {
-    it('defaults to Deposit', () => {
-      renderDialog(true)
-      const select = screen.getByLabelText('Тип платежа') as HTMLSelectElement
-      expect(select.value).toBe('Deposit')
-    })
+  it('all three options are enabled', () => {
+    renderDialog()
+    const options = screen.getAllByRole('option') as HTMLOptionElement[]
+    expect(options).toHaveLength(3)
+    options.forEach((opt) => expect(opt.disabled).toBe(false))
+  })
 
-    it('all three options are enabled', () => {
-      renderDialog(true)
-      const options = screen.getAllByRole('option') as HTMLOptionElement[]
-      options.forEach((opt) => expect(opt.disabled).toBe(false))
-    })
+  it('submit button is enabled', () => {
+    renderDialog()
+    const btn = screen.getByRole('button', { name: /Добавить/i })
+    expect((btn as HTMLButtonElement).disabled).toBe(false)
+  })
 
-    it('Deposit is submittable', async () => {
-      const user = userEvent.setup()
-      renderDialog(true)
+  it('Balance is submittable', async () => {
+    const user = userEvent.setup()
+    renderDialog()
 
-      await user.type(screen.getByLabelText('Сумма (сом)'), '1000')
-      await user.click(screen.getByRole('button', { name: /Добавить/i }))
+    await user.selectOptions(screen.getByLabelText('Тип платежа'), 'Balance')
+    await user.type(screen.getByLabelText('Сумма (сом)'), '500')
+    await user.click(screen.getByRole('button', { name: /Добавить/i }))
 
-      expect(DEFAULT_MUTATION.mutateAsync).toHaveBeenCalledWith(
-        expect.objectContaining({ kind: 'Deposit', amountTjs: 1000 }),
-      )
-    })
+    expect(DEFAULT_MUTATION.mutateAsync).toHaveBeenCalledWith(
+      expect.objectContaining({ kind: 'Balance', amountTjs: 500 }),
+    )
+  })
+
+  it('on MEASUREMENT_REQUIRED_FOR_PAYMENT error → toast.error + onClose', async () => {
+    const user = userEvent.setup()
+    const onClose = vi.fn()
+    const error = {
+      response: {
+        data: {
+          detail: 'Нельзя добавить платёж: у лида нет замера. Создайте замер в Дизайнере.',
+          errorCode: 'MEASUREMENT_REQUIRED_FOR_PAYMENT',
+        },
+      },
+    }
+    mockUseCreatePayment.mockReturnValue({
+      ...DEFAULT_MUTATION,
+      mutateAsync: vi.fn().mockRejectedValue(error),
+    } as unknown as ReturnType<typeof api.useCreatePayment>)
+
+    renderDialog(onClose)
+    await user.type(screen.getByLabelText('Сумма (сом)'), '500')
+    await user.click(screen.getByRole('button', { name: /Добавить/i }))
+
+    expect(mockToast.error).toHaveBeenCalledWith(
+      'Нельзя добавить платёж: у лида нет замера. Создайте замер в Дизайнере.',
+    )
+    expect(onClose).toHaveBeenCalled()
+  })
+
+  it('on generic error → toast.error, dialog stays open', async () => {
+    const user = userEvent.setup()
+    const onClose = vi.fn()
+    mockUseCreatePayment.mockReturnValue({
+      ...DEFAULT_MUTATION,
+      mutateAsync: vi.fn().mockRejectedValue(new Error('network')),
+    } as unknown as ReturnType<typeof api.useCreatePayment>)
+
+    renderDialog(onClose)
+    await user.type(screen.getByLabelText('Сумма (сом)'), '500')
+    await user.click(screen.getByRole('button', { name: /Добавить/i }))
+
+    expect(mockToast.error).toHaveBeenCalledWith('Ошибка создания платежа. Попробуйте снова.')
+    expect(onClose).not.toHaveBeenCalled()
   })
 })
