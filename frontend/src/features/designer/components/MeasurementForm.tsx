@@ -1,4 +1,4 @@
-import { type UseFormReturn } from 'react-hook-form'
+import { Controller, type UseFormReturn } from 'react-hook-form'
 import { cn } from '@/shared/lib/cn'
 import { Button } from '@/shared/ui/button'
 import { Input } from '@/shared/ui/input'
@@ -10,14 +10,7 @@ import {
   GlassColorValues,
   HardwareColorValues,
 } from '../schemas'
-import type { DesignerLeadOption } from '../api'
-
-const STATUS_LABELS: Record<string, string> = {
-  Measurement:      'Замер',
-  Buying:           'Покупает',
-  OrderedAtFactory: 'Заказ на завод',
-  GlassArrived:     'Стекло пришло',
-}
+import { LeadCombobox } from './LeadCombobox'
 
 const SELECT_CLASS =
   'flex h-10 w-full cursor-pointer rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50'
@@ -25,15 +18,15 @@ const SELECT_CLASS =
 interface Props {
   form: UseFormReturn<MeasurementFormValues>
   onSubmit: (values: MeasurementFormValues) => void
-  leads: DesignerLeadOption[]
   isLoading?: boolean
   disableLeadSelector?: boolean
 }
 
-export function MeasurementForm({ form, onSubmit, leads, isLoading = false, disableLeadSelector = false }: Props) {
+export function MeasurementForm({ form, onSubmit, isLoading = false, disableLeadSelector = false }: Props) {
   const {
     register,
     handleSubmit,
+    control,
     watch,
     formState: { errors },
   } = form
@@ -49,20 +42,19 @@ export function MeasurementForm({ form, onSubmit, leads, isLoading = false, disa
           Лид
         </h2>
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="leadId">Клиент *</Label>
-          <select
-            id="leadId"
-            {...register('leadId')}
-            className={SELECT_CLASS}
-            disabled={disableLeadSelector}
-          >
-            <option value="">— Выберите лид —</option>
-            {leads.map((l) => (
-              <option key={l.id} value={l.id}>
-                {l.name} · {STATUS_LABELS[l.status] ?? l.status}
-              </option>
-            ))}
-          </select>
+          <Label htmlFor="lead-combobox">Клиент *</Label>
+          <Controller
+            control={control}
+            name="leadId"
+            render={({ field }) => (
+              <LeadCombobox
+                id="lead-combobox"
+                value={field.value}
+                onChange={field.onChange}
+                disabled={disableLeadSelector}
+              />
+            )}
+          />
           {errors.leadId && <p className="text-xs text-destructive">{errors.leadId.message}</p>}
         </div>
       </section>

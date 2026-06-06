@@ -58,26 +58,49 @@ export interface MeasurementApiResponse {
 export interface DesignerLeadOption {
   id: string
   name: string
+  phone: string
   status: string
 }
 
-const DESIGNER_STATUSES = new Set(['Measurement', 'Buying', 'OrderedAtFactory', 'GlassArrived'])
+const DESIGNER_STATUSES = ['Measurement', 'Buying', 'OrderedAtFactory', 'GlassArrived'] as const
 
-export function useDesignerLeads() {
+interface LeadListItem {
+  id: string
+  name: string
+  phone: string
+  status: string
+}
+
+interface LeadPage {
+  items: LeadListItem[]
+  totalCount: number
+}
+
+export function useDesignerLeads(search?: string) {
   return useQuery<DesignerLeadOption[]>({
-    queryKey: ['designer-leads'],
-    queryFn: () =>
-      apiClient
-        .get<{ columns: { status: string; items: { id: string; name: string; status: string }[] }[] }>(
-          '/api/v1/leads/kanban',
-        )
-        .then((r) =>
-          r.data.columns
-            .filter((c) => DESIGNER_STATUSES.has(c.status))
-            .flatMap((c) =>
-              c.items.map((i): DesignerLeadOption => ({ id: i.id, name: i.name, status: i.status })),
-            ),
+    queryKey: ['designer-leads', search ?? ''],
+    queryFn: async () => {
+      const pages = await Promise.all(
+        DESIGNER_STATUSES.map((status) =>
+          apiClient
+            .get<LeadPage>('/api/v1/leads', {
+              params: {
+                status,
+                pageSize: 100,
+                page: 1,
+                ...(search ? { search } : {}),
+              },
+            })
+            .then((r) => r.data.items),
         ),
+      )
+      return pages.flat().map((l) => ({
+        id: l.id,
+        name: l.name,
+        phone: l.phone ?? '',
+        status: l.status,
+      }))
+    },
     staleTime: 30_000,
   })
 }

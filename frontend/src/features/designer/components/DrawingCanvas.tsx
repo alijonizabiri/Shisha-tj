@@ -8,6 +8,10 @@ import { Hole } from './Hole'
 const PAD = 60   // mm padding around the drawing for dimension labels
 const TICK = 6   // half-length of dimension tick marks in mm
 
+const MIN_ZOOM = 0.25
+const MAX_ZOOM = 3
+const STEP = 0.1
+
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 function xPositions(panels: Panel[]): number[] {
@@ -18,6 +22,10 @@ function xPositions(panels: Panel[]): number[] {
     cursor += p.widthMm
   }
   return xs
+}
+
+function clampZoom(z: number): number {
+  return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, Math.round(z * 10) / 10))
 }
 
 // ── Sub-components ────────────────────────────────────────────────────────────
@@ -72,6 +80,7 @@ export function DrawingCanvas({
   className,
 }: DrawingCanvasProps) {
   const [holes, setHoles] = useState<HoleData[][]>(initialHoles)
+  const [zoom, setZoom] = useState(1)
 
   const handleHoleMove = useCallback(
     (panelIdx: number, holeIdx: number, xMm: number, yMm: number) => {
@@ -94,63 +103,120 @@ export function DrawingCanvas({
   const heightMm = panels[0].heightMm
   const xs = xPositions(panels)
 
+  // ViewBox zoom — scale from center so content stays centered at any zoom level
+  const fullW = totalWidthMm + PAD * 2
+  const fullH = heightMm + PAD * 2
+  const scaledW = fullW / zoom
+  const scaledH = fullH / zoom
+  const vbX = -PAD + (fullW - scaledW) / 2
+  const vbY = -PAD + (fullH - scaledH) / 2
+
+  function adjustZoom(delta: number) {
+    setZoom((z) => clampZoom(z + delta))
+  }
+
+  function handleWheel(e: React.WheelEvent<HTMLDivElement>) {
+    if (!e.ctrlKey && !e.metaKey) return
+    e.preventDefault()
+    adjustZoom(e.deltaY < 0 ? STEP : -STEP)
+  }
+
   return (
-    <svg
-      viewBox={`${-PAD} ${-PAD} ${totalWidthMm + PAD * 2} ${heightMm + PAD * 2}`}
-      className={cn('w-full', className)}
-      aria-label="Чертёж кабины"
+    <div
+      className={cn('relative h-full w-full', className)}
+      onWheel={handleWheel}
     >
-      {/* ── Panels ── */}
-      {panels.map((panel, i) => (
-        <g key={`panel-${i}`}>
-          <rect
-            x={xs[i]} y={0} width={panel.widthMm} height={heightMm}
-            fill={panel.isDoor ? '#dbeafe' : '#f8fafc'}
-            stroke="#334155" strokeWidth={2}
-          />
-          {panel.isDoor && (
-            <line
-              x1={xs[i] + 2} y1={6}
-              x2={xs[i] + panel.widthMm - 2} y2={6}
-              stroke="#3b82f6" strokeWidth={4} strokeLinecap="round"
+      {/* ── Zoom controls ── */}
+      <div className="absolute right-3 top-3 z-10 flex items-center gap-0.5 rounded-md border border-border bg-card/90 p-1 shadow-sm backdrop-blur-sm">
+        <button
+          type="button"
+          onClick={() => adjustZoom(-STEP)}
+          disabled={zoom <= MIN_ZOOM}
+          aria-label="Уменьшить"
+          className="flex h-7 w-7 items-center justify-center rounded text-base hover:bg-accent disabled:opacity-40"
+        >
+          −
+        </button>
+        <span className="min-w-[3.25rem] text-center text-xs tabular-nums text-foreground">
+          {Math.round(zoom * 100)}%
+        </span>
+        <button
+          type="button"
+          onClick={() => adjustZoom(STEP)}
+          disabled={zoom >= MAX_ZOOM}
+          aria-label="Увеличить"
+          className="flex h-7 w-7 items-center justify-center rounded text-base hover:bg-accent disabled:opacity-40"
+        >
+          +
+        </button>
+        <button
+          type="button"
+          onClick={() => setZoom(1)}
+          aria-label="Сброс зума"
+          className="ml-0.5 h-7 rounded px-2 text-xs hover:bg-accent"
+        >
+          Сброс
+        </button>
+      </div>
+
+      <svg
+        viewBox={`${vbX} ${vbY} ${scaledW} ${scaledH}`}
+        className="h-full w-full"
+        preserveAspectRatio="xMidYMid meet"
+        aria-label="Чертёж кабины"
+      >
+        {/* ── Panels ── */}
+        {panels.map((panel, i) => (
+          <g key={`panel-${i}`}>
+            <rect
+              x={xs[i]} y={0} width={panel.widthMm} height={heightMm}
+              fill={panel.isDoor ? '#dbeafe' : '#f8fafc'}
+              stroke="#334155" strokeWidth={2}
             />
-          )}
-          <text
-            x={xs[i] + panel.widthMm / 2} y={heightMm - 20}
-            textAnchor="middle" fontSize={22} fill="#94a3b8"
-          >
-            {panel.isDoor ? 'Дверь' : 'Глухое'}
-          </text>
-        </g>
-      ))}
+            {panel.isDoor && (
+              <line
+                x1={xs[i] + 2} y1={6}
+                x2={xs[i] + panel.widthMm - 2} y2={6}
+                stroke="#3b82f6" strokeWidth={4} strokeLinecap="round"
+              />
+            )}
+            <text
+              x={xs[i] + panel.widthMm / 2} y={heightMm - 20}
+              textAnchor="middle" fontSize={22} fill="#94a3b8"
+            >
+              {panel.isDoor ? 'Дверь' : 'Глухое'}
+            </text>
+          </g>
+        ))}
 
-      {/* ── Draggable holes ── */}
-      {panels.map((panel, i) =>
-        (holes[i] ?? []).map((hole, j) => (
-          <Hole
-            key={`hole-${i}-${j}`}
-            xMm={hole.xMm}
-            yMm={hole.yMm}
-            radiusMm={hole.radiusMm}
-            holeType={hole.holeType}
-            panelX={xs[i]}
-            panelWidthMm={panel.widthMm}
-            panelHeightMm={panel.heightMm}
-            onMove={(x, y) => handleHoleMove(i, j, x, y)}
+        {/* ── Draggable holes ── */}
+        {panels.map((panel, i) =>
+          (holes[i] ?? []).map((hole, j) => (
+            <Hole
+              key={`hole-${i}-${j}`}
+              xMm={hole.xMm}
+              yMm={hole.yMm}
+              radiusMm={hole.radiusMm}
+              holeType={hole.holeType}
+              panelX={xs[i]}
+              panelWidthMm={panel.widthMm}
+              panelHeightMm={panel.heightMm}
+              onMove={(x, y) => handleHoleMove(i, j, x, y)}
+            />
+          )),
+        )}
+
+        {/* ── Dimension lines ── */}
+        {panels.map((panel, i) => (
+          <HorizDim
+            key={`dim-w-${i}`}
+            x1={xs[i]} x2={xs[i] + panel.widthMm}
+            y={heightMm + 22} label={`${panel.widthMm}`}
           />
-        )),
-      )}
-
-      {/* ── Dimension lines ── */}
-      {panels.map((panel, i) => (
-        <HorizDim
-          key={`dim-w-${i}`}
-          x1={xs[i]} x2={xs[i] + panel.widthMm}
-          y={heightMm + 22} label={`${panel.widthMm}`}
-        />
-      ))}
-      <HorizDim x1={0} x2={totalWidthMm} y={heightMm + 50} label={`${totalWidthMm}`} bold />
-      <VertDim x={totalWidthMm + 22} y1={0} y2={heightMm} label={`${heightMm}`} />
-    </svg>
+        ))}
+        <HorizDim x1={0} x2={totalWidthMm} y={heightMm + 50} label={`${totalWidthMm}`} bold />
+        <VertDim x={totalWidthMm + 22} y1={0} y2={heightMm} label={`${heightMm}`} />
+      </svg>
+    </div>
   )
 }

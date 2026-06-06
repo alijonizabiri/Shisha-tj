@@ -181,7 +181,6 @@ export function DesignerPage() {
           <MeasurementForm
             form={form}
             onSubmit={handleSave}
-            leads={leads}
             isLoading={saveMutation.isPending}
             disableLeadSelector={!!leadIdFromUrl}
           />
@@ -226,13 +225,14 @@ export function DesignerPage() {
             {warning}
           </div>
         )}
-        <div className="flex-1 overflow-auto p-4">
+        <div className="flex-1 min-h-0 p-4">
           {panels.length > 0 ? (
             <DrawingCanvas
               key={canvasKey}
               panels={panels}
               holesByPanel={holesByPanel}
               onHolesChange={(holes) => setHoleTracker({ key: canvasKey, holes })}
+              className="h-full"
             />
           ) : (
             <div className="flex h-full items-center justify-center">

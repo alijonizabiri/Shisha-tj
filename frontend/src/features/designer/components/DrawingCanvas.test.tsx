@@ -1,4 +1,4 @@
-import { render } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { computePanels } from '../lib/computePanels'
 import { defaultHoles } from '../lib/defaultHoles'
@@ -27,7 +27,7 @@ describe('DrawingCanvas', () => {
     expect(circles.length).toBe(totalHoles)
   })
 
-  it('viewBox includes PAD on all sides', () => {
+  it('viewBox includes PAD on all sides at zoom 1', () => {
     const { container } = render(<DrawingCanvas panels={panels} holesByPanel={holesByPanel} />)
     const svg = container.querySelector('svg')!
     const vb = svg.getAttribute('viewBox')!
@@ -49,5 +49,34 @@ describe('DrawingCanvas', () => {
     const { container } = render(<DrawingCanvas panels={p3} holesByPanel={h3} />)
     const rects = container.querySelectorAll('rect')
     expect(rects.length).toBe(3)
+  })
+})
+
+describe('DrawingCanvas zoom controls', () => {
+  it('starts at 100%', () => {
+    render(<DrawingCanvas panels={panels} holesByPanel={holesByPanel} />)
+    expect(screen.getByText('100%')).toBeTruthy()
+  })
+
+  it('+ button increases zoom to 110%', () => {
+    render(<DrawingCanvas panels={panels} holesByPanel={holesByPanel} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Увеличить' }))
+    expect(screen.getByText('110%')).toBeTruthy()
+  })
+
+  it('− button decreases zoom back to 100%', () => {
+    render(<DrawingCanvas panels={panels} holesByPanel={holesByPanel} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Увеличить' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Уменьшить' }))
+    expect(screen.getByText('100%')).toBeTruthy()
+  })
+
+  it('Сброс button returns to 100% from any zoom', () => {
+    render(<DrawingCanvas panels={panels} holesByPanel={holesByPanel} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Увеличить' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Увеличить' }))
+    expect(screen.getByText('120%')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Сброс зума' }))
+    expect(screen.getByText('100%')).toBeTruthy()
   })
 })
