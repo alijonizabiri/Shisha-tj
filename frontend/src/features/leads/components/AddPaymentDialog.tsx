@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
+import { toast } from 'sonner'
 import { useCreatePayment } from '../api'
 import { Button } from '@/shared/ui/button'
 import { Input } from '@/shared/ui/input'
@@ -40,17 +41,15 @@ interface Props {
 export function AddPaymentDialog({ leadId, hasMeasurements, onClose }: Props) {
   const createPayment = useCreatePayment(leadId)
 
-  const { register, handleSubmit, watch, formState: { errors, isSubmitting } } = useForm<FormValues>({
+  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
-      kind:      'Deposit',
+      kind:      hasMeasurements ? 'Deposit' : 'Balance',
       amountStr: '',
       paidAt:    new Date().toISOString().split('T')[0],
       note:      '',
     },
   })
-
-  const selectedKind = watch('kind')
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
@@ -59,24 +58,22 @@ export function AddPaymentDialog({ leadId, hasMeasurements, onClose }: Props) {
   }, [onClose])
 
   async function onSubmit(values: FormValues) {
-    const amount = Number(values.amountStr)
-    await createPayment.mutateAsync({
-      leadId,
-      amountTjs: values.kind === 'Refund' ? -amount : amount,
-      kind: values.kind,
-      paidAt: values.paidAt,
-      note: values.note || null,
-    })
-    onClose()
+    try {
+      const amount = Number(values.amountStr)
+      await createPayment.mutateAsync({
+        leadId,
+        amountTjs: values.kind === 'Refund' ? -amount : amount,
+        kind: values.kind,
+        paidAt: values.paidAt,
+        note: values.note || null,
+      })
+      onClose()
+    } catch (err) {
+      const detail = (err as { response?: { data?: { detail?: string } } })
+        ?.response?.data?.detail
+      toast.error(detail ?? 'Ошибка создания платежа. Попробуйте снова.')
+    }
   }
-
-  const depositBlocked = !hasMeasurements && selectedKind === 'Deposit'
-
-  // Extract server error code for race-condition guard
-  const serverErrorCode = createPayment.isError
-    ? (createPayment.error as { response?: { data?: { errorCode?: string } } })
-        ?.response?.data?.errorCode
-    : undefined
 
   return createPortal(
     <div
@@ -103,16 +100,16 @@ export function AddPaymentDialog({ leadId, hasMeasurements, onClose }: Props) {
             <Label htmlFor="pay-kind">Тип платежа</Label>
             <select id="pay-kind" {...register('kind')} className={SELECT_CLASS}>
               {(Object.entries(KIND_LABELS) as [FormValues['kind'], string][]).map(([v, label]) => (
-                <option key={v} value={v} disabled={v === 'Deposit' && !hasMeasurements}>
-                  {label}{v === 'Deposit' && !hasMeasurements ? ' (нет замера)' : ''}
+                <option
+                  key={v}
+                  value={v}
+                  disabled={v === 'Deposit' && !hasMeasurements}
+                  title={v === 'Deposit' && !hasMeasurements ? 'Сначала создайте замер' : undefined}
+                >
+                  {label}
                 </option>
               ))}
             </select>
-            {!hasMeasurements && selectedKind === 'Deposit' && (
-              <p className="text-xs text-muted-foreground">
-                Сначала создайте замер в Дизайнере.
-              </p>
-            )}
           </div>
 
           {/* Amount */}
@@ -146,24 +143,12 @@ export function AddPaymentDialog({ leadId, hasMeasurements, onClose }: Props) {
             <Input id="pay-note" placeholder="Необязательно" {...register('note')} />
           </div>
 
-          {createPayment.isError && (
-            <p className="text-sm text-destructive">
-              {serverErrorCode === 'MEASUREMENT_REQUIRED_FOR_DEPOSIT'
-                ? 'Нельзя принять депозит: у лида нет замера. Создайте замер в Дизайнере.'
-                : 'Ошибка создания платежа. Попробуйте снова.'}
-            </p>
-          )}
-
           {/* Footer */}
           <div className="flex gap-3 pt-1">
             <Button type="button" variant="outline" onClick={onClose} className="flex-1">
               Отмена
             </Button>
-            <Button
-              type="submit"
-              disabled={isSubmitting || depositBlocked}
-              className="flex-1"
-            >
+            <Button type="submit" disabled={isSubmitting} className="flex-1">
               {isSubmitting ? 'Сохранение…' : 'Добавить'}
             </Button>
           </div>

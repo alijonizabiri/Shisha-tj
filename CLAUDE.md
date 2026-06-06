@@ -164,12 +164,12 @@ For `[FULL]` steps:
 ## Current Status
 
 **Phase:** 4 — Analytics
-**Last completed:** Phase 3.5 Step 8.1 [FULL] — Депозит запрещён без замера + кнопка "Создать замер" + DesignerPage ?leadId=
-**Last commit:** Phase 3.5 Step 8.1 [FULL]: deposit requires measurement + create-measurement button
+**Last completed:** Phase 3.5 Step 8.1 fix [FE] — Deposit-only restriction in dialog, not on button
+**Last commit:** Phase 3.5 Step 8.1 fix [FE]: deposit-only restriction in payment dialog, not on button
 **Next step:** Phase 4 Step 1 [BE] — Endpoints: dashboard, funnel, refusals, by-product, by-color, by-measurer
 **Build BE:** ✅ 0 warnings, 0 errors
 **Build FE:** ✅ typecheck + lint + build passing
-**Tests:** ✅ BE 90/90 | FE 79/79
+**Tests:** ✅ BE 90/90 | FE 90/90
 **Updated:** 2026-06-06
 
 ## Completed Phases
