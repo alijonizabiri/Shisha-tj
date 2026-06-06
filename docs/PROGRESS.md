@@ -109,7 +109,7 @@ Update via `/done` command after each completed step.
 - [x] Step 3 [FE] — Dashboard page (KPIs + revenue chart)
 - [x] Step 4 [FE] — Funnel visualization (horizontal bar)
 - [x] Step 5 [FE] — Refusal reasons table
-- [ ] Step 6 [FE] — Color popularity pie charts
+- [x] Step 6 [FE] — Color popularity pie charts
 - [ ] Step 7 [FE] — Date range filter (month / quarter / year / custom)
 - [ ] **Phase 4 complete** → tag `v0.5-analytics`
 

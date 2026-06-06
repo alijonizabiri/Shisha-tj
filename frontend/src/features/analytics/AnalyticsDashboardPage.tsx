@@ -1,15 +1,17 @@
 import { formatMoney } from '@/shared/lib/formatMoney'
-import { useAnalyticsDashboard, useAnalyticsByProduct, useAnalyticsFunnel, useAnalyticsRefusals } from './api'
+import { useAnalyticsDashboard, useAnalyticsByProduct, useAnalyticsFunnel, useAnalyticsRefusals, useAnalyticsByColor } from './api'
 import { KpiCard } from './components/KpiCard'
 import { RevenueByProductChart } from './components/RevenueByProductChart'
 import { FunnelChart } from './components/FunnelChart'
 import { RefusalsTable } from './components/RefusalsTable'
+import { ColorPieChart } from './components/ColorPieChart'
 
 export function AnalyticsDashboardPage() {
   const { data: dash, isLoading: dashLoading } = useAnalyticsDashboard()
   const { data: byProduct, isLoading: productLoading } = useAnalyticsByProduct()
   const { data: funnel, isLoading: funnelLoading } = useAnalyticsFunnel()
   const { data: refusals, isLoading: refusalsLoading } = useAnalyticsRefusals()
+  const { data: byColor, isLoading: colorLoading } = useAnalyticsByColor()
 
   return (
     <div className="space-y-8 p-6">
@@ -75,16 +77,28 @@ export function AnalyticsDashboardPage() {
         </div>
       </div>
 
-      {/* ── Refusal reasons ───────────────────────────────────────────────── */}
-      <div className="rounded-lg border border-border bg-card p-5">
-        <h2 className="mb-4 text-base font-medium">Причины отказов</h2>
-        {refusalsLoading ? (
-          <div className="h-32 animate-pulse rounded-md bg-muted" />
-        ) : (
-          <RefusalsTable
-            data={refusals ?? { reasons: [], totalRefused: 0 }}
-          />
-        )}
+      {/* ── Refusals + Colors row ─────────────────────────────────────────── */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        <div className="rounded-lg border border-border bg-card p-5">
+          <h2 className="mb-4 text-base font-medium">Причины отказов</h2>
+          {refusalsLoading ? (
+            <div className="h-32 animate-pulse rounded-md bg-muted" />
+          ) : (
+            <RefusalsTable data={refusals ?? { reasons: [], totalRefused: 0 }} />
+          )}
+        </div>
+
+        <div className="rounded-lg border border-border bg-card p-5">
+          <h2 className="mb-4 text-base font-medium">Популярность цветов</h2>
+          {colorLoading ? (
+            <div className="h-48 animate-pulse rounded-md bg-muted" />
+          ) : (
+            <div className="space-y-6">
+              <ColorPieChart title="Цвет стекла" data={byColor?.glassColors ?? []} />
+              <ColorPieChart title="Цвет фурнитуры" data={byColor?.hardwareColors ?? []} />
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )

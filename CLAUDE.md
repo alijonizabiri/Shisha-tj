@@ -164,9 +164,9 @@ For `[FULL]` steps:
 ## Current Status
 
 **Phase:** 4 — Analytics
-**Last completed:** Phase 4 Step 5 [FE] — Refusal reasons table with percentage bars
-**Last commit:** Phase 4 Step 5 [FE]: refusal reasons table with inline percentage bars
-**Next step:** Phase 4 Step 6 [FE] — Color popularity pie charts
+**Last completed:** Phase 4 Step 6 [FE] — Color popularity pie charts (glass + hardware, donut style)
+**Last commit:** Phase 4 Step 6 [FE]: color popularity donut pie charts with legend
+**Next step:** Phase 4 Step 7 [FE] — Date range filter (month / quarter / year / custom)
 **Build BE:** ✅ 0 warnings, 0 errors
 **Build FE:** ✅ typecheck + lint + build passing
 **Tests:** ✅ BE 101/101 | FE 89/89
