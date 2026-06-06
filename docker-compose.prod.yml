@@ -1,0 +1,90 @@
+services:
+
+  # ── Backend API ──────────────────────────────────────────────────────────────
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__Default: >-
+        Host=db;Port=5432;Database=${POSTGRES_DB};
+        Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};
+        Pooling=true;MaxPoolSize=20
+      Jwt__SecretKey: ${JWT_SECRET}
+      Jwt__Issuer: shisha-tj
+      Jwt__Audience: shisha-tj-api
+      Jwt__AccessTokenMinutes: "15"
+      Jwt__RefreshTokenDays: "7"
+      Serilog__WriteTo__2__Args__serverUrl: http://seq:5341
+      Serilog__WriteTo__2__Args__apiKey: ${SEQ_API_KEY:-}
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  # ── Frontend (nginx static + SSL + API proxy) ─────────────────────────────
+  web:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN}
+    volumes:
+      # nginx template — processed at startup with envsubst (nginx 1.19+ feature)
+      - ./frontend/nginx.prod.conf.template:/etc/nginx/templates/default.conf.template:ro
+      # Let's Encrypt certs — run certbot on the host first
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+    depends_on:
+      - api
+    networks:
+      - internal
+
+  # ── PostgreSQL ────────────────────────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres-prod-data:/var/lib/postgresql/data
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Seq (structured log viewer) ───────────────────────────────────────────
+  seq:
+    image: datalust/seq:latest
+    restart: unless-stopped
+    environment:
+      ACCEPT_EULA: "Y"
+    volumes:
+      - seq-prod-data:/data
+    networks:
+      - internal
+
+volumes:
+  postgres-prod-data:
+  seq-prod-data:
+
+networks:
+  internal:
+    driver: bridge
