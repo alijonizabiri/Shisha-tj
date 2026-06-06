@@ -1,11 +1,13 @@
 import { formatMoney } from '@/shared/lib/formatMoney'
-import { useAnalyticsDashboard, useAnalyticsByProduct } from './api'
+import { useAnalyticsDashboard, useAnalyticsByProduct, useAnalyticsFunnel } from './api'
 import { KpiCard } from './components/KpiCard'
 import { RevenueByProductChart } from './components/RevenueByProductChart'
+import { FunnelChart } from './components/FunnelChart'
 
 export function AnalyticsDashboardPage() {
   const { data: dash, isLoading: dashLoading } = useAnalyticsDashboard()
   const { data: byProduct, isLoading: productLoading } = useAnalyticsByProduct()
+  const { data: funnel, isLoading: funnelLoading } = useAnalyticsFunnel()
 
   return (
     <div className="space-y-8 p-6">
@@ -50,14 +52,25 @@ export function AnalyticsDashboardPage() {
         </div>
       )}
 
-      {/* ── Revenue by product chart ──────────────────────────────────────── */}
-      <div className="rounded-lg border border-border bg-card p-5">
-        <h2 className="mb-4 text-base font-medium">Выручка по продуктам</h2>
-        {productLoading ? (
-          <div className="h-64 animate-pulse rounded-md bg-muted" />
-        ) : (
-          <RevenueByProductChart data={byProduct?.products ?? []} />
-        )}
+      {/* ── Two-column charts ─────────────────────────────────────────────── */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        <div className="rounded-lg border border-border bg-card p-5">
+          <h2 className="mb-4 text-base font-medium">Выручка по продуктам</h2>
+          {productLoading ? (
+            <div className="h-64 animate-pulse rounded-md bg-muted" />
+          ) : (
+            <RevenueByProductChart data={byProduct?.products ?? []} />
+          )}
+        </div>
+
+        <div className="rounded-lg border border-border bg-card p-5">
+          <h2 className="mb-4 text-base font-medium">Воронка продаж</h2>
+          {funnelLoading ? (
+            <div className="h-64 animate-pulse rounded-md bg-muted" />
+          ) : (
+            <FunnelChart data={funnel?.statuses ?? []} />
+          )}
+        </div>
       </div>
     </div>
   )

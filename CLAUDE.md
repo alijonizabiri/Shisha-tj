@@ -164,9 +164,9 @@ For `[FULL]` steps:
 ## Current Status
 
 **Phase:** 4 — Analytics
-**Last completed:** Phase 4 Step 3 [FE] — Dashboard page (KPIs + revenue by product chart)
-**Last commit:** Phase 4 Step 3 [FE]: analytics dashboard — KPI cards + revenue by product bar chart
-**Next step:** Phase 4 Step 4 [FE] — Funnel visualization (horizontal bar)
+**Last completed:** Phase 4 Step 4 [FE] — Funnel visualization (horizontal bar, all 9 statuses)
+**Last commit:** Phase 4 Step 4 [FE]: funnel chart — horizontal bars per lead status
+**Next step:** Phase 4 Step 5 [FE] — Refusal reasons table
 **Build BE:** ✅ 0 warnings, 0 errors
 **Build FE:** ✅ typecheck + lint + build passing
 **Tests:** ✅ BE 101/101 | FE 89/89

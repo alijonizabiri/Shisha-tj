@@ -107,7 +107,7 @@ Update via `/done` command after each completed step.
 - [x] Step 1 [BE] — Endpoints: dashboard, funnel, refusals, by-product, by-color, by-measurer
 - [x] Step 2 [BE] — Caching (5–15 min in-memory)
 - [x] Step 3 [FE] — Dashboard page (KPIs + revenue chart)
-- [ ] Step 4 [FE] — Funnel visualization (horizontal bar)
+- [x] Step 4 [FE] — Funnel visualization (horizontal bar)
 - [ ] Step 5 [FE] — Refusal reasons table
 - [ ] Step 6 [FE] — Color popularity pie charts
 - [ ] Step 7 [FE] — Date range filter (month / quarter / year / custom)
