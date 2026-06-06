@@ -164,9 +164,9 @@ For `[FULL]` steps:
 ## Current Status
 
 **Phase:** 4 — Analytics
-**Last completed:** Phase 5 Step 3 [DEV] — GitHub Actions CI/CD (build+test on PR, push images + SSH deploy on main)
-**Last commit:** Phase 5 Step 3 [DEV]: GitHub Actions CI/CD workflow
-**Next step:** Phase 5 Step 4 [DEV] — Daily pg_dump → MinIO/S3
+**Last completed:** Phase 5 Step 5 [FE] — PWA manifest + service worker (offline Designer)
+**Last commit:** Phase 5 Step 5 [FE]: PWA — manifest + Workbox service worker, offline Designer
+**Next step:** Phase 5 Step 6 [BE] — Rate limiting + security audit
 **Build BE:** ✅ 0 warnings, 0 errors
 **Build FE:** ✅ typecheck + lint + build passing
 **Tests:** ✅ BE 101/101 | FE 89/89
