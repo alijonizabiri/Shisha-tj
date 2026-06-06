@@ -6,6 +6,7 @@ import { LeadsListPage } from '@/features/leads/LeadsListPage'
 import { LeadsKanbanPage } from '@/features/leads/LeadsKanbanPage'
 import { LeadDetailPage } from '@/features/leads/LeadDetailPage'
 import { FactoryOrdersPage } from '@/features/factory-orders/FactoryOrdersPage'
+import { AnalyticsDashboardPage } from '@/features/analytics/AnalyticsDashboardPage'
 import { AppShell } from './layout/AppShell'
 
 export const router = createBrowserRouter([
@@ -21,14 +22,11 @@ export const router = createBrowserRouter([
         children: [
           {
             path: '/',
-            element: (
-              <div>
-                <h1 className="text-2xl font-bold">Добро пожаловать</h1>
-                <p className="mt-2 text-muted-foreground">
-                  Дашборд появится в Phase 4.
-                </p>
-              </div>
-            ),
+            element: <AnalyticsDashboardPage />,
+          },
+          {
+            path: '/analytics',
+            element: <AnalyticsDashboardPage />,
           },
           {
             path: '/leads',

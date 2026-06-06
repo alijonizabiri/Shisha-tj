@@ -14,4 +14,12 @@ export const queryKeys = {
     list: (filters: unknown) => ['factory-orders', 'list', filters] as const,
     detail: (id: string) => ['factory-orders', id] as const,
   },
+  analytics: {
+    dashboard: (from?: string, to?: string) => ['analytics', 'dashboard', from, to] as const,
+    funnel: (from?: string, to?: string) => ['analytics', 'funnel', from, to] as const,
+    refusals: (from?: string, to?: string) => ['analytics', 'refusals', from, to] as const,
+    byProduct: (from?: string, to?: string) => ['analytics', 'by-product', from, to] as const,
+    byColor: (from?: string, to?: string) => ['analytics', 'by-color', from, to] as const,
+    byMeasurer: (from?: string, to?: string) => ['analytics', 'by-measurer', from, to] as const,
+  },
 }
