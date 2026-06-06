@@ -88,6 +88,9 @@ builder.Services.AddCors(opts =>
               .AllowAnyHeader()
               .AllowAnyMethod()));
 
+// In-memory cache (analytics results)
+builder.Services.AddMemoryCache();
+
 // Health checks
 builder.Services.AddHealthChecks();
 

@@ -164,9 +164,9 @@ For `[FULL]` steps:
 ## Current Status
 
 **Phase:** 4 — Analytics
-**Last completed:** Phase 4 Step 1 [BE] — Analytics endpoints (dashboard, funnel, refusals, by-product, by-color, by-measurer)
-**Last commit:** Phase 4 Step 1 [BE]: analytics endpoints — dashboard, funnel, refusals, by-product, by-color, by-measurer
-**Next step:** Phase 4 Step 2 [BE] — Caching (5–15 min in-memory)
+**Last completed:** Phase 4 Step 2 [BE] — Caching (10 min in-memory, tenant+range keyed)
+**Last commit:** Phase 4 Step 2 [BE]: 10-min in-memory cache for all analytics endpoints
+**Next step:** Phase 4 Step 3 [FE] — Dashboard page (KPIs + revenue chart)
 **Build BE:** ✅ 0 warnings, 0 errors
 **Build FE:** ✅ typecheck + lint + build passing
 **Tests:** ✅ BE 101/101 | FE 89/89

@@ -1,11 +1,16 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
+using Shisha.Application.Abstractions;
 using Shisha.Application.Analytics;
 using Shisha.Domain.Enums;
 using Shisha.Infrastructure.Persistence;
 
 namespace Shisha.Infrastructure.Services;
 
-public sealed class AnalyticsService(AppDbContext db) : IAnalyticsService
+public sealed class AnalyticsService(
+    AppDbContext db,
+    IMemoryCache cache,
+    ICurrentUser currentUser) : IAnalyticsService
 {
     private static readonly LeadStatus[] ClosedStatuses =
         [LeadStatus.Installed, LeadStatus.Closed];
@@ -13,10 +18,24 @@ public sealed class AnalyticsService(AppDbContext db) : IAnalyticsService
     private static readonly LeadStatus[] ActiveExcluded =
         [LeadStatus.Refused, LeadStatus.Closed];
 
+    private static readonly TimeSpan CacheTtl = TimeSpan.FromMinutes(10);
+
+    private string Key(string method, DateOnly? from, DateOnly? to) =>
+        $"analytics:{currentUser.TenantId}:{method}:{from}:{to}";
+
+    private Task<T> GetOrSetAsync<T>(string key, Func<Task<T>> fetch) =>
+        cache.GetOrCreateAsync(key, entry =>
+        {
+            entry.AbsoluteExpirationRelativeToNow = CacheTtl;
+            return fetch();
+        })!;
+
     // ── Dashboard ─────────────────────────────────────────────────────────────
 
-    public async Task<DashboardDto> GetDashboardAsync(
-        DateOnly? from, DateOnly? to, CancellationToken ct = default)
+    public Task<DashboardDto> GetDashboardAsync(DateOnly? from, DateOnly? to, CancellationToken ct = default) =>
+        GetOrSetAsync(Key("dashboard", from, to), () => ComputeDashboardAsync(from, to, ct));
+
+    private async Task<DashboardDto> ComputeDashboardAsync(DateOnly? from, DateOnly? to, CancellationToken ct)
     {
         var q = db.Leads
             .Where(l => (!from.HasValue || l.CallDate >= from)
@@ -47,8 +66,10 @@ public sealed class AnalyticsService(AppDbContext db) : IAnalyticsService
 
     // ── Funnel ────────────────────────────────────────────────────────────────
 
-    public async Task<FunnelDto> GetFunnelAsync(
-        DateOnly? from, DateOnly? to, CancellationToken ct = default)
+    public Task<FunnelDto> GetFunnelAsync(DateOnly? from, DateOnly? to, CancellationToken ct = default) =>
+        GetOrSetAsync(Key("funnel", from, to), () => ComputeFunnelAsync(from, to, ct));
+
+    private async Task<FunnelDto> ComputeFunnelAsync(DateOnly? from, DateOnly? to, CancellationToken ct)
     {
         var counts = await db.Leads
             .Where(l => (!from.HasValue || l.CallDate >= from)
@@ -68,8 +89,10 @@ public sealed class AnalyticsService(AppDbContext db) : IAnalyticsService
 
     // ── Refusals ──────────────────────────────────────────────────────────────
 
-    public async Task<RefusalsDto> GetRefusalsAsync(
-        DateOnly? from, DateOnly? to, CancellationToken ct = default)
+    public Task<RefusalsDto> GetRefusalsAsync(DateOnly? from, DateOnly? to, CancellationToken ct = default) =>
+        GetOrSetAsync(Key("refusals", from, to), () => ComputeRefusalsAsync(from, to, ct));
+
+    private async Task<RefusalsDto> ComputeRefusalsAsync(DateOnly? from, DateOnly? to, CancellationToken ct)
     {
         var groups = await db.Leads
             .Where(l => l.Status == LeadStatus.Refused
@@ -107,8 +130,10 @@ public sealed class AnalyticsService(AppDbContext db) : IAnalyticsService
 
     // ── By product ────────────────────────────────────────────────────────────
 
-    public async Task<ByProductDto> GetByProductAsync(
-        DateOnly? from, DateOnly? to, CancellationToken ct = default)
+    public Task<ByProductDto> GetByProductAsync(DateOnly? from, DateOnly? to, CancellationToken ct = default) =>
+        GetOrSetAsync(Key("by-product", from, to), () => ComputeByProductAsync(from, to, ct));
+
+    private async Task<ByProductDto> ComputeByProductAsync(DateOnly? from, DateOnly? to, CancellationToken ct)
     {
         var rows = await db.Leads
             .Where(l => (!from.HasValue || l.CallDate >= from)
@@ -127,8 +152,10 @@ public sealed class AnalyticsService(AppDbContext db) : IAnalyticsService
 
     // ── By color ──────────────────────────────────────────────────────────────
 
-    public async Task<ByColorDto> GetByColorAsync(
-        DateOnly? from, DateOnly? to, CancellationToken ct = default)
+    public Task<ByColorDto> GetByColorAsync(DateOnly? from, DateOnly? to, CancellationToken ct = default) =>
+        GetOrSetAsync(Key("by-color", from, to), () => ComputeByColorAsync(from, to, ct));
+
+    private async Task<ByColorDto> ComputeByColorAsync(DateOnly? from, DateOnly? to, CancellationToken ct)
     {
         // Convert DateOnly to DateTime boundaries for the DateTime field
         var fromDt = from?.ToDateTime(TimeOnly.MinValue);
@@ -155,8 +182,10 @@ public sealed class AnalyticsService(AppDbContext db) : IAnalyticsService
 
     // ── By measurer ───────────────────────────────────────────────────────────
 
-    public async Task<ByMeasurerDto> GetByMeasurerAsync(
-        DateOnly? from, DateOnly? to, CancellationToken ct = default)
+    public Task<ByMeasurerDto> GetByMeasurerAsync(DateOnly? from, DateOnly? to, CancellationToken ct = default) =>
+        GetOrSetAsync(Key("by-measurer", from, to), () => ComputeByMeasurerAsync(from, to, ct));
+
+    private async Task<ByMeasurerDto> ComputeByMeasurerAsync(DateOnly? from, DateOnly? to, CancellationToken ct)
     {
         var data = await db.Leads
             .Where(l => l.AssignedMeasurerId != null

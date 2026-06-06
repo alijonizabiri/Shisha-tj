@@ -105,7 +105,7 @@ Update via `/done` command after each completed step.
 **Goal:** admin sees what's happening business-wide.
 
 - [x] Step 1 [BE] — Endpoints: dashboard, funnel, refusals, by-product, by-color, by-measurer
-- [ ] Step 2 [BE] — Caching (5–15 min in-memory)
+- [x] Step 2 [BE] — Caching (5–15 min in-memory)
 - [ ] Step 3 [FE] — Dashboard page (KPIs + revenue chart)
 - [ ] Step 4 [FE] — Funnel visualization (horizontal bar)
 - [ ] Step 5 [FE] — Refusal reasons table
