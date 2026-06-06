@@ -1,6 +1,8 @@
 using System.Text;
+using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -81,12 +83,54 @@ builder.Services.AddScoped<IProfitCalculator, ProfitCalculator>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IAnalyticsService, AnalyticsService>();
 
-// CORS — allow the Vite dev server in development
+// CORS — origins come from config so production can override via env var
+var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>()
+                     ?? ["http://localhost:5173"];
 builder.Services.AddCors(opts =>
     opts.AddDefaultPolicy(policy =>
-        policy.WithOrigins("http://localhost:5173")
+        policy.WithOrigins(allowedOrigins)
               .AllowAnyHeader()
               .AllowAnyMethod()));
+
+// Rate limiting
+builder.Services.AddRateLimiter(opts =>
+{
+    opts.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+    opts.OnRejected = async (ctx, ct) =>
+    {
+        ctx.HttpContext.Response.ContentType = "application/problem+json";
+        await ctx.HttpContext.Response.WriteAsync(
+            """{"type":"https://tools.ietf.org/html/rfc6585#section-4","title":"Too Many Requests","status":429,"detail":"Rate limit exceeded. Please slow down."}""",
+            ct);
+    };
+
+    // Strict FixedWindow on auth endpoints — brute-force protection: 10 req/min per IP
+    opts.AddFixedWindowLimiter("auth", limiter =>
+    {
+        limiter.PermitLimit = 10;
+        limiter.Window = TimeSpan.FromMinutes(1);
+        limiter.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+        limiter.QueueLimit = 0;
+    });
+
+    // Global SlidingWindow: 120 req/min keyed by JWT sub (authenticated) or remote IP (anonymous)
+    opts.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(ctx =>
+    {
+        var key = ctx.User.FindFirst("sub")?.Value
+                  ?? ctx.Connection.RemoteIpAddress?.ToString()
+                  ?? "anonymous";
+
+        return RateLimitPartition.GetSlidingWindowLimiter(key, _ => new SlidingWindowRateLimiterOptions
+        {
+            PermitLimit = 120,
+            Window = TimeSpan.FromMinutes(1),
+            SegmentsPerWindow = 6,
+            QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+            QueueLimit = 0,
+        });
+    });
+});
 
 // In-memory cache (analytics results)
 builder.Services.AddMemoryCache();
@@ -139,6 +183,16 @@ var app = builder.Build();
 app.UseSerilogRequestLogging();
 app.UseExceptionHandler();
 
+// Security response headers — applied before any content is written
+app.Use((ctx, next) =>
+{
+    ctx.Response.Headers.Remove("Server");
+    ctx.Response.Headers.Append("X-Content-Type-Options", "nosniff");
+    ctx.Response.Headers.Append("X-Frame-Options", "DENY");
+    ctx.Response.Headers.Append("Referrer-Policy", "strict-origin-when-cross-origin");
+    return next();
+});
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -150,6 +204,7 @@ app.UseHttpsRedirection();
 app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseRateLimiter();
 
 app.MapHealthChecks("/health", new HealthCheckOptions
 {

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Shisha.Application.Auth;
 using Shisha.Domain.Exceptions;
 
@@ -8,6 +9,7 @@ namespace Shisha.Api.Controllers;
 [ApiController]
 [Route("api/v1/auth")]
 [AllowAnonymous]
+[EnableRateLimiting("auth")]
 public sealed class AuthController(IAuthService authService) : ControllerBase
 {
     [HttpPost("login")]

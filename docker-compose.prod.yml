@@ -20,6 +20,7 @@ services:
       Jwt__RefreshTokenDays: "7"
       Serilog__WriteTo__2__Args__serverUrl: http://seq:5341
       Serilog__WriteTo__2__Args__apiKey: ${SEQ_API_KEY:-}
+      AllowedOrigins__0: ${ALLOWED_ORIGIN:-https://localhost}
     depends_on:
       db:
         condition: service_healthy
