@@ -15,8 +15,9 @@ vi.mock('./api', () => ({
     error: null,
   }),
   useDesignerLeads: () => ({
-    data: [{ id: 'lead-abc', name: 'Иван', status: 'Measurement' }],
+    data: [{ id: 'lead-abc', name: 'Иван', phone: '999123456', status: 'Measurement' }],
     isLoading: false,
+    isFetching: false,
   }),
   downloadMeasurementPdf: vi.fn(),
 }))
@@ -35,6 +36,11 @@ vi.mock('react-router-dom', () => ({
 
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
 
+// Helper: find the drawing canvas SVG (not icon SVGs)
+function getDrawingSvg(container: HTMLElement) {
+  return container.querySelector('svg[aria-label="Чертёж кабины"]')
+}
+
 describe('DesignerPage', () => {
   it('renders all form fields', () => {
     mockSearchParams = new URLSearchParams()
@@ -49,7 +55,7 @@ describe('DesignerPage', () => {
   it('hides canvas when measure is empty', () => {
     mockSearchParams = new URLSearchParams()
     const { container } = render(<DesignerPage />)
-    expect(container.querySelector('svg')).toBeNull()
+    expect(getDrawingSvg(container)).toBeNull()
   })
 
   it('shows canvas after entering a valid measureMm', () => {
@@ -58,7 +64,7 @@ describe('DesignerPage', () => {
     fireEvent.change(screen.getByLabelText('Ширина проёма (мм)'), {
       target: { value: '1560' },
     })
-    expect(container.querySelector('svg')).toBeTruthy()
+    expect(getDrawingSvg(container)).toBeTruthy()
   })
 
   it('warns when TwoGlass fixed panel exceeds 1500 mm', () => {
@@ -149,15 +155,15 @@ describe('DesignerPage', () => {
   it('lead selector is disabled when ?leadId is in URL', () => {
     mockSearchParams = new URLSearchParams('leadId=lead-abc')
     render(<DesignerPage />)
-    const select = screen.getByLabelText('Клиент *') as HTMLSelectElement
-    expect(select.disabled).toBe(true)
+    const combobox = screen.getByLabelText('Клиент *') as HTMLInputElement
+    expect(combobox.disabled).toBe(true)
   })
 
-  it('lead selector is pre-selected when ?leadId matches an eligible lead', () => {
+  it('lead selector shows selected lead name when ?leadId matches an eligible lead', () => {
     mockSearchParams = new URLSearchParams('leadId=lead-abc')
     render(<DesignerPage />)
-    const select = screen.getByLabelText('Клиент *') as HTMLSelectElement
-    expect(select.value).toBe('lead-abc')
+    const combobox = screen.getByLabelText('Клиент *') as HTMLInputElement
+    expect(combobox.value).toContain('Иван')
   })
 
   it('shows ineligible banner when ?leadId is not in eligible list', () => {

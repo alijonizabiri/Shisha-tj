@@ -47,6 +47,36 @@ export default defineConfig({
       },
     }),
   ],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules/recharts') || id.includes('node_modules/d3-')) {
+            return 'vendor-recharts'
+          }
+          if (id.includes('node_modules/@dnd-kit')) {
+            return 'vendor-dndkit'
+          }
+          if (id.includes('node_modules/react-router')) {
+            return 'vendor-router'
+          }
+          if (id.includes('node_modules/@tanstack')) {
+            return 'vendor-query'
+          }
+          if (
+            id.includes('node_modules/react-hook-form') ||
+            id.includes('node_modules/zod') ||
+            id.includes('node_modules/@hookform')
+          ) {
+            return 'vendor-form'
+          }
+          if (id.includes('node_modules/react') || id.includes('node_modules/react-dom')) {
+            return 'vendor-react'
+          }
+        },
+      },
+    },
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),

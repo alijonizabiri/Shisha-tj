@@ -33,7 +33,7 @@ export function Sidebar() {
         <span className="font-semibold tracking-tight">SHISHA_TJ</span>
       </div>
 
-      <nav className="flex flex-1 flex-col gap-1 p-2">
+      <nav aria-label="Главная навигация" className="flex flex-1 flex-col gap-1 p-2">
         {visible.map((item) => (
           <NavLink
             key={item.to}

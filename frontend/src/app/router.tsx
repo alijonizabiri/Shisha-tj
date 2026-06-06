@@ -1,13 +1,44 @@
+import { lazy, Suspense } from 'react'
 import { createBrowserRouter } from 'react-router-dom'
 import { ProtectedRoute } from '@/features/auth/ProtectedRoute'
 import { LoginPage } from '@/features/auth/LoginPage'
-import { DesignerPage } from '@/features/designer/DesignerPage'
-import { LeadsListPage } from '@/features/leads/LeadsListPage'
-import { LeadsKanbanPage } from '@/features/leads/LeadsKanbanPage'
-import { LeadDetailPage } from '@/features/leads/LeadDetailPage'
-import { FactoryOrdersPage } from '@/features/factory-orders/FactoryOrdersPage'
-import { AnalyticsDashboardPage } from '@/features/analytics/AnalyticsDashboardPage'
 import { AppShell } from './layout/AppShell'
+
+// Route-level code splitting — each page loads its own chunk on first visit
+const DesignerPage = lazy(() =>
+  import('@/features/designer/DesignerPage').then((m) => ({ default: m.DesignerPage })),
+)
+const LeadsListPage = lazy(() =>
+  import('@/features/leads/LeadsListPage').then((m) => ({ default: m.LeadsListPage })),
+)
+const LeadsKanbanPage = lazy(() =>
+  import('@/features/leads/LeadsKanbanPage').then((m) => ({ default: m.LeadsKanbanPage })),
+)
+const LeadDetailPage = lazy(() =>
+  import('@/features/leads/LeadDetailPage').then((m) => ({ default: m.LeadDetailPage })),
+)
+const FactoryOrdersPage = lazy(() =>
+  import('@/features/factory-orders/FactoryOrdersPage').then((m) => ({
+    default: m.FactoryOrdersPage,
+  })),
+)
+const AnalyticsDashboardPage = lazy(() =>
+  import('@/features/analytics/AnalyticsDashboardPage').then((m) => ({
+    default: m.AnalyticsDashboardPage,
+  })),
+)
+
+function PageLoader() {
+  return (
+    <div className="flex h-full items-center justify-center">
+      <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+    </div>
+  )
+}
+
+function Lazy({ children }: { children: React.ReactNode }) {
+  return <Suspense fallback={<PageLoader />}>{children}</Suspense>
+}
 
 export const router = createBrowserRouter([
   {
@@ -22,31 +53,31 @@ export const router = createBrowserRouter([
         children: [
           {
             path: '/',
-            element: <AnalyticsDashboardPage />,
+            element: <Lazy><AnalyticsDashboardPage /></Lazy>,
           },
           {
             path: '/analytics',
-            element: <AnalyticsDashboardPage />,
+            element: <Lazy><AnalyticsDashboardPage /></Lazy>,
           },
           {
             path: '/leads',
-            element: <LeadsListPage />,
+            element: <Lazy><LeadsListPage /></Lazy>,
           },
           {
             path: '/leads/kanban',
-            element: <LeadsKanbanPage />,
+            element: <Lazy><LeadsKanbanPage /></Lazy>,
           },
           {
             path: '/leads/:id',
-            element: <LeadDetailPage />,
+            element: <Lazy><LeadDetailPage /></Lazy>,
           },
           {
             path: '/factory-orders',
-            element: <FactoryOrdersPage />,
+            element: <Lazy><FactoryOrdersPage /></Lazy>,
           },
           {
             path: '/designer',
-            element: <DesignerPage />,
+            element: <Lazy><DesignerPage /></Lazy>,
           },
         ],
       },
