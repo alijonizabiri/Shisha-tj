@@ -236,215 +236,190 @@ export function DrawingCanvas({
   if (panels.length === 0) return null
 
   return (
-    <div className={cn('relative h-full w-full', className)} onWheel={handleWheel}>
-      {/* ── Zoom controls ── */}
-      <div className="absolute right-3 top-3 z-10 flex items-center gap-0.5 rounded-md border border-border bg-card/90 p-1 shadow-sm backdrop-blur-sm">
-        <button
-          type="button"
-          onClick={() => adjustZoom(-STEP)}
-          disabled={zoom <= MIN_ZOOM}
-          aria-label="Уменьшить"
-          className="flex h-7 w-7 items-center justify-center rounded text-base hover:bg-accent disabled:opacity-40"
+    <div className={cn('flex h-full w-full flex-col', className)} onWheel={handleWheel}>
+      {/* ── SVG area (fills remaining height) ── */}
+      <div className="relative min-h-0 flex-1">
+        {/* ── Zoom controls ── */}
+        <div className="absolute right-3 top-3 z-10 flex items-center gap-0.5 rounded-md border border-border bg-card/90 p-1 shadow-sm backdrop-blur-sm">
+          <button
+            type="button"
+            onClick={() => adjustZoom(-STEP)}
+            disabled={zoom <= MIN_ZOOM}
+            aria-label="Уменьшить"
+            className="flex h-7 w-7 items-center justify-center rounded text-base hover:bg-accent disabled:opacity-40"
+          >
+            −
+          </button>
+          <span className="min-w-[3.25rem] text-center text-xs tabular-nums text-foreground">
+            {Math.round(zoom * 100)}%
+          </span>
+          <button
+            type="button"
+            onClick={() => adjustZoom(STEP)}
+            disabled={zoom >= MAX_ZOOM}
+            aria-label="Увеличить"
+            className="flex h-7 w-7 items-center justify-center rounded text-base hover:bg-accent disabled:opacity-40"
+          >
+            +
+          </button>
+          <button
+            type="button"
+            onClick={() => setZoom(1)}
+            aria-label="Сброс зума"
+            className="ml-0.5 h-7 rounded px-2 text-xs hover:bg-accent"
+          >
+            Сброс
+          </button>
+        </div>
+
+        <svg
+          ref={svgRef}
+          viewBox={`${vbX} ${vbY} ${scaledW} ${scaledH}`}
+          className="h-full w-full"
+          preserveAspectRatio="xMidYMid meet"
+          aria-label="Чертёж кабины"
         >
-          −
-        </button>
-        <span className="min-w-[3.25rem] text-center text-xs tabular-nums text-foreground">
-          {Math.round(zoom * 100)}%
-        </span>
-        <button
-          type="button"
-          onClick={() => adjustZoom(STEP)}
-          disabled={zoom >= MAX_ZOOM}
-          aria-label="Увеличить"
-          className="flex h-7 w-7 items-center justify-center rounded text-base hover:bg-accent disabled:opacity-40"
-        >
-          +
-        </button>
-        <button
-          type="button"
-          onClick={() => setZoom(1)}
-          aria-label="Сброс зума"
-          className="ml-0.5 h-7 rounded px-2 text-xs hover:bg-accent"
-        >
-          Сброс
-        </button>
+          {/* ── 1. Glass panel rects ── */}
+          {renderPanels.map((panel, i) => {
+            const yOffset = cabinHeightMm - panel.heightMm
+            return (
+              <g key={`panel-${i}`}>
+                <rect
+                  data-testid="glass-rect"
+                  x={xs[i]} y={yOffset}
+                  width={panel.widthMm} height={panel.heightMm}
+                  fill={panel.isDoor ? '#dbeafe' : '#f8fafc'}
+                  stroke="#334155" strokeWidth={2}
+                />
+                {panel.isDoor && (
+                  <line
+                    x1={xs[i] + 2} y1={yOffset + 6}
+                    x2={xs[i] + panel.widthMm - 2} y2={yOffset + 6}
+                    stroke="#3b82f6" strokeWidth={4} strokeLinecap="round"
+                  />
+                )}
+                {/* Show individual height when panel is shorter than cabin */}
+                {panel.heightMm !== cabinHeightMm && (
+                  <text
+                    x={xs[i] + panel.widthMm / 2} y={yOffset + 28}
+                    textAnchor="middle" fontSize={20} fill="#94a3b8"
+                  >
+                    {panel.heightMm} мм ↕
+                  </text>
+                )}
+              </g>
+            )
+          })}
+
+          {/* ── 2. Boundary drag handles ── */}
+          {renderPanels.slice(0, -1).map((_, i) => {
+            const bx = xs[i] + renderPanels[i].widthMm
+            return (
+              <g key={`boundary-${i}`}>
+                <line
+                  x1={bx} y1={0} x2={bx} y2={cabinHeightMm}
+                  stroke="#94a3b8" strokeWidth={1} strokeDasharray="6 3"
+                  pointerEvents="none"
+                />
+                <rect
+                  x={bx - 10} y={0} width={20} height={cabinHeightMm}
+                  fill="transparent"
+                  style={{ cursor: 'ew-resize' }}
+                  onPointerDown={(e) => startDrag(e, 'boundary', i)}
+                  onPointerMove={handleDragMove}
+                  onPointerUp={handleDragUp}
+                  onPointerCancel={handleDragCancel}
+                />
+              </g>
+            )
+          })}
+
+          {/* ── 3. Height drag handles (top edge of each panel) ── */}
+          {renderPanels.map((panel, i) => {
+            const topY = cabinHeightMm - panel.heightMm
+            return (
+              <g key={`height-handle-${i}`}>
+                <line
+                  x1={xs[i] + 8} y1={topY}
+                  x2={xs[i] + panel.widthMm - 8} y2={topY}
+                  stroke="#94a3b8" strokeWidth={2} strokeDasharray="4 4"
+                  pointerEvents="none"
+                />
+                <rect
+                  x={xs[i]} y={topY - 10} width={panel.widthMm} height={20}
+                  fill="transparent"
+                  style={{ cursor: 'ns-resize' }}
+                  onPointerDown={(e) => startDrag(e, 'height', i)}
+                  onPointerMove={handleDragMove}
+                  onPointerUp={handleDragUp}
+                  onPointerCancel={handleDragCancel}
+                />
+              </g>
+            )
+          })}
+
+          {/* ── 4. Holes (above drag handles so they keep pointer priority) ── */}
+          {renderPanels.map((panel, i) => {
+            const yOffset = cabinHeightMm - panel.heightMm
+            return (holes[i] ?? []).map((hole, j) => (
+              <Hole
+                key={`hole-${i}-${j}`}
+                xMm={hole.xMm}
+                yMm={hole.yMm + yOffset}
+                radiusMm={hole.radiusMm}
+                holeType={hole.holeType}
+                panelX={xs[i]}
+                panelWidthMm={panel.widthMm}
+                panelHeightMm={panel.heightMm}
+                onMove={(x, y) => handleHoleMove(i, j, x, y - yOffset)}
+              />
+            ))
+          })}
+
+          {/* ── 5. Dimension lines ── */}
+          {renderPanels.map((panel, i) => (
+            <HorizDim
+              key={`dim-w-${i}`}
+              x1={xs[i]} x2={xs[i] + panel.widthMm}
+              y={cabinHeightMm + 22} label={`${panel.widthMm}`}
+            />
+          ))}
+          <HorizDim x1={0} x2={totalWidthMm} y={cabinHeightMm + 50} label={`${totalWidthMm}`} bold />
+          <VertDim x={totalWidthMm + 22} y1={0} y2={cabinHeightMm} label={`${cabinHeightMm}`} />
+        </svg>
       </div>
 
-      <svg
-        ref={svgRef}
-        viewBox={`${vbX} ${vbY} ${scaledW} ${scaledH}`}
-        className="h-full w-full"
-        preserveAspectRatio="xMidYMid meet"
-        aria-label="Чертёж кабины"
+      {/* ── Panel action bar (HTML buttons — better touch targets, no SVG clutter) ── */}
+      <div
+        className={cn(
+          'flex flex-wrap gap-x-4 gap-y-1 border-t border-border bg-card/80 px-3 py-1.5 backdrop-blur-sm',
+          isDragging && 'pointer-events-none opacity-40',
+        )}
       >
-        {/* ── 1. Glass panel rects ── */}
-        {renderPanels.map((panel, i) => {
-          const yOffset = cabinHeightMm - panel.heightMm
-          return (
-            <g key={`panel-${i}`}>
-              <rect
-                data-testid="glass-rect"
-                x={xs[i]} y={yOffset}
-                width={panel.widthMm} height={panel.heightMm}
-                fill={panel.isDoor ? '#dbeafe' : '#f8fafc'}
-                stroke="#334155" strokeWidth={2}
-              />
-              {panel.isDoor && (
-                <line
-                  x1={xs[i] + 2} y1={yOffset + 6}
-                  x2={xs[i] + panel.widthMm - 2} y2={yOffset + 6}
-                  stroke="#3b82f6" strokeWidth={4} strokeLinecap="round"
-                />
-              )}
-              {/* Show individual height when panel is shorter than cabin */}
-              {panel.heightMm !== cabinHeightMm && (
-                <text
-                  x={xs[i] + panel.widthMm / 2} y={yOffset + 28}
-                  textAnchor="middle" fontSize={20} fill="#94a3b8"
-                >
-                  {panel.heightMm} мм ↕
-                </text>
-              )}
-            </g>
-          )
-        })}
-
-        {/* ── 2. Boundary drag handles ── */}
-        {renderPanels.slice(0, -1).map((_, i) => {
-          const bx = xs[i] + renderPanels[i].widthMm
-          return (
-            <g key={`boundary-${i}`}>
-              <line
-                x1={bx} y1={0} x2={bx} y2={cabinHeightMm}
-                stroke="#94a3b8" strokeWidth={1} strokeDasharray="6 3"
-                pointerEvents="none"
-              />
-              <rect
-                x={bx - 10} y={0} width={20} height={cabinHeightMm}
-                fill="transparent"
-                style={{ cursor: 'ew-resize' }}
-                onPointerDown={(e) => startDrag(e, 'boundary', i)}
-                onPointerMove={handleDragMove}
-                onPointerUp={handleDragUp}
-                onPointerCancel={handleDragCancel}
-              />
-            </g>
-          )
-        })}
-
-        {/* ── 3. Height drag handles (top edge of each panel) ── */}
-        {renderPanels.map((panel, i) => {
-          const topY = cabinHeightMm - panel.heightMm
-          return (
-            <g key={`height-handle-${i}`}>
-              <line
-                x1={xs[i] + 8} y1={topY}
-                x2={xs[i] + panel.widthMm - 8} y2={topY}
-                stroke="#94a3b8" strokeWidth={2} strokeDasharray="4 4"
-                pointerEvents="none"
-              />
-              <rect
-                x={xs[i]} y={topY - 10} width={panel.widthMm} height={20}
-                fill="transparent"
-                style={{ cursor: 'ns-resize' }}
-                onPointerDown={(e) => startDrag(e, 'height', i)}
-                onPointerMove={handleDragMove}
-                onPointerUp={handleDragUp}
-                onPointerCancel={handleDragCancel}
-              />
-            </g>
-          )
-        })}
-
-        {/* ── 4. Holes (above drag handles so they keep pointer priority) ── */}
-        {renderPanels.map((panel, i) => {
-          const yOffset = cabinHeightMm - panel.heightMm
-          return (holes[i] ?? []).map((hole, j) => (
-            <Hole
-              key={`hole-${i}-${j}`}
-              xMm={hole.xMm}
-              yMm={hole.yMm + yOffset}
-              radiusMm={hole.radiusMm}
-              holeType={hole.holeType}
-              panelX={xs[i]}
-              panelWidthMm={panel.widthMm}
-              panelHeightMm={panel.heightMm}
-              onMove={(x, y) => handleHoleMove(i, j, x, y - yOffset)}
-            />
-          ))
-        })}
-
-        {/* ── 5. Dimension lines ── */}
         {renderPanels.map((panel, i) => (
-          <HorizDim
-            key={`dim-w-${i}`}
-            x1={xs[i]} x2={xs[i] + panel.widthMm}
-            y={cabinHeightMm + 22} label={`${panel.widthMm}`}
-          />
-        ))}
-        <HorizDim x1={0} x2={totalWidthMm} y={cabinHeightMm + 50} label={`${totalWidthMm}`} bold />
-        <VertDim x={totalWidthMm + 22} y1={0} y2={cabinHeightMm} label={`${cabinHeightMm}`} />
-
-        {/* ── 6. Action buttons (hidden during drag to avoid mis-taps) ── */}
-        {!isDragging && renderPanels.map((panel, i) => {
-          const midX = xs[i] + panel.widthMm / 2
-          // Buttons anchored near the floor; always inside panel (min height ≥ 200 mm)
-          const doorBtnTop  = cabinHeightMm - 70
-          const splitBtnTop = cabinHeightMm - 118
-
-          return (
-            <g key={`actions-${i}`}>
-              {/* Door ↔ Fixed toggle */}
-              <g
-                onClick={(e) => { e.stopPropagation(); onToggleDoor?.(i) }}
-                style={{ cursor: 'pointer' }}
-                role="button"
-                aria-label={panel.isDoor ? 'Сделать глухим' : 'Сделать дверью'}
+          <div key={`pa-${i}`} className="flex items-center gap-1">
+            <span className="select-none text-xs text-muted-foreground">{i + 1}</span>
+            <button
+              type="button"
+              aria-label={panel.isDoor ? 'Сделать глухим' : 'Сделать дверью'}
+              onClick={() => onToggleDoor?.(i)}
+              className="rounded border border-border bg-background px-2 py-0.5 text-xs hover:bg-accent active:scale-95"
+            >
+              {panel.isDoor ? '→ Глухое' : '→ Дверь'}
+            </button>
+            {!panel.isDoor && panel.widthMm >= 400 && renderPanels.length < MAX_PANELS && (
+              <button
+                type="button"
+                aria-label="Разделить"
+                onClick={() => onSplitPanel?.(i)}
+                className="rounded border border-border bg-background px-2 py-0.5 text-xs hover:bg-accent active:scale-95"
               >
-                <rect
-                  x={midX - 65} y={doorBtnTop} width={130} height={44}
-                  rx={6}
-                  fill={panel.isDoor ? '#eff6ff' : '#f1f5f9'}
-                  stroke="#94a3b8" strokeWidth={1.5}
-                />
-                <text
-                  x={midX} y={doorBtnTop + 28}
-                  textAnchor="middle" fontSize={26}
-                  fill="#475569" fontFamily="system-ui,sans-serif"
-                  pointerEvents="none"
-                >
-                  {panel.isDoor ? '→ Глухое' : '→ Дверь'}
-                </text>
-              </g>
-
-              {/* Split — only for non-door panels wide enough to halve legally */}
-              {!panel.isDoor && panel.widthMm >= 400 && renderPanels.length < MAX_PANELS && (
-                <g
-                  onClick={(e) => { e.stopPropagation(); onSplitPanel?.(i) }}
-                  style={{ cursor: 'pointer' }}
-                  role="button"
-                  aria-label="Разделить"
-                >
-                  <rect
-                    x={midX - 55} y={splitBtnTop} width={110} height={40}
-                    rx={6}
-                    fill="#f8fafc"
-                    stroke="#94a3b8" strokeWidth={1.5}
-                  />
-                  <text
-                    x={midX} y={splitBtnTop + 26}
-                    textAnchor="middle" fontSize={24}
-                    fill="#64748b" fontFamily="system-ui,sans-serif"
-                    pointerEvents="none"
-                  >
-                    Разделить
-                  </text>
-                </g>
-              )}
-            </g>
-          )
-        })}
-      </svg>
+                Разделить
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   )
 }

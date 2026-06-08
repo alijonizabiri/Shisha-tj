@@ -3,6 +3,7 @@ import { useForm, useWatch } from 'react-hook-form'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from 'sonner'
+import { cn } from '@/shared/lib/cn'
 import { computeInitialPanels, computeMetrics } from './lib/computePanels'
 import { defaultHoles } from './lib/defaultHoles'
 import type { Hole, Panel } from './lib/types'
@@ -59,6 +60,11 @@ export function DesignerPage() {
 
   const measureMm = useWatch({ control: form.control, name: 'measureMm' })
   const heightMm  = useWatch({ control: form.control, name: 'heightMm' })
+
+  // ── Sidebar collapse state ─────────────────────────────────────────────────
+
+  const [formOpen, setFormOpen] = useState(true)
+  const [calcOpen, setCalcOpen] = useState(true)
 
   // ── Auto-computed panel layout (from form dimensions) ──────────────────────
 
@@ -243,66 +249,94 @@ export function DesignerPage() {
 
   return (
     <div className="flex h-full overflow-hidden">
-      <aside className="w-72 shrink-0 overflow-y-auto border-r border-border bg-card">
-        <div className="p-4">
-          <h1 className="mb-4 text-lg font-semibold">Дизайнер</h1>
-
-          {leadIneligible && (
-            <div
-              role="alert"
-              className="mb-4 rounded-md border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-800 dark:border-yellow-800 dark:bg-yellow-950 dark:text-yellow-200"
-            >
-              <p className="font-medium">Лид не в подходящем статусе</p>
-              <p className="mt-1 text-xs">
-                Замер можно создать только для лидов в статусах: Замер, Покупает, Заказ на завод, Стекло пришло.
-              </p>
-              <button
-                onClick={() => navigate(-1)}
-                className="mt-2 text-xs font-medium underline hover:no-underline"
-              >
-                ← Назад к лиду
-              </button>
-            </div>
+      {/* ── Left sidebar: measurement form (collapsible) ── */}
+      <aside
+        className={cn(
+          'flex shrink-0 flex-col overflow-hidden border-r border-border bg-card transition-all duration-200',
+          formOpen ? 'w-72' : 'w-10',
+        )}
+      >
+        {/* Header */}
+        <div
+          className={cn(
+            'flex shrink-0 items-center gap-2 border-b border-border px-3 py-2.5',
+            !formOpen && 'justify-center',
           )}
-
-          <MeasurementForm
-            form={form}
-            onSubmit={handleSave}
-            isLoading={saveMutation.isPending}
-            disableLeadSelector={!!leadIdFromUrl}
-          />
-
-          {saveMutation.isError && (
-            <p className="mt-2 text-sm text-destructive">Ошибка сохранения. Попробуйте ещё раз.</p>
-          )}
-
-          {savedId && !leadIdFromUrl && (
-            <div className="mt-3 flex flex-col gap-2">
-              <p className="text-sm font-medium text-green-600 dark:text-green-400">
-                Замер сохранён ✓
-              </p>
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full"
-                onClick={() => void downloadMeasurementPdf(savedId, 'a4')}
-              >
-                Скачать PDF (A4)
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full"
-                onClick={() => void downloadMeasurementPdf(savedId, 'a3')}
-              >
-                Скачать PDF (A3)
-              </Button>
-            </div>
-          )}
+        >
+          {formOpen && <h1 className="flex-1 text-lg font-semibold">Дизайнер</h1>}
+          <button
+            type="button"
+            onClick={() => setFormOpen((v) => !v)}
+            aria-label={formOpen ? 'Свернуть форму' : 'Развернуть форму'}
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-accent"
+          >
+            {formOpen ? '←' : '→'}
+          </button>
         </div>
+
+        {/* Form content */}
+        {formOpen && (
+          <div className="flex-1 overflow-y-auto">
+            <div className="p-4">
+              {leadIneligible && (
+                <div
+                  role="alert"
+                  className="mb-4 rounded-md border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-800 dark:border-yellow-800 dark:bg-yellow-950 dark:text-yellow-200"
+                >
+                  <p className="font-medium">Лид не в подходящем статусе</p>
+                  <p className="mt-1 text-xs">
+                    Замер можно создать только для лидов в статусах: Замер, Покупает, Заказ на завод, Стекло пришло.
+                  </p>
+                  <button
+                    onClick={() => navigate(-1)}
+                    className="mt-2 text-xs font-medium underline hover:no-underline"
+                  >
+                    ← Назад к лиду
+                  </button>
+                </div>
+              )}
+
+              <MeasurementForm
+                form={form}
+                onSubmit={handleSave}
+                isLoading={saveMutation.isPending}
+                disableLeadSelector={!!leadIdFromUrl}
+              />
+
+              {saveMutation.isError && (
+                <p className="mt-2 text-sm text-destructive">Ошибка сохранения. Попробуйте ещё раз.</p>
+              )}
+
+              {savedId && !leadIdFromUrl && (
+                <div className="mt-3 flex flex-col gap-2">
+                  <p className="text-sm font-medium text-green-600 dark:text-green-400">
+                    Замер сохранён ✓
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    onClick={() => void downloadMeasurementPdf(savedId, 'a4')}
+                  >
+                    Скачать PDF (A4)
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    onClick={() => void downloadMeasurementPdf(savedId, 'a3')}
+                  >
+                    Скачать PDF (A3)
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </aside>
 
-      <main className="flex-1 flex flex-col overflow-hidden bg-background">
+      {/* ── Main canvas area ── */}
+      <main className="flex flex-1 flex-col overflow-hidden bg-background">
         {/* Width-change warning after manual panel edits */}
         {showResetWarning && (
           <div
@@ -338,7 +372,7 @@ export function DesignerPage() {
           </div>
         )}
 
-        <div className="flex-1 min-h-0 p-4">
+        <div className="min-h-0 flex-1 p-4">
           {panels.length > 0 ? (
             <DrawingCanvas
               key={canvasKey}
@@ -362,11 +396,40 @@ export function DesignerPage() {
         </div>
       </main>
 
-      <CalculationSidebar
-        areaSqM={metrics?.areaSqM ?? null}
-        masterFeeTjs={metrics?.masterFeeTjs ?? null}
-        form={form}
-      />
+      {/* ── Right sidebar: calculation (collapsible) ── */}
+      <aside
+        className={cn(
+          'flex shrink-0 flex-col overflow-hidden border-l border-border bg-card transition-all duration-200',
+          calcOpen ? 'w-56' : 'w-10',
+        )}
+      >
+        {/* Header */}
+        <div
+          className={cn(
+            'flex shrink-0 items-center gap-2 border-b border-border px-3 py-2.5',
+            !calcOpen && 'justify-center',
+          )}
+        >
+          <button
+            type="button"
+            onClick={() => setCalcOpen((v) => !v)}
+            aria-label={calcOpen ? 'Свернуть расчёт' : 'Развернуть расчёт'}
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-accent"
+          >
+            {calcOpen ? '→' : '←'}
+          </button>
+          {calcOpen && <span className="text-sm font-semibold">Расчёт</span>}
+        </div>
+
+        {/* Calculation content */}
+        {calcOpen && (
+          <CalculationSidebar
+            areaSqM={metrics?.areaSqM ?? null}
+            masterFeeTjs={metrics?.masterFeeTjs ?? null}
+            form={form}
+          />
+        )}
+      </aside>
     </div>
   )
 }

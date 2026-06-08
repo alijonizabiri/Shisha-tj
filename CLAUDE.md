@@ -164,8 +164,8 @@ For `[FULL]` steps:
 ## Current Status
 
 **Phase:** 5 — Production Polish
-**Last completed:** Phase 3.5 Step 10 [FE] — Manual panel editing: drag boundaries, height drag, split, toggle door, reset warning
-**Last commit:** Phase 3.5 Step 10 [FE]: manual panel editing — drag, split, door toggle, reset warning
+**Last completed:** Phase 3.5 Step 11 [FE] — Designer mobile-first: collapsible sidebars + HTML panel action bar
+**Last commit:** Phase 3.5 Step 11 [FE]: mobile-first Designer — collapsible sidebars, action bar off SVG
 **Next step:** Phase 5 Step 7 [FULL] — Regression pass + Lighthouse 90+ on FE
 **Build BE:** ✅ 0 warnings, 0 errors
 **Build FE:** ✅ typecheck + lint + build passing

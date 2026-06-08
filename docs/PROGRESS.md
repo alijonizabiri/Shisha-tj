@@ -99,7 +99,8 @@ Update via `/done` command after each completed step.
 - [x] Step 8.1 [FULL] — Депозит запрещён без замера (BE BusinessRuleException + FE guard); кнопка "+ Создать замер" в drawer; DesignerPage принимает ?leadId= (prefill + disable + back-navigate)
 - [x] Step 9 [FULL] — Замена фиксированных конфигураций (TwoGlass/ThreeGlass) на произвольный panels[]: миграция RemoveCabinConfiguration, ComputeInitial, PanelInputDto, FE computeInitialPanels, DrawingCanvas floor-aligned
 - [x] Step 10 [FE] — Ручное редактирование раскладки: drag границ между стёклами, click-to-split, кнопка "Сделать дверью", предупреждение при смене ширины кабины
-- [x] ~~**Phase 3.5 complete** → tag `v0.4.1-ux-polish`~~ *(extended with Steps 9–10)*
+- [x] Step 11 [FE] — Designer mobile-first layout: collapsible form/calc sidebars + panel action bar moved from SVG to HTML toolbar below canvas
+- [x] ~~**Phase 3.5 complete** → tag `v0.4.1-ux-polish`~~ *(extended with Steps 9–11)*
 
 ---
 

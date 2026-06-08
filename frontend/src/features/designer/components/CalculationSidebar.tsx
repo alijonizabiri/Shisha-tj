@@ -45,57 +45,54 @@ export function CalculationSidebar({ areaSqM, masterFeeTjs, form }: Props) {
   const balance = masterFeeTjs !== null ? masterFeeTjs + delivery - deposit : null
 
   return (
-    <aside className="w-56 shrink-0 overflow-y-auto border-l border-border bg-card">
-      <div className="p-4">
-        <h2 className="mb-4 text-base font-semibold">Расчёт</h2>
-        <dl className="flex flex-col gap-4">
-          <MetricRow
-            label="Площадь"
-            value={areaSqM !== null ? `${areaSqM.toFixed(2)} м²` : '—'}
+    <div className="overflow-y-auto p-4">
+      <dl className="flex flex-col gap-4">
+        <MetricRow
+          label="Площадь"
+          value={areaSqM !== null ? `${areaSqM.toFixed(2)} м²` : '—'}
+        />
+
+        <MetricRow
+          label="Работа мастера"
+          value={masterFeeTjs !== null ? formatMoney(masterFeeTjs) : '—'}
+        />
+
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="deliveryTjs">Доставка</Label>
+          <Input
+            id="deliveryTjs"
+            type="number"
+            inputMode="numeric"
+            min={0}
+            {...register('deliveryTjs', { valueAsNumber: true })}
           />
+          {errors.deliveryTjs && (
+            <p className="text-xs text-destructive">{errors.deliveryTjs.message}</p>
+          )}
+        </div>
 
-          <MetricRow
-            label="Работа мастера"
-            value={masterFeeTjs !== null ? formatMoney(masterFeeTjs) : '—'}
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="depositTjs">Депозит</Label>
+          <Input
+            id="depositTjs"
+            type="number"
+            inputMode="numeric"
+            min={0}
+            {...register('depositTjs', { valueAsNumber: true })}
           />
+          {errors.depositTjs && (
+            <p className="text-xs text-destructive">{errors.depositTjs.message}</p>
+          )}
+        </div>
 
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="deliveryTjs">Доставка</Label>
-            <Input
-              id="deliveryTjs"
-              type="number"
-              inputMode="numeric"
-              min={0}
-              {...register('deliveryTjs', { valueAsNumber: true })}
-            />
-            {errors.deliveryTjs && (
-              <p className="text-xs text-destructive">{errors.deliveryTjs.message}</p>
-            )}
-          </div>
+        <hr className="border-border" />
 
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="depositTjs">Депозит</Label>
-            <Input
-              id="depositTjs"
-              type="number"
-              inputMode="numeric"
-              min={0}
-              {...register('depositTjs', { valueAsNumber: true })}
-            />
-            {errors.depositTjs && (
-              <p className="text-xs text-destructive">{errors.depositTjs.message}</p>
-            )}
-          </div>
-
-          <hr className="border-border" />
-
-          <MetricRow
-            label="Остаток"
-            value={balance !== null ? formatMoney(balance) : '—'}
-            highlight={balance !== null && balance < 0}
-          />
-        </dl>
-      </div>
-    </aside>
+        <MetricRow
+          label="Остаток"
+          value={balance !== null ? formatMoney(balance) : '—'}
+          highlight={balance !== null && balance < 0}
+        />
+      </dl>
+    </div>
   )
 }
