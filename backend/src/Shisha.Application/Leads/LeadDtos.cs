@@ -77,7 +77,6 @@ public record KanbanResponse(IReadOnlyList<KanbanColumn> Columns);
 
 public record LeadMeasurementDto(
     Guid Id,
-    string Configuration,
     string GlassColor,
     string HardwareColor,
     int MeasureMm,

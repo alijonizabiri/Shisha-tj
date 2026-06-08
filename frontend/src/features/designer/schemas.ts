@@ -13,7 +13,6 @@ export const measurementFormSchema = z.object({
   leadId:        z.string().min(1, 'Выберите лид'),
   measureMm:     z.number().min(600, 'Мин. 600 мм').max(3000, 'Макс. 3000 мм'),
   heightMm:      z.number().min(1500, 'Мин. 1500 мм').max(2500, 'Макс. 2500 мм'),
-  configuration: z.enum(['TwoGlass', 'ThreeGlass']),
   glassColor:    glassColorSchema,
   hardwareColor: hardwareColorSchema,
   deliveryTjs:   z.number().min(0, 'Мин. 0 сом'),

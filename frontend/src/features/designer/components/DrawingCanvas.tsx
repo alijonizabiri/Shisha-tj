@@ -100,12 +100,13 @@ export function DrawingCanvas({
   if (panels.length === 0) return null
 
   const totalWidthMm = panels.reduce((acc, p) => acc + p.widthMm, 0)
-  const heightMm = panels[0].heightMm
+  // Maximum panel height determines the viewBox height (panels are floor-aligned)
+  const maxHeightMm = Math.max(...panels.map((p) => p.heightMm))
   const xs = xPositions(panels)
 
   // ViewBox zoom — scale from center so content stays centered at any zoom level
   const fullW = totalWidthMm + PAD * 2
-  const fullH = heightMm + PAD * 2
+  const fullH = maxHeightMm + PAD * 2
   const scaledW = fullW / zoom
   const scaledH = fullH / zoom
   const vbX = -PAD + (fullW - scaledW) / 2
@@ -165,57 +166,62 @@ export function DrawingCanvas({
         preserveAspectRatio="xMidYMid meet"
         aria-label="Чертёж кабины"
       >
-        {/* ── Panels ── */}
-        {panels.map((panel, i) => (
-          <g key={`panel-${i}`}>
-            <rect
-              x={xs[i]} y={0} width={panel.widthMm} height={heightMm}
-              fill={panel.isDoor ? '#dbeafe' : '#f8fafc'}
-              stroke="#334155" strokeWidth={2}
-            />
-            {panel.isDoor && (
-              <line
-                x1={xs[i] + 2} y1={6}
-                x2={xs[i] + panel.widthMm - 2} y2={6}
-                stroke="#3b82f6" strokeWidth={4} strokeLinecap="round"
+        {/* ── Panels — bottom-aligned (floor = maxHeightMm) ── */}
+        {panels.map((panel, i) => {
+          // Panels with shorter height sit above the floor gap (top of floor = maxHeightMm)
+          const yOffset = maxHeightMm - panel.heightMm
+          return (
+            <g key={`panel-${i}`}>
+              <rect
+                x={xs[i]} y={yOffset} width={panel.widthMm} height={panel.heightMm}
+                fill={panel.isDoor ? '#dbeafe' : '#f8fafc'}
+                stroke="#334155" strokeWidth={2}
               />
-            )}
-            <text
-              x={xs[i] + panel.widthMm / 2} y={heightMm - 20}
-              textAnchor="middle" fontSize={22} fill="#94a3b8"
-            >
-              {panel.isDoor ? 'Дверь' : 'Глухое'}
-            </text>
-          </g>
-        ))}
+              {panel.isDoor && (
+                <line
+                  x1={xs[i] + 2} y1={yOffset + 6}
+                  x2={xs[i] + panel.widthMm - 2} y2={yOffset + 6}
+                  stroke="#3b82f6" strokeWidth={4} strokeLinecap="round"
+                />
+              )}
+              <text
+                x={xs[i] + panel.widthMm / 2} y={maxHeightMm - 20}
+                textAnchor="middle" fontSize={22} fill="#94a3b8"
+              >
+                {panel.isDoor ? 'Дверь' : 'Глухое'}
+              </text>
+            </g>
+          )
+        })}
 
         {/* ── Draggable holes ── */}
-        {panels.map((panel, i) =>
-          (holes[i] ?? []).map((hole, j) => (
+        {panels.map((panel, i) => {
+          const yOffset = maxHeightMm - panel.heightMm
+          return (holes[i] ?? []).map((hole, j) => (
             <Hole
               key={`hole-${i}-${j}`}
               xMm={hole.xMm}
-              yMm={hole.yMm}
+              yMm={hole.yMm + yOffset}
               radiusMm={hole.radiusMm}
               holeType={hole.holeType}
               panelX={xs[i]}
               panelWidthMm={panel.widthMm}
               panelHeightMm={panel.heightMm}
-              onMove={(x, y) => handleHoleMove(i, j, x, y)}
+              onMove={(x, y) => handleHoleMove(i, j, x, y - yOffset)}
             />
-          )),
-        )}
+          ))
+        })}
 
         {/* ── Dimension lines ── */}
         {panels.map((panel, i) => (
           <HorizDim
             key={`dim-w-${i}`}
             x1={xs[i]} x2={xs[i] + panel.widthMm}
-            y={heightMm + 22} label={`${panel.widthMm}`}
+            y={maxHeightMm + 22} label={`${panel.widthMm}`}
           />
         ))}
-        <HorizDim x1={0} x2={totalWidthMm} y={heightMm + 50} label={`${totalWidthMm}`} bold />
-        <VertDim x={totalWidthMm + 22} y1={0} y2={heightMm} label={`${heightMm}`} />
+        <HorizDim x1={0} x2={totalWidthMm} y={maxHeightMm + 50} label={`${totalWidthMm}`} bold />
+        <VertDim x={totalWidthMm + 22} y1={0} y2={maxHeightMm} label={`${maxHeightMm}`} />
       </svg>
     </div>
   )

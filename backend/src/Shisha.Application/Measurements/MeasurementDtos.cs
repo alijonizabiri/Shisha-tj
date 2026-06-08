@@ -2,6 +2,12 @@ namespace Shisha.Application.Measurements;
 
 // ── Requests ──────────────────────────────────────────────────────────────────
 
+public sealed record PanelInputDto(
+    int Position,
+    int WidthMm,
+    int HeightMm,
+    bool IsDoor);
+
 public sealed record HoleRequest(
     int PanelIndex,
     int XMm,
@@ -12,20 +18,20 @@ public sealed record HoleRequest(
 public sealed record CreateMeasurementRequest(
     int MeasureMm,
     int HeightMm,
-    string Configuration,
     string GlassColor,
     string HardwareColor,
     string? HandleSide,
     Guid? LeadId,
+    IReadOnlyList<PanelInputDto>? Panels,
     IReadOnlyList<HoleRequest>? Holes);
 
 public sealed record UpdateMeasurementRequest(
     int MeasureMm,
     int HeightMm,
-    string Configuration,
     string GlassColor,
     string HardwareColor,
     string? HandleSide,
+    IReadOnlyList<PanelInputDto> Panels,
     IReadOnlyList<HoleRequest>? Holes);
 
 // ── Responses ─────────────────────────────────────────────────────────────────
@@ -50,7 +56,6 @@ public sealed record MeasurementResponse(
     Guid? MeasurerId,
     int MeasureMm,
     int HeightMm,
-    string Configuration,
     string GlassColor,
     string HardwareColor,
     string HandleSide,

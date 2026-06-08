@@ -9,8 +9,7 @@ and are mirrored in `backend/src/Shisha.Application/Designer/`.
 | Parameter | Source | Range | Notes |
 |-----------|--------|-------|-------|
 | `measureMm` | measurer | 600 – 3000 | width of the opening at the wall |
-| `heightMm` | measurer | 1500 – 2500 | default 2000 |
-| `configuration` | measurer | `TwoGlass` \| `ThreeGlass` | `Corner` is v2 |
+| `heightMm` | measurer | 1500 – 2500 | default 2000; cabin total height |
 | `glassColor` | measurer | enum (5 values) | see below |
 | `hardwareColor` | measurer | enum (5 values) | see below |
 
@@ -18,43 +17,60 @@ and are mirrored in `backend/src/Shisha.Application/Designer/`.
 - `GlassColor`: `Transparent`, `Matte`, `Iodine`, `Gray`, `EuroBronze`
 - `HardwareColor`: `BlackMatte`, `Gold`, `Nickel`, `MatteGold`, `WetAsphalt`
 
-## Width formulas
+## Panels (manual layout)
 
-### Total width of all glass panels combined
+The glass layout is an explicit array of panels — no fixed configuration enum.
+Each panel has `{ position, widthMm, heightMm, isDoor }`.
+
+### Auto-computed initial layout (server + client mirror)
+
 ```
 totalWidth = measureMm + 40   // always +40 mm gap to opening
-```
 
-### Configuration: TwoGlass (1 fixed + 1 door)
-```
 if totalWidth <= 1600:
-    doorWidth   = totalWidth / 2
-    fixedWidth  = totalWidth / 2
+    panel[0] = { position=0, widthMm=totalWidth/2, heightMm=heightMm, isDoor=false }
+    panel[1] = { position=1, widthMm=totalWidth/2, heightMm=heightMm, isDoor=true  }
 else:
-    doorWidth   = 800              // max door size (sliding constraint)
-    fixedWidth  = totalWidth - 800
+    panel[0] = { position=0, widthMm=totalWidth-800, heightMm=heightMm, isDoor=false }
+    panel[1] = { position=1, widthMm=800,            heightMm=heightMm, isDoor=true  }
 ```
-Layout left-to-right: `[fixed][door]`.
 
-**Examples:**
-- 156 cm + 4 = 160 → 80 / 80
-- 166 cm + 4 = 170 → 80 / 90 (door 80, fixed 90)
-- 200 cm + 4 = 204 → 80 / 124 (door 80, fixed 124)
+Layout left-to-right: `[fixed][door]`.  
+When `totalWidth` is odd (half is not integer), `Math.round` / `MidpointRounding.AwayFromZero` is used; the fixed panel absorbs the remainder.
 
-### Configuration: ThreeGlass (2 fixed + 1 door in middle)
-Used when there's a sink/obstacle in front of one side and the door
-must open in the middle.
+**Reference test cases (must match exactly — BE and FE):**
 ```
-doorWidth = 800
-sideWidth = (totalWidth - 800) / 2     // each side glass
+measureMm=600,  h=2000 → panels=[{320,fixed,h=2000}, {320,door,h=2000}], sum=640
+measureMm=1560, h=2000 → panels=[{800,fixed,h=2000}, {800,door,h=2000}], sum=1600
+measureMm=1660, h=2000 → panels=[{900,fixed,h=2000}, {800,door,h=2000}], sum=1700
+measureMm=2000, h=2000 → panels=[{1240,fixed,h=2000},{800,door,h=2000}], sum=2040
+sum invariant: panel widths always sum to measureMm + 40
 ```
-Layout: `[fixed][door][fixed]`. Measurer may override side widths manually.
+
+### Constraints on individual panels
+
+| Property | Door panel | Fixed panel |
+|----------|-----------|-------------|
+| `widthMm` | 500 – 800 | 200 – 3000 |
+| `heightMm` | 200 – heightMm_cabin | 200 – heightMm_cabin |
+
+- Exactly 0 or 1 door in the array (v1: always 1)
+- All `widthMm` must sum to `measureMm + 40`
+
+### Validation warnings (FE only, not blocking)
+
+- Any fixed panel with `widthMm > 1500` → warn: "Глухая панель X мм — очень широкая"
+- Any fixed panel with `widthMm < 200` → warn: "Глухая панель X мм — слишком узкая"
 
 ## Height
+
 ```
 glassHeight = heightMm   // NO +40, height is exact
 ```
-Default 2000. Range checked against client opening (must be at least 20 mm less than ceiling).
+
+Default 2000. Range 1500 – 2500. Each panel stores its own `heightMm`.
+A panel may have `heightMm < cabinaHeightMm` (e.g. short glass above a bathtub).
+Panels are drawn bottom-aligned (floor-aligned) in the canvas.
 
 ## Hole positions (defaults)
 
@@ -100,34 +116,7 @@ deliveryDushanbe = 100             // flat fee for Dushanbe city
 ```
 Out-of-city delivery is entered manually (no formula).
 
-## Glass count
-
-| Configuration | Door | Fixed | Total |
-|---------------|------|-------|-------|
-| TwoGlass | 1 | 1 | 2 |
-| ThreeGlass | 1 | 2 | 3 |
-
-The factory orders are placed per glass — each glass has a unique code
-**at the factory's side** (we don't generate codes in SHISHA_TJ).
-
-## Validation rules
-
-- `measureMm`: required, 600 ≤ value ≤ 3000
-- `heightMm`: required, 1500 ≤ value ≤ 2500
-- For `TwoGlass`: if computed `fixedWidth > 1500` → warn measurer (very large fixed)
-- For `ThreeGlass`: if `sideWidth < 200` → warn (side too narrow)
-- All holes must be at least 20 mm from any edge of their panel
-- All holes within the panel bounds (0 ≤ x ≤ width, 0 ≤ y ≤ height)
-
 ## Backend / Frontend parity
 
-The formulas above must produce **identical** results on both sides.
-A shared snapshot test compares outputs for 50 reference inputs to catch drift.
-
-**Reference test cases (must match exactly):**
-```
-(measureMm=1560, height=2000, mode=TwoGlass) → panels=[{800,fixed},{800,door}], area=3.20m²
-(measureMm=1660, height=2000, mode=TwoGlass) → panels=[{900,fixed},{800,door}], area=3.40m²
-(measureMm=2000, height=2000, mode=TwoGlass) → panels=[{1240,fixed},{800,door}], area=4.08m²
-(measureMm=1800, height=2200, mode=ThreeGlass) → panels=[{520,fixed},{800,door},{520,fixed}], area=4.05m²
-```
+The `ComputeInitial` / `computeInitialPanels` functions must produce **identical** results on both sides.
+A shared snapshot test compares outputs for reference inputs to catch drift.

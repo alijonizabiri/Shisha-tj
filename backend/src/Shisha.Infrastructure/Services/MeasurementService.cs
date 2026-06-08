@@ -15,7 +15,6 @@ public sealed class MeasurementService(AppDbContext db, ICurrentUser currentUser
         CreateMeasurementRequest request,
         CancellationToken ct = default)
     {
-        var config = ParseEnum<CabinConfiguration>(request.Configuration, "configuration");
         var glassColor = ParseEnum<GlassColor>(request.GlassColor, "glassColor");
         var hardwareColor = ParseEnum<HardwareColor>(request.HardwareColor, "hardwareColor");
         var handleSide = ParseEnum<HandleSide>(request.HandleSide ?? "Right", "handleSide");
@@ -35,7 +34,18 @@ public sealed class MeasurementService(AppDbContext db, ICurrentUser currentUser
                     $"Lead must be in Measurement, Buying, OrderedAtFactory, or GlassArrived status. Got: {lead.Status}.");
         }
 
-        var panels = PanelComputer.Compute(request.MeasureMm, request.HeightMm, config);
+        IReadOnlyList<PanelInputDto> panels;
+        if (request.Panels is null or [])
+        {
+            panels = PanelComputer.ComputeInitial(request.MeasureMm, request.HeightMm)
+                .Select(p => new PanelInputDto(p.Position, p.WidthMm, p.HeightMm, p.IsDoor))
+                .ToList();
+        }
+        else
+        {
+            panels = request.Panels;
+            ValidatePanels(panels, request.HeightMm);
+        }
 
         var measurement = new Measurement
         {
@@ -43,7 +53,6 @@ public sealed class MeasurementService(AppDbContext db, ICurrentUser currentUser
             LeadId = request.LeadId,
             MeasureMm = request.MeasureMm,
             HeightMm = request.HeightMm,
-            Configuration = config,
             GlassColor = glassColor,
             HardwareColor = hardwareColor,
             HandleSide = handleSide,
@@ -51,8 +60,7 @@ public sealed class MeasurementService(AppDbContext db, ICurrentUser currentUser
         };
         db.Measurements.Add(measurement);
 
-        var glasses = CreateGlasses(measurement.Id, request.HeightMm, panels);
-
+        var glasses = CreateGlasses(measurement.Id, panels);
         AddHoles(glasses, request.Holes);
 
         await db.SaveChangesAsync(ct);
@@ -75,15 +83,15 @@ public sealed class MeasurementService(AppDbContext db, ICurrentUser currentUser
         var measurement = await db.Measurements.FindAsync([id], ct)
             ?? throw new NotFoundException($"Measurement {id} not found.");
 
-        var config = ParseEnum<CabinConfiguration>(request.Configuration, "configuration");
         var glassColor = ParseEnum<GlassColor>(request.GlassColor, "glassColor");
         var hardwareColor = ParseEnum<HardwareColor>(request.HardwareColor, "hardwareColor");
         var handleSide = ParseEnum<HandleSide>(request.HandleSide ?? "Right", "handleSide");
 
         ValidateRange(request.MeasureMm, 600, 3000, "measureMm");
         ValidateRange(request.HeightMm, 1500, 2500, "heightMm");
+        ValidatePanels(request.Panels, request.HeightMm);
 
-        // Soft-delete old glasses and holes (AuditInterceptor converts Remove → IsDeleted=true)
+        // Soft-delete old glasses and holes
         var oldGlasses = await db.Glasses
             .Include(g => g.Holes)
             .Where(g => g.MeasurementId == id)
@@ -98,13 +106,11 @@ public sealed class MeasurementService(AppDbContext db, ICurrentUser currentUser
 
         measurement.MeasureMm = request.MeasureMm;
         measurement.HeightMm = request.HeightMm;
-        measurement.Configuration = config;
         measurement.GlassColor = glassColor;
         measurement.HardwareColor = hardwareColor;
         measurement.HandleSide = handleSide;
 
-        var panels = PanelComputer.Compute(request.MeasureMm, request.HeightMm, config);
-        var glasses = CreateGlasses(measurement.Id, request.HeightMm, panels);
+        var glasses = CreateGlasses(measurement.Id, request.Panels);
         AddHoles(glasses, request.Holes);
 
         await db.SaveChangesAsync(ct);
@@ -113,10 +119,30 @@ public sealed class MeasurementService(AppDbContext db, ICurrentUser currentUser
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
-    private List<Glass> CreateGlasses(
-        Guid measurementId,
-        int heightMm,
-        IReadOnlyList<PanelComputer.Panel> panels)
+    private static void ValidatePanels(IReadOnlyList<PanelInputDto> panels, int cabinHeightMm)
+    {
+        int doorCount = panels.Count(p => p.IsDoor);
+        if (doorCount > 1)
+            throw new DomainValidationException("panels", "At most one door panel is allowed.");
+
+        foreach (var p in panels)
+        {
+            var minWidth = p.IsDoor ? 500 : 200;
+            var maxWidth = p.IsDoor ? 800 : 3000;
+
+            if (p.WidthMm < minWidth || p.WidthMm > maxWidth)
+                throw new DomainValidationException(
+                    "panels",
+                    $"Panel {p.Position}: widthMm={p.WidthMm} out of range [{minWidth}, {maxWidth}].");
+
+            if (p.HeightMm < 200 || p.HeightMm > cabinHeightMm)
+                throw new DomainValidationException(
+                    "panels",
+                    $"Panel {p.Position}: heightMm={p.HeightMm} must be between 200 and cabin height ({cabinHeightMm}).");
+        }
+    }
+
+    private List<Glass> CreateGlasses(Guid measurementId, IReadOnlyList<PanelInputDto> panels)
     {
         var glasses = new List<Glass>(panels.Count);
         foreach (var panel in panels)
@@ -127,7 +153,7 @@ public sealed class MeasurementService(AppDbContext db, ICurrentUser currentUser
                 Position = panel.Position,
                 IsDoor = panel.IsDoor,
                 WidthMm = panel.WidthMm,
-                HeightMm = heightMm,
+                HeightMm = panel.HeightMm,
             };
             db.Glasses.Add(glass);
             glasses.Add(glass);
@@ -169,7 +195,6 @@ public sealed class MeasurementService(AppDbContext db, ICurrentUser currentUser
             m.MeasurerId,
             m.MeasureMm,
             m.HeightMm,
-            m.Configuration.ToString(),
             m.GlassColor.ToString(),
             m.HardwareColor.ToString(),
             m.HandleSide.ToString(),

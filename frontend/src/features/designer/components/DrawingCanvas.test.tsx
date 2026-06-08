@@ -1,11 +1,11 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-import { computePanels } from '../lib/computePanels'
+import { computeInitialPanels } from '../lib/computePanels'
 import { defaultHoles } from '../lib/defaultHoles'
 import { DrawingCanvas } from './DrawingCanvas'
 
 // Use real computed data so the test validates the full pipeline
-const panels = computePanels(1560, 2000, 'TwoGlass')
+const panels = computeInitialPanels(1560, 2000)
 const holesByPanel = panels.map((p) => defaultHoles(p, p.heightMm))
 
 describe('DrawingCanvas', () => {
@@ -43,12 +43,15 @@ describe('DrawingCanvas', () => {
     expect(container.querySelector('svg')).toBeNull()
   })
 
-  it('works for ThreeGlass layout', () => {
-    const p3 = computePanels(1800, 2000, 'ThreeGlass')
-    const h3 = p3.map((p) => defaultHoles(p, p.heightMm))
-    const { container } = render(<DrawingCanvas panels={p3} holesByPanel={h3} />)
-    const rects = container.querySelectorAll('rect')
-    expect(rects.length).toBe(3)
+  it('renders N rects for N panels', () => {
+    const threePanels = [
+      { widthMm: 500, heightMm: 2000, isDoor: false, position: 0 },
+      { widthMm: 700, heightMm: 2000, isDoor: false, position: 1 },
+      { widthMm: 800, heightMm: 2000, isDoor: true,  position: 2 },
+    ]
+    const h3 = threePanels.map((p) => defaultHoles(p, p.heightMm))
+    const { container } = render(<DrawingCanvas panels={threePanels} holesByPanel={h3} />)
+    expect(container.querySelectorAll('rect').length).toBe(3)
   })
 })
 

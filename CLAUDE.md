@@ -163,14 +163,14 @@ For `[FULL]` steps:
 
 ## Current Status
 
-**Phase:** 5 — Production Polish
-**Last completed:** Phase 5 Step 6 [BE] — Rate limiting + security audit
-**Last commit:** Phase 5 Step 6 [BE]: rate limiting + security headers + CORS from config
-**Next step:** Phase 5 Step 7 [FULL] — Regression pass + Lighthouse 90+ on FE
+**Phase:** 3.5 (extended) — Designer Remodel
+**Last completed:** Phase 3.5 Step 9 [FULL] — Replace fixed configurations with panels array
+**Last commit:** Phase 3.5 Step 9 [FULL]: replace fixed configurations with panels array
+**Next step:** Phase 3.5 Step 10 [FE] — Manual panel editing (drag, split, door toggle)
 **Build BE:** ✅ 0 warnings, 0 errors
 **Build FE:** ✅ build passing
-**Tests:** ✅ BE 19/19 | FE passing
-**Updated:** 2026-06-06
+**Tests:** ✅ BE 119/119 | FE 98/98
+**Updated:** 2026-06-08
 
 ## Completed Phases
 - Phase 0 — Foundation ✅ (2026-06-03) — tag `v0.1-foundation` — [summary](docs/phase-summaries/Phase0-summary.md)

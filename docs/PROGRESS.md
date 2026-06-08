@@ -85,8 +85,8 @@ Update via `/done` command after each completed step.
 
 ---
 
-## Phase 3.5 — UX Polish ✅ Complete — 2026-06-05
-**Цель:** все действия с лидом из одного drawer; замеры реально привязаны к лидам.
+## Phase 3.5 — UX Polish + Designer Remodel (extended)
+**Цель:** все действия с лидом из одного drawer; замеры реально привязаны к лидам; произвольная раскладка стёкол вместо фиксированных конфигураций.
 
 - [x] Step 1 [FE] — Кнопка "+ Новый лид" в шапке Канбана (как в LeadsListPage)
 - [x] Step 2 [FE] — LeadDetailDrawer (slide-in panel справа, ~640px) вместо страницы /leads/{id} при клике из списка/канбана
@@ -97,7 +97,9 @@ Update via `/done` command after each completed step.
 - [x] Step 7 [QA] — End-to-end: создать лид → Замер → открыть Дизайнер с этим лидом → сохранить замер → Покупает → создать заказ на завод
 - [x] Step 8 [FULL] — Ужесточение правил перехода статусов: Measurement→Thinking требует замер; →Buying требует замер + dealPriceTjs + депозит ≥ 100 TJS; →Installed требует полную оплату; удалить автосоздание платежей из transition service
 - [x] Step 8.1 [FULL] — Депозит запрещён без замера (BE BusinessRuleException + FE guard); кнопка "+ Создать замер" в drawer; DesignerPage принимает ?leadId= (prefill + disable + back-navigate)
-- [x] **Phase 3.5 complete** → tag `v0.4.1-ux-polish`
+- [x] Step 9 [FULL] — Замена фиксированных конфигураций (TwoGlass/ThreeGlass) на произвольный panels[]: миграция RemoveCabinConfiguration, ComputeInitial, PanelInputDto, FE computeInitialPanels, DrawingCanvas floor-aligned
+- [ ] Step 10 [FE] — Ручное редактирование раскладки: drag границ между стёклами, click-to-split, кнопка "Сделать дверью", предупреждение при смене ширины кабины
+- [x] ~~**Phase 3.5 complete** → tag `v0.4.1-ux-polish`~~ *(extended with Steps 9–10)*
 
 ---
 

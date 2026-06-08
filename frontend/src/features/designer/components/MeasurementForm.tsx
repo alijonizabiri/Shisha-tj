@@ -1,5 +1,4 @@
 import { Controller, type UseFormReturn } from 'react-hook-form'
-import { cn } from '@/shared/lib/cn'
 import { Button } from '@/shared/ui/button'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
@@ -27,11 +26,8 @@ export function MeasurementForm({ form, onSubmit, isLoading = false, disableLead
     register,
     handleSubmit,
     control,
-    watch,
     formState: { errors },
   } = form
-
-  const configuration = watch('configuration')
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5" noValidate>
@@ -95,38 +91,8 @@ export function MeasurementForm({ form, onSubmit, isLoading = false, disableLead
 
       <section className="flex flex-col gap-3">
         <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Конфигурация
+          Параметры
         </h2>
-
-        <div className="flex flex-col gap-1.5">
-          <Label>Тип кабины</Label>
-          <div
-            className="flex overflow-hidden rounded-md border border-input"
-            role="group"
-            aria-label="Тип кабины"
-          >
-            {(['TwoGlass', 'ThreeGlass'] as const).map((val) => (
-              <label key={val} className="flex-1 cursor-pointer">
-                <input
-                  type="radio"
-                  value={val}
-                  {...register('configuration')}
-                  className="sr-only"
-                />
-                <span
-                  className={cn(
-                    'block select-none py-2 text-center text-sm transition-colors',
-                    configuration === val
-                      ? 'bg-primary text-primary-foreground'
-                      : 'hover:bg-accent hover:text-accent-foreground',
-                  )}
-                >
-                  {val === 'TwoGlass' ? '2 стекла' : '3 стекла'}
-                </span>
-              </label>
-            ))}
-          </div>
-        </div>
 
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="glassColor">Цвет стекла</Label>

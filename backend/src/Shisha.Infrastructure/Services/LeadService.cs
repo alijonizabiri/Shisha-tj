@@ -268,7 +268,6 @@ public sealed class LeadService(
             .OrderByDescending(m => m.MeasuredAt)
             .Select(m => new LeadMeasurementDto(
                 m.Id,
-                m.Configuration.ToString(),
                 m.GlassColor.ToString(),
                 m.HardwareColor.ToString(),
                 m.MeasureMm,

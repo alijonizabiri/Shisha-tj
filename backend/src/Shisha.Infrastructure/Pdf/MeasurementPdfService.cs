@@ -67,9 +67,9 @@ internal sealed class MeasurementDocument(MeasurementResponse m, string format) 
             {
                 row.RelativeItem().Column(left =>
                 {
-                    left.Item().Text($"Конфигурация: {LocalizeConfig(m.Configuration)}");
                     left.Item().Text($"Ширина проёма: {m.MeasureMm} мм");
                     left.Item().Text($"Высота: {m.HeightMm} мм");
+                    left.Item().Text($"Стёкол: {m.Glasses.Count}");
                 });
                 row.RelativeItem().Column(right =>
                 {
@@ -274,13 +274,6 @@ internal sealed class MeasurementDocument(MeasurementResponse m, string format) 
         "Handle" => "#1e40af",
         "Mount" => "#64748b",
         _ => "#94a3b8",
-    };
-
-    private static string LocalizeConfig(string code) => code switch
-    {
-        "TwoGlass" => "2 стекла",
-        "ThreeGlass" => "3 стекла",
-        _ => code,
     };
 
     private static string LocalizeGlassColor(string code) => code switch

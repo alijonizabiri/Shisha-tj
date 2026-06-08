@@ -1,47 +1,31 @@
-import type { Configuration, Metrics, Panel } from './types'
+import type { Metrics, Panel } from './types'
 
 const RAIL_GAP_MM = 40       // opening + 40 mm → total glass width
 const MAX_DOOR_MM = 800      // sliding door constraint
 const EQUAL_SPLIT_MAX = 1600 // below this total, split door and fixed equally
 
 /**
- * Computes glass panels for a shower cabin opening.
- * Layout TwoGlass:   [fixed][door]
- * Layout ThreeGlass: [fixed][door][fixed]
+ * Computes the initial glass panel layout for a shower cabin opening.
+ * Layout: [fixed][door] — door is always rightmost, max 800 mm.
+ * Mirrors BE PanelComputer.ComputeInitial exactly.
  */
-export function computePanels(
-  measureMm: number,
-  heightMm: number,
-  configuration: Configuration,
-): Panel[] {
+export function computeInitialPanels(measureMm: number, heightMm: number): Panel[] {
   const total = measureMm + RAIL_GAP_MM
 
-  if (configuration === 'TwoGlass') {
-    let doorMm: number
-    let fixedMm: number
+  let doorMm: number
+  let fixedMm: number
 
-    if (total <= EQUAL_SPLIT_MAX) {
-      doorMm = Math.round(total / 2)
-      fixedMm = total - doorMm // absorb any rounding remainder
-    } else {
-      doorMm = MAX_DOOR_MM
-      fixedMm = total - MAX_DOOR_MM
-    }
-
-    return [
-      { widthMm: fixedMm, heightMm, isDoor: false, position: 0 },
-      { widthMm: doorMm, heightMm, isDoor: true, position: 1 },
-    ]
+  if (total <= EQUAL_SPLIT_MAX) {
+    doorMm = Math.round(total / 2)
+    fixedMm = total - doorMm // absorb any rounding remainder
+  } else {
+    doorMm = MAX_DOOR_MM
+    fixedMm = total - MAX_DOOR_MM
   }
 
-  // ThreeGlass
-  const sideMm = Math.round((total - MAX_DOOR_MM) / 2)
-  const otherSideMm = total - MAX_DOOR_MM - sideMm // right side absorbs rounding
-
   return [
-    { widthMm: sideMm, heightMm, isDoor: false, position: 0 },
-    { widthMm: MAX_DOOR_MM, heightMm, isDoor: true, position: 1 },
-    { widthMm: otherSideMm, heightMm, isDoor: false, position: 2 },
+    { widthMm: fixedMm, heightMm, isDoor: false, position: 0 },
+    { widthMm: doorMm,  heightMm, isDoor: true,  position: 1 },
   ]
 }
 

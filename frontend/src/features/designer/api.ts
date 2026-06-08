@@ -3,6 +3,13 @@ import { apiClient } from '@/shared/api/client'
 
 // ── Request / Response types ──────────────────────────────────────────────────
 
+export interface PanelInput {
+  position: number
+  widthMm: number
+  heightMm: number
+  isDoor: boolean
+}
+
 export interface HoleRequest {
   panelIndex: number
   xMm: number
@@ -14,11 +21,11 @@ export interface HoleRequest {
 export interface CreateMeasurementRequest {
   measureMm: number
   heightMm: number
-  configuration: string
   glassColor: string
   hardwareColor: string
   handleSide?: string
   leadId?: string | null
+  panels?: PanelInput[]
   holes?: HoleRequest[]
 }
 
@@ -44,7 +51,6 @@ export interface MeasurementApiResponse {
   measurerId: string | null
   measureMm: number
   heightMm: number
-  configuration: string
   glassColor: string
   hardwareColor: string
   handleSide: string

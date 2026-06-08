@@ -1,5 +1,4 @@
 import { fireEvent, render, screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { DesignerPage } from './DesignerPage'
 
@@ -67,7 +66,17 @@ describe('DesignerPage', () => {
     expect(getDrawingSvg(container)).toBeTruthy()
   })
 
-  it('warns when TwoGlass fixed panel exceeds 1500 mm', () => {
+  it('shows canvas with 2 rects for any valid measureMm (auto-computed layout)', () => {
+    mockSearchParams = new URLSearchParams()
+    const { container } = render(<DesignerPage />)
+    fireEvent.change(screen.getByLabelText('Ширина проёма (мм)'), {
+      target: { value: '1800' },
+    })
+    // computeInitialPanels(1800, 2000) → [1040 fixed, 800 door] = 2 panels
+    expect(container.querySelectorAll('rect').length).toBe(2)
+  })
+
+  it('warns when fixed panel exceeds 1500 mm', () => {
     mockSearchParams = new URLSearchParams()
     render(<DesignerPage />)
     // measureMm=2500 → totalWidth=2540 → fixedMm=1740 > 1500
@@ -78,7 +87,7 @@ describe('DesignerPage', () => {
     expect(screen.getByText(/очень широкая/i)).toBeTruthy()
   })
 
-  it('shows no warning for normal TwoGlass width', () => {
+  it('shows no warning for normal panel width', () => {
     mockSearchParams = new URLSearchParams()
     render(<DesignerPage />)
     fireEvent.change(screen.getByLabelText('Ширина проёма (мм)'), {
@@ -121,19 +130,6 @@ describe('DesignerPage', () => {
     fireEvent.change(screen.getByLabelText('Депозит'), { target: { value: '200' } })
     const balanceRow = screen.getByText('Остаток').closest('div')!
     expect(balanceRow.textContent).toMatch(/284/)
-  })
-
-  it('renders 3 rects after switching to ThreeGlass', async () => {
-    mockSearchParams = new URLSearchParams()
-    const user = userEvent.setup()
-    const { container } = render(<DesignerPage />)
-    fireEvent.change(screen.getByLabelText('Ширина проёма (мм)'), {
-      target: { value: '1800' },
-    })
-    // userEvent.click on the label span properly triggers the radio change
-    await user.click(screen.getByText('3 стекла'))
-    // 1800+40=1840 → sides=520, door=800 → 3 panels
-    expect(container.querySelectorAll('rect').length).toBe(3)
   })
 
   it('save button is present and enabled by default', () => {

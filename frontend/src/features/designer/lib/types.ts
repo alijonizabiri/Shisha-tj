@@ -1,4 +1,3 @@
-export type Configuration = 'TwoGlass' | 'ThreeGlass'
 export type HandleSide = 'Left' | 'Right'
 export type HoleType = 'Roller' | 'Handle' | 'Mount' | 'Custom'
 

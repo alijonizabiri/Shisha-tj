@@ -67,6 +67,7 @@ export function LeadCombobox({ id, value, onChange, disabled = false }: LeadComb
 
   // Reset active index when options list changes
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setActiveIndex(0)
   }, [options.length, query])
 

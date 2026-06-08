@@ -28,11 +28,11 @@ public sealed class MeasurementTests(ApiFactory factory)
         return client;
     }
 
-    private static object DefaultRequest(string config = "TwoGlass") => new
+    // Default request — no panels provided (server computes initial layout)
+    private static object DefaultRequest() => new
     {
         measureMm = 1560,
         heightMm = 2000,
-        configuration = config,
         glassColor = "Transparent",
         hardwareColor = "BlackMatte",
         holes = new[]
@@ -42,8 +42,18 @@ public sealed class MeasurementTests(ApiFactory factory)
         },
     };
 
+    // Request with explicit panels
+    private static object RequestWithPanels(object[] panels) => new
+    {
+        measureMm = 1560,
+        heightMm = 2000,
+        glassColor = "Transparent",
+        hardwareColor = "BlackMatte",
+        panels,
+    };
+
     [Fact]
-    public async Task Create_ValidRequest_Returns201WithLocation()
+    public async Task Create_NoPanels_Returns201WithAutoComputedLayout()
     {
         if (!factory.IsAvailable) return;
 
@@ -55,24 +65,84 @@ public sealed class MeasurementTests(ApiFactory factory)
 
         var body = await response.Content.ReadFromJsonAsync<JsonElement>(JsonOpts);
         Assert.NotEqual(Guid.Empty, Guid.Parse(body.GetProperty("id").GetString()!));
+        // measureMm=1560, totalWidth=1600 ≤ 1600 → 2 equal panels
         Assert.Equal(2, body.GetProperty("glasses").GetArrayLength());
+        Assert.Equal(800, body.GetProperty("glasses")[0].GetProperty("widthMm").GetInt32());
+        Assert.Equal(800, body.GetProperty("glasses")[1].GetProperty("widthMm").GetInt32());
     }
 
     [Fact]
-    public async Task Create_ThreeGlass_Returns3Glasses()
+    public async Task Create_WithExplicitPanels_PanelsSavedAsIs()
     {
         if (!factory.IsAvailable) return;
 
         var client = await AuthenticatedClientAsync();
-        var response = await client.PostAsJsonAsync("/api/v1/measurements", DefaultRequest("ThreeGlass"));
+        var panels = new[]
+        {
+            new { position = 0, widthMm = 600, heightMm = 2000, isDoor = false },
+            new { position = 1, widthMm = 600, heightMm = 2000, isDoor = true  },
+        };
+        var response = await client.PostAsJsonAsync("/api/v1/measurements", RequestWithPanels(panels.Cast<object>().ToArray()));
 
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         var body = await response.Content.ReadFromJsonAsync<JsonElement>(JsonOpts);
-        Assert.Equal(3, body.GetProperty("glasses").GetArrayLength());
+        var glasses = body.GetProperty("glasses");
+        Assert.Equal(2, glasses.GetArrayLength());
+        Assert.Equal(600, glasses[0].GetProperty("widthMm").GetInt32());
+        Assert.Equal(600, glasses[1].GetProperty("widthMm").GetInt32());
     }
 
     [Fact]
-    public async Task GetById_ExistingMeasurement_Returns200WithHoles()
+    public async Task Create_TwoDoors_Returns400()
+    {
+        if (!factory.IsAvailable) return;
+
+        var client = await AuthenticatedClientAsync();
+        var panels = new[]
+        {
+            new { position = 0, widthMm = 600, heightMm = 2000, isDoor = true },
+            new { position = 1, widthMm = 600, heightMm = 2000, isDoor = true },
+        };
+        var response = await client.PostAsJsonAsync("/api/v1/measurements", RequestWithPanels(panels.Cast<object>().ToArray()));
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Create_DoorTooWide_Returns400()
+    {
+        if (!factory.IsAvailable) return;
+
+        var client = await AuthenticatedClientAsync();
+        var panels = new[]
+        {
+            new { position = 0, widthMm = 600, heightMm = 2000, isDoor = false },
+            new { position = 1, widthMm = 900, heightMm = 2000, isDoor = true  },
+        };
+        var response = await client.PostAsJsonAsync("/api/v1/measurements", RequestWithPanels(panels.Cast<object>().ToArray()));
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Create_PanelHeightExceedsCabin_Returns400()
+    {
+        if (!factory.IsAvailable) return;
+
+        var client = await AuthenticatedClientAsync();
+        var panels = new[]
+        {
+            new { position = 0, widthMm = 600, heightMm = 2100, isDoor = false },
+            new { position = 1, widthMm = 600, heightMm = 2000, isDoor = true  },
+        };
+        var response = await client.PostAsJsonAsync("/api/v1/measurements", RequestWithPanels(panels.Cast<object>().ToArray()));
+
+        // cabinHeightMm=2000, panel heightMm=2100 > 2000 → 400
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetById_ExistingMeasurement_Returns200WithGlasses()
     {
         if (!factory.IsAvailable) return;
 
@@ -88,6 +158,7 @@ public sealed class MeasurementTests(ApiFactory factory)
         var body = await getResponse.Content.ReadFromJsonAsync<JsonElement>(JsonOpts);
         Assert.Equal(id, body.GetProperty("id").GetString());
         Assert.Equal(1560, body.GetProperty("measureMm").GetInt32());
+        Assert.Equal(2, body.GetProperty("glasses").GetArrayLength());
         // First glass (fixed) should have 1 hole (Mount)
         var firstGlass = body.GetProperty("glasses")[0];
         Assert.Equal(1, firstGlass.GetProperty("holes").GetArrayLength());
@@ -105,13 +176,13 @@ public sealed class MeasurementTests(ApiFactory factory)
     }
 
     [Fact]
-    public async Task Update_ChangesConfig_ReturnsNewGlasses()
+    public async Task Update_WithPanels_ReturnsNewGlasses()
     {
         if (!factory.IsAvailable) return;
 
         var client = await AuthenticatedClientAsync();
 
-        var createResponse = await client.PostAsJsonAsync("/api/v1/measurements", DefaultRequest("TwoGlass"));
+        var createResponse = await client.PostAsJsonAsync("/api/v1/measurements", DefaultRequest());
         var created = await createResponse.Content.ReadFromJsonAsync<JsonElement>(JsonOpts);
         var id = created.GetProperty("id").GetString()!;
 
@@ -119,9 +190,14 @@ public sealed class MeasurementTests(ApiFactory factory)
         {
             measureMm = 1800,
             heightMm = 2200,
-            configuration = "ThreeGlass",
             glassColor = "Matte",
             hardwareColor = "Gold",
+            panels = new[]
+            {
+                new { position = 0, widthMm = 500, heightMm = 2200, isDoor = false },
+                new { position = 1, widthMm = 700, heightMm = 2200, isDoor = false },
+                new { position = 2, widthMm = 640, heightMm = 2200, isDoor = true  },
+            },
             holes = Array.Empty<object>(),
         };
 
@@ -131,7 +207,6 @@ public sealed class MeasurementTests(ApiFactory factory)
         var body = await updateResponse.Content.ReadFromJsonAsync<JsonElement>(JsonOpts);
         Assert.Equal(3, body.GetProperty("glasses").GetArrayLength());
         Assert.Equal(1800, body.GetProperty("measureMm").GetInt32());
-        Assert.Equal("ThreeGlass", body.GetProperty("configuration").GetString());
     }
 
     [Fact]
@@ -144,7 +219,6 @@ public sealed class MeasurementTests(ApiFactory factory)
         {
             measureMm = 100,  // below minimum 600
             heightMm = 2000,
-            configuration = "TwoGlass",
             glassColor = "Transparent",
             hardwareColor = "BlackMatte",
         });

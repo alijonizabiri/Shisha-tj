@@ -13,11 +13,6 @@ public sealed class MeasurementConfiguration : IEntityTypeConfiguration<Measurem
         builder.Property(m => m.MeasureMm).IsRequired();
         builder.Property(m => m.HeightMm).IsRequired();
 
-        builder.Property(m => m.Configuration)
-            .HasConversion<string>()
-            .HasMaxLength(20)
-            .IsRequired();
-
         builder.Property(m => m.GlassColor)
             .HasConversion<string>()
             .HasMaxLength(20)

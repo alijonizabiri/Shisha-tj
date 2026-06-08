@@ -93,7 +93,7 @@ A measurer's site visit → drawing.
 | measurer_id | uuid FK → users | |
 | measure_mm | int not null | width of opening |
 | height_mm | int not null | default 2000 |
-| configuration | text not null | `TwoGlass` \| `ThreeGlass` (\| `Corner` v2) |
+| ~~configuration~~ | ~~text~~ | **Removed** in migration `RemoveCabinConfiguration`; glass layout is now stored in the `glasses` table |
 | glass_color | text not null | enum |
 | hardware_color | text not null | enum |
 | handle_side | text not null default 'Right' | `Left` \| `Right` |
@@ -231,3 +231,4 @@ Reworks caused by factory error don't count against profit (factory absorbs).
 4. `AddMeasurements` — measurements, glasses, holes
 5. `AddFactoryOrders` — factory_orders, factory_order_items
 6. `AddFinances` — hardware, payments, expenses
+7. `RemoveCabinConfiguration` — drops `configuration` column from `measurements`

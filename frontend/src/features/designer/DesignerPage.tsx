@@ -3,9 +3,9 @@ import { useForm, useWatch } from 'react-hook-form'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from 'sonner'
-import { computeMetrics, computePanels } from './lib/computePanels'
+import { computeInitialPanels, computeMetrics } from './lib/computePanels'
 import { defaultHoles } from './lib/defaultHoles'
-import type { Hole } from './lib/types'
+import type { Hole, Panel } from './lib/types'
 import { measurementFormSchema, type MeasurementFormValues } from './schemas'
 import { downloadMeasurementPdf, useDesignerLeads, useSaveMeasurement, type HoleRequest } from './api'
 import { CalculationSidebar } from './components/CalculationSidebar'
@@ -39,7 +39,6 @@ export function DesignerPage() {
       leadId:        '',
       measureMm:     '' as unknown as number,
       heightMm:      2000,
-      configuration: 'TwoGlass',
       glassColor:    'Transparent',
       hardwareColor: 'BlackMatte',
       deliveryTjs:   100,
@@ -62,16 +61,15 @@ export function DesignerPage() {
 
   // useWatch instead of form.watch() — compatible with the React Compiler
   const measureMm = useWatch({ control: form.control, name: 'measureMm' })
-  const heightMm = useWatch({ control: form.control, name: 'heightMm' })
-  const configuration = useWatch({ control: form.control, name: 'configuration' })
+  const heightMm  = useWatch({ control: form.control, name: 'heightMm' })
 
-  const panels = useMemo(() => {
+  const panels: Panel[] = useMemo(() => {
     const m = typeof measureMm === 'number' ? measureMm : Number(measureMm)
-    const h = typeof heightMm === 'number' ? heightMm : Number(heightMm)
+    const h = typeof heightMm  === 'number' ? heightMm  : Number(heightMm)
     if (!Number.isFinite(m) || !Number.isFinite(h)) return []
     if (m < 600 || m > 3000 || h < 1500 || h > 2500) return []
-    return computePanels(m, h, configuration)
-  }, [measureMm, heightMm, configuration])
+    return computeInitialPanels(m, h)
+  }, [measureMm, heightMm])
 
   const holesByPanel = useMemo(
     () => panels.map((p) => defaultHoles(p, p.heightMm)),
@@ -81,32 +79,29 @@ export function DesignerPage() {
   const canvasKey = panels.map((p) => `${p.widthMm}x${p.heightMm}`).join('-')
 
   // Hole tracker — keyed by canvasKey so dragged positions reset when panels resize.
-  // currentHoles falls back to holesByPanel whenever the key doesn't match.
   const [holeTracker, setHoleTracker] = useState<{ key: string; holes: Hole[][] }>({
     key: canvasKey,
     holes: holesByPanel,
   })
   const currentHoles = holeTracker.key === canvasKey ? holeTracker.holes : holesByPanel
 
-  // Snapshot of what was last saved — derived savedId becomes null when form diverges
+  // Snapshot of what was last saved — null when form diverges from last save
   const [savedSnapshot, setSavedSnapshot] = useState<{
     id: string
     measureMm: unknown
     heightMm: unknown
-    configuration: string
   } | null>(null)
 
   const savedId =
     savedSnapshot !== null &&
     savedSnapshot.measureMm === measureMm &&
-    savedSnapshot.heightMm === heightMm &&
-    savedSnapshot.configuration === configuration
+    savedSnapshot.heightMm === heightMm
       ? savedSnapshot.id
       : null
 
   const metrics = useMemo(() => {
     const m = typeof measureMm === 'number' ? measureMm : Number(measureMm)
-    const h = typeof heightMm === 'number' ? heightMm : Number(heightMm)
+    const h = typeof heightMm  === 'number' ? heightMm  : Number(heightMm)
     if (!Number.isFinite(m) || !Number.isFinite(h) || m < 600 || m > 3000 || h < 1500 || h > 2500) {
       return null
     }
@@ -115,15 +110,12 @@ export function DesignerPage() {
 
   const warning = useMemo(() => {
     if (panels.length === 0) return null
-    if (configuration === 'TwoGlass') {
-      const fixed = panels.find((p) => !p.isDoor)
-      if (fixed && fixed.widthMm > 1500) return `Глухая панель ${fixed.widthMm} мм — очень широкая`
-    } else {
-      const narrow = panels.filter((p) => !p.isDoor).find((s) => s.widthMm < 200)
-      if (narrow) return `Боковая панель ${narrow.widthMm} мм — слишком узкая`
-    }
+    const wide = panels.find((p) => !p.isDoor && p.widthMm > 1500)
+    if (wide) return `Глухая панель ${wide.widthMm} мм — очень широкая`
+    const narrow = panels.find((p) => !p.isDoor && p.widthMm < 200)
+    if (narrow) return `Глухая панель ${narrow.widthMm} мм — слишком узкая`
     return null
-  }, [panels, configuration])
+  }, [panels])
 
   function handleSave(values: MeasurementFormValues): void {
     saveMutation.mutate(
@@ -131,18 +123,22 @@ export function DesignerPage() {
         leadId:        values.leadId,
         measureMm:     values.measureMm,
         heightMm:      values.heightMm,
-        configuration: values.configuration,
         glassColor:    values.glassColor,
         hardwareColor: values.hardwareColor,
-        holes:         flattenHoles(currentHoles),
+        panels:        panels.map((p) => ({
+          position: p.position,
+          widthMm:  p.widthMm,
+          heightMm: p.heightMm,
+          isDoor:   p.isDoor,
+        })),
+        holes: flattenHoles(currentHoles),
       },
       {
         onSuccess: (data) => {
           setSavedSnapshot({
             id: data.id,
             measureMm: values.measureMm,
-            heightMm: values.heightMm,
-            configuration: values.configuration,
+            heightMm:  values.heightMm,
           })
           if (leadIdFromUrl) {
             toast.success('Замер сохранён')

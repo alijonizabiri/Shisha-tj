@@ -13,7 +13,6 @@ public sealed class Measurement : BaseEntity, ITenantOwned, ISoftDeletable
 
     public int MeasureMm { get; set; }
     public int HeightMm { get; set; }
-    public CabinConfiguration Configuration { get; set; }
     public GlassColor GlassColor { get; set; }
     public HardwareColor HardwareColor { get; set; }
     public HandleSide HandleSide { get; set; } = HandleSide.Right;
