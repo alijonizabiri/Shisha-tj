@@ -7,16 +7,12 @@ import { Hole } from './Hole'
 
 const PAD = 60
 const TICK = 6
-const MIN_ZOOM = 0.25
-const MAX_ZOOM = 3
-const STEP = 0.1
 
 const MIN_DOOR_W  = 500
 const MAX_DOOR_W  = 800
 const MIN_FIXED_W = 200
 const MAX_FIXED_W = 3000
 const MIN_HEIGHT  = 200
-const MAX_PANELS  = 6
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -29,6 +25,13 @@ interface DragState {
   startClientY: number
 }
 
+export interface PanelScreenRect {
+  x: number
+  y: number
+  w: number
+  h: number
+}
+
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 function xPositions(panels: Panel[]): number[] {
@@ -39,10 +42,6 @@ function xPositions(panels: Panel[]): number[] {
     cursor += p.widthMm
   }
   return xs
-}
-
-function clampZoom(z: number): number {
-  return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, Math.round(z * 10) / 10))
 }
 
 // ── Sub-components ────────────────────────────────────────────────────────────
@@ -85,13 +84,14 @@ function VertDim({ x, y1, y2, label }: { x: number; y1: number; y2: number; labe
 interface DrawingCanvasProps {
   panels: Panel[]
   holesByPanel: HoleData[][]
-  /** Cabin opening height in mm — floor coordinate and height-drag constraint */
   cabinHeightMm: number
+  /** Controlled zoom — 1 = full drawing fits container */
+  zoom: number
+  onZoomChange: (z: number) => void
   onHolesChange?: (holesByPanel: HoleData[][]) => void
-  /** Called when boundary or height drag is committed (pointer-up) */
   onPanelsChange?: (panels: Panel[]) => void
-  onSplitPanel?: (panelIdx: number) => void
-  onToggleDoor?: (panelIdx: number) => void
+  selectedPanelId?: string | null
+  onSelectPanel?: (id: string | null, rect?: PanelScreenRect) => void
   className?: string
 }
 
@@ -101,15 +101,15 @@ export function DrawingCanvas({
   panels,
   holesByPanel: initialHoles,
   cabinHeightMm,
+  zoom,
+  onZoomChange,
   onHolesChange,
   onPanelsChange,
-  onSplitPanel,
-  onToggleDoor,
+  selectedPanelId,
+  onSelectPanel,
   className,
 }: DrawingCanvasProps) {
   const [holes, setHoles] = useState<HoleData[][]>(initialHoles)
-  const [zoom, setZoom] = useState(1)
-  // localPanels: in-progress drag visual; null when not dragging
   const [localPanels, setLocalPanels] = useState<Panel[] | null>(null)
   const [isDragging, setIsDragging] = useState(false)
 
@@ -144,19 +144,45 @@ export function DrawingCanvas({
     [onHolesChange],
   )
 
-  // ── Zoom ──────────────────────────────────────────────────────────────────
-
-  function adjustZoom(delta: number) {
-    setZoom((z) => clampZoom(z + delta))
-  }
+  // ── Wheel zoom ────────────────────────────────────────────────────────────
 
   function handleWheel(e: React.WheelEvent<HTMLDivElement>) {
     if (!e.ctrlKey && !e.metaKey) return
     e.preventDefault()
-    adjustZoom(e.deltaY < 0 ? STEP : -STEP)
+    const delta = e.deltaY < 0 ? 0.1 : -0.1
+    onZoomChange(Math.min(3, Math.max(0.25, Math.round((zoom + delta) * 10) / 10)))
   }
 
-  // ── Panel drag ────────────────────────────────────────────────────────────
+  // ── Glass selection ───────────────────────────────────────────────────────
+
+  function getGlassScreenRect(panelIdx: number): PanelScreenRect {
+    const svg = svgRef.current!
+    const ctm = svg.getScreenCTM()!
+    const panel = renderPanels[panelIdx]
+    const yOffset = cabinHeightMm - panel.heightMm
+    return {
+      x: xs[panelIdx] * ctm.a + ctm.e,
+      y: yOffset * ctm.d + ctm.f,
+      w: panel.widthMm * ctm.a,
+      h: panel.heightMm * Math.abs(ctm.d),
+    }
+  }
+
+  function handleGlassClick(e: React.MouseEvent, panelId: string, panelIdx: number) {
+    e.stopPropagation()
+    if (isDragging) return
+    if (!svgRef.current?.getScreenCTM?.()) {
+      onSelectPanel?.(panelId)
+      return
+    }
+    onSelectPanel?.(panelId, getGlassScreenRect(panelIdx))
+  }
+
+  function handleSvgClick() {
+    onSelectPanel?.(null)
+  }
+
+  // ── Panel boundary drag ───────────────────────────────────────────────────
 
   function startDrag(
     e: React.PointerEvent<SVGRectElement>,
@@ -174,16 +200,16 @@ export function DrawingCanvas({
       startClientY: e.clientY,
     }
     setIsDragging(true)
+    onSelectPanel?.(null)
   }
 
   function handleDragMove(e: React.PointerEvent<SVGRectElement>) {
     const drag = activeDragRef.current
     if (!drag || !svgRef.current) return
 
-    // getScreenCTM().a/.d give screen-pixels-per-SVG-unit, including viewBox scale
     const ctm = svgRef.current.getScreenCTM()
     if (!ctm) return
-    const scaleX = 1 / ctm.a  // SVG units per screen pixel
+    const scaleX = 1 / ctm.a
     const scaleY = 1 / ctm.d
 
     if (drag.type === 'boundary') {
@@ -209,7 +235,6 @@ export function DrawingCanvas({
         return p
       }))
     } else {
-      // Drag top edge up → panel gets taller (svgDelta < 0 → height increases)
       const svgDelta = Math.round((e.clientY - drag.startClientY) * scaleY)
       const { panelIdx, startHeights } = drag
       const newH = Math.max(MIN_HEIGHT, Math.min(cabinHeightMm, startHeights[panelIdx] - svgDelta))
@@ -236,190 +261,128 @@ export function DrawingCanvas({
   if (panels.length === 0) return null
 
   return (
-    <div className={cn('flex h-full w-full flex-col', className)} onWheel={handleWheel}>
-      {/* ── SVG area (fills remaining height) ── */}
-      <div className="relative min-h-0 flex-1">
-        {/* ── Zoom controls ── */}
-        <div className="absolute right-3 top-3 z-10 flex items-center gap-0.5 rounded-md border border-border bg-card/90 p-1 shadow-sm backdrop-blur-sm">
-          <button
-            type="button"
-            onClick={() => adjustZoom(-STEP)}
-            disabled={zoom <= MIN_ZOOM}
-            aria-label="Уменьшить"
-            className="flex h-7 w-7 items-center justify-center rounded text-base hover:bg-accent disabled:opacity-40"
-          >
-            −
-          </button>
-          <span className="min-w-[3.25rem] text-center text-xs tabular-nums text-foreground">
-            {Math.round(zoom * 100)}%
-          </span>
-          <button
-            type="button"
-            onClick={() => adjustZoom(STEP)}
-            disabled={zoom >= MAX_ZOOM}
-            aria-label="Увеличить"
-            className="flex h-7 w-7 items-center justify-center rounded text-base hover:bg-accent disabled:opacity-40"
-          >
-            +
-          </button>
-          <button
-            type="button"
-            onClick={() => setZoom(1)}
-            aria-label="Сброс зума"
-            className="ml-0.5 h-7 rounded px-2 text-xs hover:bg-accent"
-          >
-            Сброс
-          </button>
-        </div>
-
-        <svg
-          ref={svgRef}
-          viewBox={`${vbX} ${vbY} ${scaledW} ${scaledH}`}
-          className="h-full w-full"
-          preserveAspectRatio="xMidYMid meet"
-          aria-label="Чертёж кабины"
-        >
-          {/* ── 1. Glass panel rects ── */}
-          {renderPanels.map((panel, i) => {
-            const yOffset = cabinHeightMm - panel.heightMm
-            return (
-              <g key={`panel-${i}`}>
-                <rect
-                  data-testid="glass-rect"
-                  x={xs[i]} y={yOffset}
-                  width={panel.widthMm} height={panel.heightMm}
-                  fill={panel.isDoor ? '#dbeafe' : '#f8fafc'}
-                  stroke="#334155" strokeWidth={2}
-                />
-                {panel.isDoor && (
-                  <line
-                    x1={xs[i] + 2} y1={yOffset + 6}
-                    x2={xs[i] + panel.widthMm - 2} y2={yOffset + 6}
-                    stroke="#3b82f6" strokeWidth={4} strokeLinecap="round"
-                  />
-                )}
-                {/* Show individual height when panel is shorter than cabin */}
-                {panel.heightMm !== cabinHeightMm && (
-                  <text
-                    x={xs[i] + panel.widthMm / 2} y={yOffset + 28}
-                    textAnchor="middle" fontSize={20} fill="#94a3b8"
-                  >
-                    {panel.heightMm} мм ↕
-                  </text>
-                )}
-              </g>
-            )
-          })}
-
-          {/* ── 2. Boundary drag handles ── */}
-          {renderPanels.slice(0, -1).map((_, i) => {
-            const bx = xs[i] + renderPanels[i].widthMm
-            return (
-              <g key={`boundary-${i}`}>
-                <line
-                  x1={bx} y1={0} x2={bx} y2={cabinHeightMm}
-                  stroke="#94a3b8" strokeWidth={1} strokeDasharray="6 3"
-                  pointerEvents="none"
-                />
-                <rect
-                  x={bx - 10} y={0} width={20} height={cabinHeightMm}
-                  fill="transparent"
-                  style={{ cursor: 'ew-resize' }}
-                  onPointerDown={(e) => startDrag(e, 'boundary', i)}
-                  onPointerMove={handleDragMove}
-                  onPointerUp={handleDragUp}
-                  onPointerCancel={handleDragCancel}
-                />
-              </g>
-            )
-          })}
-
-          {/* ── 3. Height drag handles (top edge of each panel) ── */}
-          {renderPanels.map((panel, i) => {
-            const topY = cabinHeightMm - panel.heightMm
-            return (
-              <g key={`height-handle-${i}`}>
-                <line
-                  x1={xs[i] + 8} y1={topY}
-                  x2={xs[i] + panel.widthMm - 8} y2={topY}
-                  stroke="#94a3b8" strokeWidth={2} strokeDasharray="4 4"
-                  pointerEvents="none"
-                />
-                <rect
-                  x={xs[i]} y={topY - 10} width={panel.widthMm} height={20}
-                  fill="transparent"
-                  style={{ cursor: 'ns-resize' }}
-                  onPointerDown={(e) => startDrag(e, 'height', i)}
-                  onPointerMove={handleDragMove}
-                  onPointerUp={handleDragUp}
-                  onPointerCancel={handleDragCancel}
-                />
-              </g>
-            )
-          })}
-
-          {/* ── 4. Holes (above drag handles so they keep pointer priority) ── */}
-          {renderPanels.map((panel, i) => {
-            const yOffset = cabinHeightMm - panel.heightMm
-            return (holes[i] ?? []).map((hole, j) => (
-              <Hole
-                key={`hole-${i}-${j}`}
-                xMm={hole.xMm}
-                yMm={hole.yMm + yOffset}
-                radiusMm={hole.radiusMm}
-                holeType={hole.holeType}
-                panelX={xs[i]}
-                panelWidthMm={panel.widthMm}
-                panelHeightMm={panel.heightMm}
-                onMove={(x, y) => handleHoleMove(i, j, x, y - yOffset)}
-              />
-            ))
-          })}
-
-          {/* ── 5. Dimension lines ── */}
-          {renderPanels.map((panel, i) => (
-            <HorizDim
-              key={`dim-w-${i}`}
-              x1={xs[i]} x2={xs[i] + panel.widthMm}
-              y={cabinHeightMm + 22} label={`${panel.widthMm}`}
-            />
-          ))}
-          <HorizDim x1={0} x2={totalWidthMm} y={cabinHeightMm + 50} label={`${totalWidthMm}`} bold />
-          <VertDim x={totalWidthMm + 22} y1={0} y2={cabinHeightMm} label={`${cabinHeightMm}`} />
-        </svg>
-      </div>
-
-      {/* ── Panel action bar (HTML buttons — better touch targets, no SVG clutter) ── */}
-      <div
-        className={cn(
-          'flex flex-wrap gap-x-4 gap-y-1 border-t border-border bg-card/80 px-3 py-1.5 backdrop-blur-sm',
-          isDragging && 'pointer-events-none opacity-40',
-        )}
+    <div className={cn('h-full w-full', className)} onWheel={handleWheel}>
+      <svg
+        ref={svgRef}
+        viewBox={`${vbX} ${vbY} ${scaledW} ${scaledH}`}
+        className="h-full w-full"
+        preserveAspectRatio="xMidYMid meet"
+        aria-label="Чертёж кабины"
+        onClick={handleSvgClick}
       >
+        {/* ── 1. Glass panel rects ── */}
+        {renderPanels.map((panel, i) => {
+          const yOffset = cabinHeightMm - panel.heightMm
+          const isSelected = panel.id === selectedPanelId
+          return (
+            <g key={`panel-${panel.id}`}>
+              <rect
+                data-testid="glass-rect"
+                x={xs[i]} y={yOffset}
+                width={panel.widthMm} height={panel.heightMm}
+                fill={panel.isDoor ? '#dbeafe' : '#f8fafc'}
+                stroke={isSelected ? '#6366f1' : '#334155'}
+                strokeWidth={isSelected ? 3 : 2}
+                style={{ cursor: 'pointer' }}
+                onClick={(e) => handleGlassClick(e, panel.id, i)}
+              />
+              {panel.isDoor && (
+                <line
+                  x1={xs[i] + 2} y1={yOffset + 6}
+                  x2={xs[i] + panel.widthMm - 2} y2={yOffset + 6}
+                  stroke="#3b82f6" strokeWidth={4} strokeLinecap="round"
+                  pointerEvents="none"
+                />
+              )}
+              {panel.heightMm !== cabinHeightMm && (
+                <text
+                  x={xs[i] + panel.widthMm / 2} y={yOffset + 28}
+                  textAnchor="middle" fontSize={20} fill="#94a3b8"
+                  pointerEvents="none"
+                >
+                  {panel.heightMm} мм ↕
+                </text>
+              )}
+            </g>
+          )
+        })}
+
+        {/* ── 2. Boundary drag handles ── */}
+        {renderPanels.slice(0, -1).map((_, i) => {
+          const bx = xs[i] + renderPanels[i].widthMm
+          return (
+            <g key={`boundary-${i}`}>
+              <line
+                x1={bx} y1={0} x2={bx} y2={cabinHeightMm}
+                stroke="#94a3b8" strokeWidth={1} strokeDasharray="6 3"
+                pointerEvents="none"
+              />
+              <rect
+                x={bx - 10} y={0} width={20} height={cabinHeightMm}
+                fill="transparent"
+                style={{ cursor: 'ew-resize' }}
+                onPointerDown={(e) => startDrag(e, 'boundary', i)}
+                onPointerMove={handleDragMove}
+                onPointerUp={handleDragUp}
+                onPointerCancel={handleDragCancel}
+              />
+            </g>
+          )
+        })}
+
+        {/* ── 3. Height drag handles ── */}
+        {renderPanels.map((panel, i) => {
+          const topY = cabinHeightMm - panel.heightMm
+          return (
+            <g key={`height-handle-${i}`}>
+              <line
+                x1={xs[i] + 8} y1={topY}
+                x2={xs[i] + panel.widthMm - 8} y2={topY}
+                stroke="#94a3b8" strokeWidth={2} strokeDasharray="4 4"
+                pointerEvents="none"
+              />
+              <rect
+                x={xs[i]} y={topY - 10} width={panel.widthMm} height={20}
+                fill="transparent"
+                style={{ cursor: 'ns-resize' }}
+                onPointerDown={(e) => startDrag(e, 'height', i)}
+                onPointerMove={handleDragMove}
+                onPointerUp={handleDragUp}
+                onPointerCancel={handleDragCancel}
+              />
+            </g>
+          )
+        })}
+
+        {/* ── 4. Holes ── */}
+        {renderPanels.map((panel, i) => {
+          const yOffset = cabinHeightMm - panel.heightMm
+          return (holes[i] ?? []).map((hole, j) => (
+            <Hole
+              key={`hole-${panel.id}-${j}`}
+              xMm={hole.xMm}
+              yMm={hole.yMm + yOffset}
+              radiusMm={hole.radiusMm}
+              holeType={hole.holeType}
+              panelX={xs[i]}
+              panelWidthMm={panel.widthMm}
+              panelHeightMm={panel.heightMm}
+              onMove={(x, y) => handleHoleMove(i, j, x, y - yOffset)}
+            />
+          ))
+        })}
+
+        {/* ── 5. Dimension lines ── */}
         {renderPanels.map((panel, i) => (
-          <div key={`pa-${i}`} className="flex items-center gap-1">
-            <span className="select-none text-xs text-muted-foreground">{i + 1}</span>
-            <button
-              type="button"
-              aria-label={panel.isDoor ? 'Сделать глухим' : 'Сделать дверью'}
-              onClick={() => onToggleDoor?.(i)}
-              className="rounded border border-border bg-background px-2 py-0.5 text-xs hover:bg-accent active:scale-95"
-            >
-              {panel.isDoor ? '→ Глухое' : '→ Дверь'}
-            </button>
-            {!panel.isDoor && panel.widthMm >= 400 && renderPanels.length < MAX_PANELS && (
-              <button
-                type="button"
-                aria-label="Разделить"
-                onClick={() => onSplitPanel?.(i)}
-                className="rounded border border-border bg-background px-2 py-0.5 text-xs hover:bg-accent active:scale-95"
-              >
-                Разделить
-              </button>
-            )}
-          </div>
+          <HorizDim
+            key={`dim-w-${i}`}
+            x1={xs[i]} x2={xs[i] + panel.widthMm}
+            y={cabinHeightMm + 22} label={`${panel.widthMm}`}
+          />
         ))}
-      </div>
+        <HorizDim x1={0} x2={totalWidthMm} y={cabinHeightMm + 50} label={`${totalWidthMm}`} bold />
+        <VertDim x={totalWidthMm + 22} y1={0} y2={cabinHeightMm} label={`${cabinHeightMm}`} />
+      </svg>
     </div>
   )
 }

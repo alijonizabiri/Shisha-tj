@@ -1,8 +1,10 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { DesignerPage } from './DesignerPage'
+import type { Panel } from './lib/types'
+import type { MeasurementFormValues } from './schemas'
 
-// ── Mock the API module so tests don't need QueryClientProvider or a server ───
+// ── API mock ──────────────────────────────────────────────────────────────────
 
 vi.mock('./api', () => ({
   useSaveMeasurement: () => ({
@@ -21,7 +23,7 @@ vi.mock('./api', () => ({
   downloadMeasurementPdf: vi.fn(),
 }))
 
-// ── Mock react-router-dom so tests don't need a Router context ───────────────
+// ── Router mock ───────────────────────────────────────────────────────────────
 
 const mockNavigate = vi.fn()
 let mockSearchParams = new URLSearchParams()
@@ -31,185 +33,304 @@ vi.mock('react-router-dom', () => ({
   useNavigate: () => mockNavigate,
 }))
 
-// ── Mock sonner so toast calls are silent in tests ────────────────────────────
+// ── Sonner mock (must include Toaster or DesignerPage crashes) ────────────────
 
-vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
+vi.mock('sonner', () => ({
+  toast: { success: vi.fn(), error: vi.fn() },
+  Toaster: () => null,
+}))
 
-// Helper: find the drawing canvas SVG (not icon SVGs)
-function getDrawingSvg(container: HTMLElement) {
-  return container.querySelector('svg[aria-label="Чертёж кабины"]')
+// ── DesignerSheet mock: renders apply buttons when open ───────────────────────
+
+vi.mock('./components/DesignerSheet', () => ({
+  DesignerSheet: ({
+    open,
+    onOpenChange,
+    onApply,
+  }: {
+    open: boolean
+    onOpenChange: (o: boolean) => void
+    onApply: (v: MeasurementFormValues) => void
+    values: MeasurementFormValues
+    disableLeadSelector?: boolean
+  }) => (
+    <div data-testid="designer-sheet" data-open={String(open)}>
+      {open && (
+        <>
+          {/* Normal apply: 1560mm */}
+          <button
+            data-testid="sheet-apply"
+            onClick={() => {
+              onApply({
+                leadId: 'lead-abc',
+                measureMm: 1560,
+                heightMm: 2000,
+                glassColor: 'Transparent',
+                hardwareColor: 'BlackMatte',
+                deliveryTjs: 100,
+                depositTjs: 0,
+              })
+              onOpenChange(false)
+            }}
+          >
+            Применить
+          </button>
+          {/* Wide-panel apply: 2500mm → fixedMm=1740 > 1500 → warning */}
+          <button
+            data-testid="sheet-apply-wide"
+            onClick={() => {
+              onApply({
+                leadId: 'lead-abc',
+                measureMm: 2500,
+                heightMm: 2000,
+                glassColor: 'Transparent',
+                hardwareColor: 'BlackMatte',
+                deliveryTjs: 100,
+                depositTjs: 0,
+              })
+              onOpenChange(false)
+            }}
+          >
+            Применить-широко
+          </button>
+        </>
+      )}
+    </div>
+  ),
+}))
+
+// ── DrawingCanvas mock: renders glass-rect divs without real SVG ──────────────
+
+vi.mock('./components/DrawingCanvas', () => ({
+  DrawingCanvas: ({
+    panels,
+    onSelectPanel,
+  }: {
+    panels: Panel[]
+    onSelectPanel?: (id: string | null, rect?: unknown) => void
+  }) => (
+    <div data-testid="drawing-canvas">
+      {panels.map((p) => (
+        <div
+          key={p.id}
+          data-testid="glass-rect"
+          onClick={() => onSelectPanel?.(p.id, { x: 100, y: 100, w: 200, h: 300 })}
+        />
+      ))}
+    </div>
+  ),
+}))
+
+// ── GlassContextPopover mock ──────────────────────────────────────────────────
+
+vi.mock('./components/GlassContextPopover', () => ({
+  GlassContextPopover: ({
+    onToggleDoor,
+    onSplit,
+    onDelete,
+    onClose,
+  }: {
+    onToggleDoor: () => void
+    onSplit: () => void
+    onDelete: () => void
+    onClose: () => void
+  }) => (
+    <div data-testid="glass-popover">
+      <button onClick={() => { onToggleDoor(); onClose() }}>toggle-door</button>
+      <button onClick={() => { onSplit(); onClose() }}>split</button>
+      <button onClick={() => { onDelete(); onClose() }}>delete</button>
+      <button onClick={onClose}>close-popover</button>
+    </div>
+  ),
+}))
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function openSheet() {
+  fireEvent.click(screen.getByRole('button', { name: 'Открыть параметры замера' }))
 }
 
+function applyValues() {
+  openSheet()
+  fireEvent.click(screen.getByTestId('sheet-apply'))
+}
+
+function applyWideValues() {
+  openSheet()
+  fireEvent.click(screen.getByTestId('sheet-apply-wide'))
+}
+
+function expandInfoCard() {
+  fireEvent.click(screen.getByRole('button', { name: 'Развернуть расчёт' }))
+}
+
+// ── Tests ─────────────────────────────────────────────────────────────────────
+
 describe('DesignerPage', () => {
-  it('renders all form fields', () => {
+  it('renders canvas area', () => {
     mockSearchParams = new URLSearchParams()
     render(<DesignerPage />)
-    expect(screen.getByLabelText('Клиент *')).toBeTruthy()
-    expect(screen.getByLabelText('Ширина проёма (мм)')).toBeTruthy()
-    expect(screen.getByLabelText('Высота (мм)')).toBeTruthy()
-    expect(screen.getByLabelText('Цвет стекла')).toBeTruthy()
-    expect(screen.getByLabelText('Цвет фурнитуры')).toBeTruthy()
+    expect(screen.getByTestId('canvas-area')).toBeTruthy()
   })
 
-  it('hides canvas when measure is empty', () => {
+  it('shows prompt before apply', () => {
     mockSearchParams = new URLSearchParams()
-    const { container } = render(<DesignerPage />)
-    expect(getDrawingSvg(container)).toBeNull()
+    render(<DesignerPage />)
+    expect(screen.getByText(/Введите параметры замера/)).toBeTruthy()
   })
 
-  it('shows canvas after entering a valid measureMm', () => {
+  it('FAB button is present', () => {
     mockSearchParams = new URLSearchParams()
-    const { container } = render(<DesignerPage />)
-    fireEvent.change(screen.getByLabelText('Ширина проёма (мм)'), {
-      target: { value: '1560' },
-    })
-    expect(getDrawingSvg(container)).toBeTruthy()
+    render(<DesignerPage />)
+    expect(screen.getByRole('button', { name: 'Открыть параметры замера' })).toBeTruthy()
   })
 
-  it('shows canvas with 2 glass rects for any valid measureMm (auto-computed layout)', () => {
+  it('clicking FAB opens sheet', () => {
     mockSearchParams = new URLSearchParams()
-    const { container } = render(<DesignerPage />)
-    fireEvent.change(screen.getByLabelText('Ширина проёма (мм)'), {
-      target: { value: '1800' },
-    })
-    // computeInitialPanels(1800, 2000) → [1040 fixed, 800 door] = 2 panels
-    expect(container.querySelectorAll('[data-testid="glass-rect"]').length).toBe(2)
+    render(<DesignerPage />)
+    const sheet = screen.getByTestId('designer-sheet')
+    expect(sheet.getAttribute('data-open')).toBe('false')
+    openSheet()
+    expect(sheet.getAttribute('data-open')).toBe('true')
+  })
+
+  it('hides canvas before apply', () => {
+    mockSearchParams = new URLSearchParams()
+    render(<DesignerPage />)
+    expect(screen.queryByTestId('drawing-canvas')).toBeNull()
+  })
+
+  it('shows 2 glass rects after apply with 1560mm', () => {
+    mockSearchParams = new URLSearchParams()
+    render(<DesignerPage />)
+    applyValues()
+    // computeInitialPanels(1560, 2000) → [800 fixed, 800 door] = 2 panels
+    expect(screen.getAllByTestId('glass-rect').length).toBe(2)
+  })
+
+  it('shows area in info card after apply', () => {
+    mockSearchParams = new URLSearchParams()
+    render(<DesignerPage />)
+    applyValues()
+    // computeMetrics(1560, 2000) → totalWidthMm=1600, areaSqM=3.20
+    expect(screen.getByText('3.20 м²')).toBeTruthy()
+  })
+
+  it('shows placeholder dashes before apply', () => {
+    mockSearchParams = new URLSearchParams()
+    render(<DesignerPage />)
+    // InfoCard shows "—" for both area and masterFee before apply
+    expect(screen.getAllByText('—').length).toBeGreaterThanOrEqual(1)
+  })
+
+  it('back button calls navigate(-1)', () => {
+    mockSearchParams = new URLSearchParams()
+    mockNavigate.mockClear()
+    render(<DesignerPage />)
+    fireEvent.click(screen.getByRole('button', { name: 'Назад' }))
+    expect(mockNavigate).toHaveBeenCalledWith(-1)
+  })
+
+  it('save button disabled without panels', () => {
+    mockSearchParams = new URLSearchParams()
+    render(<DesignerPage />)
+    const btn = screen.getByRole('button', { name: 'Сохранить замер' })
+    expect((btn as HTMLButtonElement).disabled).toBe(true)
+  })
+
+  it('save button enabled after apply with lead and valid dimensions', () => {
+    mockSearchParams = new URLSearchParams()
+    render(<DesignerPage />)
+    applyValues()
+    const btn = screen.getByRole('button', { name: 'Сохранить замер' })
+    expect((btn as HTMLButtonElement).disabled).toBe(false)
+  })
+
+  it('PDF buttons not shown before save', () => {
+    mockSearchParams = new URLSearchParams()
+    render(<DesignerPage />)
+    expect(screen.queryByText(/Скачать PDF/i)).toBeNull()
+  })
+
+  it('shows ineligible banner when ?leadId is unknown', () => {
+    mockSearchParams = new URLSearchParams('leadId=unknown-lead')
+    render(<DesignerPage />)
+    expect(screen.getByText(/Лид не в подходящем статусе/i)).toBeTruthy()
+  })
+
+  it('TopBar shows "Новый замер" when no lead applied', () => {
+    mockSearchParams = new URLSearchParams()
+    render(<DesignerPage />)
+    expect(screen.getByText('Новый замер')).toBeTruthy()
+  })
+
+  it('TopBar shows lead name after apply', () => {
+    mockSearchParams = new URLSearchParams()
+    render(<DesignerPage />)
+    applyValues()
+    // lead-abc → name 'Иван' → title "Замер · Иван"
+    expect(screen.getByText(/Замер.*Иван/)).toBeTruthy()
+  })
+
+  it('clicking glass rect opens popover', () => {
+    mockSearchParams = new URLSearchParams()
+    render(<DesignerPage />)
+    applyValues()
+    fireEvent.click(screen.getAllByTestId('glass-rect')[0])
+    expect(screen.getByTestId('glass-popover')).toBeTruthy()
+  })
+
+  it('close-popover button dismisses popover', () => {
+    mockSearchParams = new URLSearchParams()
+    render(<DesignerPage />)
+    applyValues()
+    fireEvent.click(screen.getAllByTestId('glass-rect')[0])
+    fireEvent.click(screen.getByText('close-popover'))
+    expect(screen.queryByTestId('glass-popover')).toBeNull()
+  })
+
+  it('toggle-door action closes popover', () => {
+    mockSearchParams = new URLSearchParams()
+    render(<DesignerPage />)
+    applyValues()
+    fireEvent.click(screen.getAllByTestId('glass-rect')[0])
+    fireEvent.click(screen.getByText('toggle-door'))
+    expect(screen.queryByTestId('glass-popover')).toBeNull()
   })
 
   it('warns when fixed panel exceeds 1500 mm', () => {
     mockSearchParams = new URLSearchParams()
     render(<DesignerPage />)
-    // measureMm=2500 → totalWidth=2540 → fixedMm=1740 > 1500
-    fireEvent.change(screen.getByLabelText('Ширина проёма (мм)'), {
-      target: { value: '2500' },
-    })
-    expect(screen.getByRole('alert')).toBeTruthy()
+    applyWideValues()
+    expandInfoCard()
+    // computeInitialPanels(2500, 2000) → fixedMm=1740 → "Панель 1740 мм — очень широкая"
     expect(screen.getByText(/очень широкая/i)).toBeTruthy()
   })
 
   it('shows no warning for normal panel width', () => {
     mockSearchParams = new URLSearchParams()
     render(<DesignerPage />)
-    fireEvent.change(screen.getByLabelText('Ширина проёма (мм)'), {
-      target: { value: '1560' },
-    })
-    expect(screen.queryByRole('alert')).toBeNull()
-  })
-
-  it('shows placeholder dashes before dimensions are entered', () => {
-    mockSearchParams = new URLSearchParams()
-    render(<DesignerPage />)
-    expect(screen.getAllByText('—').length).toBeGreaterThan(0)
-  })
-
-  it('shows area after entering valid dimensions', () => {
-    mockSearchParams = new URLSearchParams()
-    render(<DesignerPage />)
-    fireEvent.change(screen.getByLabelText('Ширина проёма (мм)'), {
-      target: { value: '1560' },
-    })
-    // totalWidth=1600, areaSqM=(1600/1000)*(2000/1000)=3.20
-    expect(screen.getByText('3.20 м²')).toBeTruthy()
+    applyValues() // 1560mm → fixedMm=800 (ok)
+    expect(screen.queryByText(/очень широкая/i)).toBeNull()
+    expect(screen.queryByText(/слишком узкая/i)).toBeNull()
   })
 
   it('delivery defaults to 100', () => {
     mockSearchParams = new URLSearchParams()
     render(<DesignerPage />)
-    const deliveryInput = screen.getByLabelText('Доставка') as HTMLInputElement
-    expect(Number(deliveryInput.value)).toBe(100)
+    expandInfoCard()
+    const input = screen.getByLabelText('Доставка') as HTMLInputElement
+    expect(Number(input.value)).toBe(100)
   })
 
-  it('balance = masterFee + delivery − deposit', () => {
+  it('balance updates when deposit changes', () => {
     mockSearchParams = new URLSearchParams()
     render(<DesignerPage />)
-    fireEvent.change(screen.getByLabelText('Ширина проёма (мм)'), {
-      target: { value: '1560' },
-    })
-    // masterFee=384, delivery=100(default), deposit=0 → balance=484
-    // Change deposit to 200 → balance = 384+100−200 = 284
+    applyValues() // masterFee=384, delivery=100
+    expandInfoCard()
     fireEvent.change(screen.getByLabelText('Депозит'), { target: { value: '200' } })
+    // balance = 384 + 100 - 200 = 284
     const balanceRow = screen.getByText('Остаток').closest('div')!
     expect(balanceRow.textContent).toMatch(/284/)
-  })
-
-  it('save button is present and enabled by default', () => {
-    mockSearchParams = new URLSearchParams()
-    render(<DesignerPage />)
-    const btn = screen.getByRole('button', { name: /сохранить/i })
-    expect(btn).toBeTruthy()
-    expect((btn as HTMLButtonElement).disabled).toBe(false)
-  })
-
-  it('PDF buttons are not shown before save', () => {
-    mockSearchParams = new URLSearchParams()
-    render(<DesignerPage />)
-    expect(screen.queryByText(/Скачать PDF/i)).toBeNull()
-  })
-
-  // ── ?leadId=… behaviour ──────────────────────────────────────────────────────
-
-  it('lead selector is disabled when ?leadId is in URL', () => {
-    mockSearchParams = new URLSearchParams('leadId=lead-abc')
-    render(<DesignerPage />)
-    const combobox = screen.getByLabelText('Клиент *') as HTMLInputElement
-    expect(combobox.disabled).toBe(true)
-  })
-
-  it('lead selector shows selected lead name when ?leadId matches an eligible lead', () => {
-    mockSearchParams = new URLSearchParams('leadId=lead-abc')
-    render(<DesignerPage />)
-    const combobox = screen.getByLabelText('Клиент *') as HTMLInputElement
-    expect(combobox.value).toContain('Иван')
-  })
-
-  it('shows ineligible banner when ?leadId is not in eligible list', () => {
-    mockSearchParams = new URLSearchParams('leadId=unknown-lead')
-    render(<DesignerPage />)
-    expect(screen.getByText(/Лид не в подходящем статусе/i)).toBeTruthy()
-  })
-
-  // ── Panel editing ────────────────────────────────────────────────────────────
-
-  it('shows reset warning when dimensions change after manual panel edit', () => {
-    mockSearchParams = new URLSearchParams()
-    render(<DesignerPage />)
-
-    // Enter initial dimensions → auto-computed panels
-    fireEvent.change(screen.getByLabelText('Ширина проёма (мм)'), { target: { value: '1560' } })
-
-    // Simulate a manual panel edit by clicking the toggle-door button (index 0)
-    // The button renders inside the SVG canvas with aria-label
-    const toggleBtns = screen.getAllByRole('button', { name: /дверь|глухим/i })
-    fireEvent.click(toggleBtns[0])
-
-    // Now change measureMm → should show reset warning
-    fireEvent.change(screen.getByLabelText('Ширина проёма (мм)'), { target: { value: '1660' } })
-    expect(screen.getByText(/Размеры кабины изменены/i)).toBeTruthy()
-  })
-
-  it('"Оставить" dismisses reset warning without changing panels', () => {
-    mockSearchParams = new URLSearchParams()
-    const { container } = render(<DesignerPage />)
-    fireEvent.change(screen.getByLabelText('Ширина проёма (мм)'), { target: { value: '1560' } })
-    const toggleBtns = screen.getAllByRole('button', { name: /дверь|глухим/i })
-    fireEvent.click(toggleBtns[0])
-    fireEvent.change(screen.getByLabelText('Ширина проёма (мм)'), { target: { value: '1660' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Оставить' }))
-    expect(screen.queryByText(/Размеры кабины изменены/i)).toBeNull()
-    // Canvas still present (panels not wiped out)
-    expect(container.querySelector('svg[aria-label="Чертёж кабины"]')).toBeTruthy()
-  })
-
-  it('"Пересчитать" resets panels to auto-computed', () => {
-    mockSearchParams = new URLSearchParams()
-    const { container } = render(<DesignerPage />)
-    fireEvent.change(screen.getByLabelText('Ширина проёма (мм)'), { target: { value: '1560' } })
-    const toggleBtns = screen.getAllByRole('button', { name: /дверь|глухим/i })
-    fireEvent.click(toggleBtns[0])
-    fireEvent.change(screen.getByLabelText('Ширина проёма (мм)'), { target: { value: '1660' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Пересчитать' }))
-    expect(screen.queryByText(/Размеры кабины изменены/i)).toBeNull()
-    // Auto-layout for 1660mm: total=1700 > 1600 → [900 fixed, 800 door]
-    expect(container.querySelectorAll('[data-testid="glass-rect"]').length).toBe(2)
   })
 })

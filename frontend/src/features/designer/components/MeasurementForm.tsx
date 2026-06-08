@@ -19,9 +19,10 @@ interface Props {
   onSubmit: (values: MeasurementFormValues) => void
   isLoading?: boolean
   disableLeadSelector?: boolean
+  submitLabel?: string
 }
 
-export function MeasurementForm({ form, onSubmit, isLoading = false, disableLeadSelector = false }: Props) {
+export function MeasurementForm({ form, onSubmit, isLoading = false, disableLeadSelector = false, submitLabel = 'Сохранить' }: Props) {
   const {
     register,
     handleSubmit,
@@ -118,7 +119,7 @@ export function MeasurementForm({ form, onSubmit, isLoading = false, disableLead
       </section>
 
       <Button type="submit" className="w-full" disabled={isLoading}>
-        {isLoading ? 'Сохранение...' : 'Сохранить'}
+        {isLoading ? 'Сохранение…' : submitLabel}
       </Button>
     </form>
   )

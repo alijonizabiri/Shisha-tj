@@ -50,6 +50,11 @@ export const router = createBrowserRouter([
     element: <ProtectedRoute />,
     children: [
       {
+        // Designer runs fullscreen — no AppShell sidebar/header
+        path: '/designer',
+        element: <Lazy><DesignerPage /></Lazy>,
+      },
+      {
         element: <AppShell />,
         children: [
           {
@@ -75,10 +80,6 @@ export const router = createBrowserRouter([
           {
             path: '/factory-orders',
             element: <Lazy><FactoryOrdersPage /></Lazy>,
-          },
-          {
-            path: '/designer',
-            element: <Lazy><DesignerPage /></Lazy>,
           },
         ],
       },

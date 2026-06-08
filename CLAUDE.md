@@ -164,8 +164,8 @@ For `[FULL]` steps:
 ## Current Status
 
 **Phase:** 5 — Production Polish
-**Last completed:** Phase 3.5 Step 11 [FE] — Designer mobile-first: collapsible sidebars + HTML panel action bar
-**Last commit:** Phase 3.5 Step 11 [FE]: mobile-first Designer — collapsible sidebars, action bar off SVG
+**Last completed:** Phase 3.5 Step 12 [FE] — Tablet-first fullscreen Designer redesign
+**Last commit:** Phase 3.5 Step 12 [FE]: tablet-first designer — FAB, sheet, popover, floating controls
 **Next step:** Phase 5 Step 7 [FULL] — Regression pass + Lighthouse 90+ on FE
 **Build BE:** ✅ 0 warnings, 0 errors
 **Build FE:** ✅ typecheck + lint + build passing

@@ -2,6 +2,8 @@ export type HandleSide = 'Left' | 'Right'
 export type HoleType = 'Roller' | 'Handle' | 'Mount' | 'Custom'
 
 export interface Panel {
+  /** Client-side stable identifier — not sent to the backend */
+  id: string
   widthMm: number
   heightMm: number
   isDoor: boolean

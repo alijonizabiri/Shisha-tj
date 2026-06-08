@@ -24,8 +24,8 @@ export function computeInitialPanels(measureMm: number, heightMm: number): Panel
   }
 
   return [
-    { widthMm: fixedMm, heightMm, isDoor: false, position: 0 },
-    { widthMm: doorMm,  heightMm, isDoor: true,  position: 1 },
+    { id: crypto.randomUUID(), widthMm: fixedMm, heightMm, isDoor: false, position: 0 },
+    { id: crypto.randomUUID(), widthMm: doorMm,  heightMm, isDoor: true,  position: 1 },
   ]
 }
 
