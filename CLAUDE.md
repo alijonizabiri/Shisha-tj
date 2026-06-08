@@ -163,13 +163,13 @@ For `[FULL]` steps:
 
 ## Current Status
 
-**Phase:** 3.5 (extended) — Designer Remodel
-**Last completed:** Phase 3.5 Step 9 [FULL] — Replace fixed configurations with panels array
-**Last commit:** Phase 3.5 Step 9 [FULL]: replace fixed configurations with panels array
-**Next step:** Phase 3.5 Step 10 [FE] — Manual panel editing (drag, split, door toggle)
+**Phase:** 5 — Production Polish
+**Last completed:** Phase 3.5 Step 10 [FE] — Manual panel editing: drag boundaries, height drag, split, toggle door, reset warning
+**Last commit:** Phase 3.5 Step 10 [FE]: manual panel editing — drag, split, door toggle, reset warning
+**Next step:** Phase 5 Step 7 [FULL] — Regression pass + Lighthouse 90+ on FE
 **Build BE:** ✅ 0 warnings, 0 errors
-**Build FE:** ✅ build passing
-**Tests:** ✅ BE 119/119 | FE 98/98
+**Build FE:** ✅ typecheck + lint + build passing
+**Tests:** ✅ BE 119/119 | FE 104/104
 **Updated:** 2026-06-08
 
 ## Completed Phases

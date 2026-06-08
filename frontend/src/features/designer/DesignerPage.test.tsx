@@ -66,14 +66,14 @@ describe('DesignerPage', () => {
     expect(getDrawingSvg(container)).toBeTruthy()
   })
 
-  it('shows canvas with 2 rects for any valid measureMm (auto-computed layout)', () => {
+  it('shows canvas with 2 glass rects for any valid measureMm (auto-computed layout)', () => {
     mockSearchParams = new URLSearchParams()
     const { container } = render(<DesignerPage />)
     fireEvent.change(screen.getByLabelText('Ширина проёма (мм)'), {
       target: { value: '1800' },
     })
     // computeInitialPanels(1800, 2000) → [1040 fixed, 800 door] = 2 panels
-    expect(container.querySelectorAll('rect').length).toBe(2)
+    expect(container.querySelectorAll('[data-testid="glass-rect"]').length).toBe(2)
   })
 
   it('warns when fixed panel exceeds 1500 mm', () => {
@@ -166,5 +166,50 @@ describe('DesignerPage', () => {
     mockSearchParams = new URLSearchParams('leadId=unknown-lead')
     render(<DesignerPage />)
     expect(screen.getByText(/Лид не в подходящем статусе/i)).toBeTruthy()
+  })
+
+  // ── Panel editing ────────────────────────────────────────────────────────────
+
+  it('shows reset warning when dimensions change after manual panel edit', () => {
+    mockSearchParams = new URLSearchParams()
+    render(<DesignerPage />)
+
+    // Enter initial dimensions → auto-computed panels
+    fireEvent.change(screen.getByLabelText('Ширина проёма (мм)'), { target: { value: '1560' } })
+
+    // Simulate a manual panel edit by clicking the toggle-door button (index 0)
+    // The button renders inside the SVG canvas with aria-label
+    const toggleBtns = screen.getAllByRole('button', { name: /дверь|глухим/i })
+    fireEvent.click(toggleBtns[0])
+
+    // Now change measureMm → should show reset warning
+    fireEvent.change(screen.getByLabelText('Ширина проёма (мм)'), { target: { value: '1660' } })
+    expect(screen.getByText(/Размеры кабины изменены/i)).toBeTruthy()
+  })
+
+  it('"Оставить" dismisses reset warning without changing panels', () => {
+    mockSearchParams = new URLSearchParams()
+    const { container } = render(<DesignerPage />)
+    fireEvent.change(screen.getByLabelText('Ширина проёма (мм)'), { target: { value: '1560' } })
+    const toggleBtns = screen.getAllByRole('button', { name: /дверь|глухим/i })
+    fireEvent.click(toggleBtns[0])
+    fireEvent.change(screen.getByLabelText('Ширина проёма (мм)'), { target: { value: '1660' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Оставить' }))
+    expect(screen.queryByText(/Размеры кабины изменены/i)).toBeNull()
+    // Canvas still present (panels not wiped out)
+    expect(container.querySelector('svg[aria-label="Чертёж кабины"]')).toBeTruthy()
+  })
+
+  it('"Пересчитать" resets panels to auto-computed', () => {
+    mockSearchParams = new URLSearchParams()
+    const { container } = render(<DesignerPage />)
+    fireEvent.change(screen.getByLabelText('Ширина проёма (мм)'), { target: { value: '1560' } })
+    const toggleBtns = screen.getAllByRole('button', { name: /дверь|глухим/i })
+    fireEvent.click(toggleBtns[0])
+    fireEvent.change(screen.getByLabelText('Ширина проёма (мм)'), { target: { value: '1660' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Пересчитать' }))
+    expect(screen.queryByText(/Размеры кабины изменены/i)).toBeNull()
+    // Auto-layout for 1660mm: total=1700 > 1600 → [900 fixed, 800 door]
+    expect(container.querySelectorAll('[data-testid="glass-rect"]').length).toBe(2)
   })
 })

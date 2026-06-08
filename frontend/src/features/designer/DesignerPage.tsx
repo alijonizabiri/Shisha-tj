@@ -46,30 +46,118 @@ export function DesignerPage() {
     },
   })
 
-  // Prefill lead selector when coming from drawer
   useEffect(() => {
     if (leadIdFromUrl) {
       form.setValue('leadId', leadIdFromUrl, { shouldValidate: false })
     }
   }, [leadIdFromUrl, form])
 
-  // Ineligible: URL has a leadId but it's not in eligible leads after loading
   const leadIneligible =
     !!leadIdFromUrl && !leadsLoading && !leads.some((l) => l.id === leadIdFromUrl)
 
   const saveMutation = useSaveMeasurement()
 
-  // useWatch instead of form.watch() — compatible with the React Compiler
   const measureMm = useWatch({ control: form.control, name: 'measureMm' })
   const heightMm  = useWatch({ control: form.control, name: 'heightMm' })
 
-  const panels: Panel[] = useMemo(() => {
+  // ── Auto-computed panel layout (from form dimensions) ──────────────────────
+
+  const autoComputed = useMemo(() => {
     const m = typeof measureMm === 'number' ? measureMm : Number(measureMm)
     const h = typeof heightMm  === 'number' ? heightMm  : Number(heightMm)
     if (!Number.isFinite(m) || !Number.isFinite(h)) return []
     if (m < 600 || m > 3000 || h < 1500 || h > 2500) return []
     return computeInitialPanels(m, h)
   }, [measureMm, heightMm])
+
+  const autoComputedKey = autoComputed.map((p) => `${p.widthMm}-${p.heightMm}`).join('|')
+
+  // ── Panel state (mutable by the user) ─────────────────────────────────────
+
+  const [panels, setPanels] = useState<Panel[]>([])
+  const [panelsEdited, setPanelsEdited] = useState(false)
+  const [showResetWarning, setShowResetWarning] = useState(false)
+  const [pendingAutoComputed, setPendingAutoComputed] = useState<Panel[]>([])
+
+  // Derived-state sync: update panels when autoComputed changes.
+  // Using the "setState during render" pattern (React docs: Storing information
+  // from previous renders) — concurrent-mode safe and synchronous (no flicker).
+  const [prevAutoComputedKey, setPrevAutoComputedKey] = useState(autoComputedKey)
+  if (prevAutoComputedKey !== autoComputedKey) {
+    setPrevAutoComputedKey(autoComputedKey)
+    if (autoComputed.length === 0) {
+      if (panels.length > 0)  setPanels([])
+      if (panelsEdited)       setPanelsEdited(false)
+      if (showResetWarning)   setShowResetWarning(false)
+    } else if (!panelsEdited) {
+      setPanels(autoComputed)
+    } else {
+      // User has manual edits — ask before overwriting
+      setShowResetWarning(true)
+      setPendingAutoComputed(autoComputed)
+    }
+  }
+
+  // ── Cabin height ───────────────────────────────────────────────────────────
+
+  const rawH = typeof heightMm === 'number' ? heightMm : Number(heightMm)
+  const cabinHeightMm = Number.isFinite(rawH) && rawH >= 1500 && rawH <= 2500 ? rawH : 2000
+
+  // ── Panel edit handlers ────────────────────────────────────────────────────
+
+  function markEdited() {
+    setPanelsEdited(true)
+    setSavedSnapshot(null)
+  }
+
+  function handlePanelsChange(newPanels: Panel[]) {
+    setPanels(newPanels)
+    markEdited()
+  }
+
+  function handleSplitPanel(panelIdx: number) {
+    const panel = panels[panelIdx]
+    if (panel.isDoor || panel.widthMm < 400) return
+    const half1 = Math.round(panel.widthMm / 2)
+    const half2 = panel.widthMm - half1
+    const newPanels = [
+      ...panels.slice(0, panelIdx),
+      { ...panel, widthMm: half1 },
+      { widthMm: half2, heightMm: panel.heightMm, isDoor: false, position: 0 },
+      ...panels.slice(panelIdx + 1),
+    ].map((p, i) => ({ ...p, position: i }))
+    setPanels(newPanels)
+    markEdited()
+  }
+
+  function handleToggleDoor(panelIdx: number) {
+    const willBeDoor = !panels[panelIdx].isDoor
+    const newPanels = panels.map((p, i) => {
+      if (i === panelIdx) {
+        const widthMm = willBeDoor
+          ? Math.min(800, Math.max(500, p.widthMm))
+          : p.widthMm
+        return { ...p, isDoor: willBeDoor, widthMm }
+      }
+      // Demote the existing door when another panel becomes a door
+      if (willBeDoor && p.isDoor) return { ...p, isDoor: false }
+      return p
+    })
+    setPanels(newPanels)
+    markEdited()
+  }
+
+  function handleConfirmReset() {
+    setPanels(pendingAutoComputed)
+    setPanelsEdited(false)
+    setShowResetWarning(false)
+  }
+
+  function handleKeepPanels() {
+    setShowResetWarning(false)
+  }
+
+  // ── Holes ──────────────────────────────────────────────────────────────────
 
   const holesByPanel = useMemo(
     () => panels.map((p) => defaultHoles(p, p.heightMm)),
@@ -78,14 +166,14 @@ export function DesignerPage() {
 
   const canvasKey = panels.map((p) => `${p.widthMm}x${p.heightMm}`).join('-')
 
-  // Hole tracker — keyed by canvasKey so dragged positions reset when panels resize.
   const [holeTracker, setHoleTracker] = useState<{ key: string; holes: Hole[][] }>({
     key: canvasKey,
     holes: holesByPanel,
   })
   const currentHoles = holeTracker.key === canvasKey ? holeTracker.holes : holesByPanel
 
-  // Snapshot of what was last saved — null when form diverges from last save
+  // ── Saved snapshot ─────────────────────────────────────────────────────────
+
   const [savedSnapshot, setSavedSnapshot] = useState<{
     id: string
     measureMm: unknown
@@ -98,6 +186,8 @@ export function DesignerPage() {
     savedSnapshot.heightMm === heightMm
       ? savedSnapshot.id
       : null
+
+  // ── Metrics & warnings ─────────────────────────────────────────────────────
 
   const metrics = useMemo(() => {
     const m = typeof measureMm === 'number' ? measureMm : Number(measureMm)
@@ -116,6 +206,8 @@ export function DesignerPage() {
     if (narrow) return `Глухая панель ${narrow.widthMm} мм — слишком узкая`
     return null
   }, [panels])
+
+  // ── Save ───────────────────────────────────────────────────────────────────
 
   function handleSave(values: MeasurementFormValues): void {
     saveMutation.mutate(
@@ -155,7 +247,6 @@ export function DesignerPage() {
         <div className="p-4">
           <h1 className="mb-4 text-lg font-semibold">Дизайнер</h1>
 
-          {/* Ineligible lead banner */}
           {leadIneligible && (
             <div
               role="alert"
@@ -185,7 +276,6 @@ export function DesignerPage() {
             <p className="mt-2 text-sm text-destructive">Ошибка сохранения. Попробуйте ещё раз.</p>
           )}
 
-          {/* Show inline success only when NOT navigating back (no leadIdFromUrl) */}
           {savedId && !leadIdFromUrl && (
             <div className="mt-3 flex flex-col gap-2">
               <p className="text-sm font-medium text-green-600 dark:text-green-400">
@@ -213,6 +303,32 @@ export function DesignerPage() {
       </aside>
 
       <main className="flex-1 flex flex-col overflow-hidden bg-background">
+        {/* Width-change warning after manual panel edits */}
+        {showResetWarning && (
+          <div
+            role="alert"
+            className="m-4 mb-0 rounded-md border border-orange-200 bg-orange-50 px-4 py-3 text-sm text-orange-800 dark:border-orange-800 dark:bg-orange-950 dark:text-orange-200"
+          >
+            <p className="font-medium">Размеры кабины изменены</p>
+            <p className="mt-1 text-xs">Раскладка будет пересчитана. Ручные правки будут потеряны.</p>
+            <div className="mt-2 flex gap-2">
+              <button
+                onClick={handleConfirmReset}
+                className="rounded bg-orange-600 px-3 py-1 text-xs font-medium text-white hover:bg-orange-700"
+              >
+                Пересчитать
+              </button>
+              <button
+                onClick={handleKeepPanels}
+                className="rounded border border-orange-400 px-3 py-1 text-xs font-medium text-orange-800 hover:bg-orange-100 dark:text-orange-200"
+              >
+                Оставить
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Panel width warning */}
         {warning && (
           <div
             role="alert"
@@ -221,13 +337,18 @@ export function DesignerPage() {
             {warning}
           </div>
         )}
+
         <div className="flex-1 min-h-0 p-4">
           {panels.length > 0 ? (
             <DrawingCanvas
               key={canvasKey}
               panels={panels}
-              holesByPanel={holesByPanel}
+              holesByPanel={currentHoles}
+              cabinHeightMm={cabinHeightMm}
               onHolesChange={(holes) => setHoleTracker({ key: canvasKey, holes })}
+              onPanelsChange={handlePanelsChange}
+              onSplitPanel={handleSplitPanel}
+              onToggleDoor={handleToggleDoor}
               className="h-full"
             />
           ) : (
