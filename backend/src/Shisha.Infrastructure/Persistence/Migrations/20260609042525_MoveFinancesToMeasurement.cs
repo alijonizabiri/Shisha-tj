@@ -93,11 +93,10 @@ WITH first_measurements AS (
 UPDATE payments
 SET measurement_id = fm.measurement_id
 FROM first_measurements fm
-WHERE payments.lead_id = fm.lead_id
-  AND payments.is_deleted = false;
+WHERE payments.lead_id = fm.lead_id;
 ");
 
-            // Soft-delete payments that still have no measurement (lead had no measurements)
+            // Soft-delete active payments that have no matching measurement
             migrationBuilder.Sql(@"
 UPDATE payments
 SET
@@ -107,6 +106,9 @@ SET
 WHERE measurement_id IS NULL
   AND is_deleted = false;
 ");
+
+            // Hard-delete any remaining null rows (already-soft-deleted orphans)
+            migrationBuilder.Sql(@"DELETE FROM payments WHERE measurement_id IS NULL;");
 
             // ── Step 4: Make measurement_id NOT NULL, add FK+index, drop lead_id ──
 
@@ -320,7 +322,7 @@ WHERE p.measurement_id = m.id
   AND p.is_deleted = false;
 ");
 
-            // Remove orphaned payments (those without a lead_id after restore) so NOT NULL succeeds
+            // Remove orphaned soft-deleted payments so NOT NULL won't fail
             migrationBuilder.Sql(@"
 DELETE FROM payments WHERE lead_id IS NULL AND is_deleted = true;
 ");
@@ -361,12 +363,12 @@ DELETE FROM payments WHERE lead_id IS NULL AND is_deleted = true;
 
             // ── D5: Drop financial columns from measurements ────────────────────
 
-            migrationBuilder.DropColumn(name: "address",          table: "measurements");
-            migrationBuilder.DropColumn(name: "deal_price_tjs",   table: "measurements");
+            migrationBuilder.DropColumn(name: "address",           table: "measurements");
+            migrationBuilder.DropColumn(name: "deal_price_tjs",    table: "measurements");
             migrationBuilder.DropColumn(name: "delivery_cost_tjs", table: "measurements");
             migrationBuilder.DropColumn(name: "installation_date", table: "measurements");
-            migrationBuilder.DropColumn(name: "installed_at",     table: "measurements");
-            migrationBuilder.DropColumn(name: "warranty_until",   table: "measurements");
+            migrationBuilder.DropColumn(name: "installed_at",      table: "measurements");
+            migrationBuilder.DropColumn(name: "warranty_until",    table: "measurements");
         }
     }
 }
