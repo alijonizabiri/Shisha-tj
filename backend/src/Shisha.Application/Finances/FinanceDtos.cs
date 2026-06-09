@@ -14,3 +14,18 @@ public record LeadFinancesDto(
     decimal TotalPaidTjs,
     decimal TotalDepositTjs,
     decimal? BalanceDueTjs);
+
+public record MeasurementFinancesDto(
+    Guid MeasurementId,
+    decimal? DealPriceTjs,
+    decimal GlassCostTjs,
+    decimal ReworkCostTjs,
+    decimal HardwareCostTjs,
+    decimal MasterFeeTjs,
+    decimal DeliveryCostTjs,
+    decimal OtherCostsTjs,
+    decimal TotalCostTjs,
+    decimal? ProfitTjs,
+    decimal TotalPaidTjs,
+    decimal TotalDepositTjs,
+    decimal? BalanceDueTjs);

@@ -11,6 +11,8 @@ namespace Shisha.Infrastructure.Services;
 
 public sealed class MeasurementService(AppDbContext db, ICurrentUser currentUser) : IMeasurementService
 {
+    private const string DefaultAddress = "Не указан";
+
     public async Task<MeasurementResponse> CreateAsync(
         CreateMeasurementRequest request,
         CancellationToken ct = default)
@@ -51,11 +53,15 @@ public sealed class MeasurementService(AppDbContext db, ICurrentUser currentUser
         {
             MeasurerId = currentUser.IsAuthenticated ? currentUser.UserId : null,
             LeadId = request.LeadId,
+            Address = string.IsNullOrWhiteSpace(request.Address) ? DefaultAddress : request.Address,
             MeasureMm = request.MeasureMm,
             HeightMm = request.HeightMm,
             GlassColor = glassColor,
             HardwareColor = hardwareColor,
             HandleSide = handleSide,
+            DealPriceTjs = request.DealPriceTjs,
+            DeliveryCostTjs = request.DeliveryCostTjs,
+            InstallationDate = request.InstallationDate,
             MeasuredAt = DateTime.UtcNow,
         };
         db.Measurements.Add(measurement);
@@ -109,6 +115,15 @@ public sealed class MeasurementService(AppDbContext db, ICurrentUser currentUser
         measurement.GlassColor = glassColor;
         measurement.HardwareColor = hardwareColor;
         measurement.HandleSide = handleSide;
+
+        if (!string.IsNullOrWhiteSpace(request.Address))
+            measurement.Address = request.Address;
+        if (request.DealPriceTjs.HasValue)
+            measurement.DealPriceTjs = request.DealPriceTjs;
+        if (request.DeliveryCostTjs.HasValue)
+            measurement.DeliveryCostTjs = request.DeliveryCostTjs;
+        if (request.InstallationDate.HasValue)
+            measurement.InstallationDate = request.InstallationDate;
 
         var glasses = CreateGlasses(measurement.Id, request.Panels);
         AddHoles(glasses, request.Holes);
@@ -193,11 +208,17 @@ public sealed class MeasurementService(AppDbContext db, ICurrentUser currentUser
         return new MeasurementResponse(
             m.Id,
             m.MeasurerId,
+            m.LeadId,
+            m.Address,
             m.MeasureMm,
             m.HeightMm,
             m.GlassColor.ToString(),
             m.HardwareColor.ToString(),
             m.HandleSide.ToString(),
+            m.DealPriceTjs,
+            m.DeliveryCostTjs,
+            m.InstallationDate,
+            m.WarrantyUntil,
             m.MeasuredAt,
             m.CreatedAt,
             m.Glasses

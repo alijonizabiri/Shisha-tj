@@ -82,6 +82,7 @@ public sealed class LeadService(
         var lead = await db.Leads
             .Include(l => l.AssignedMeasurer)
             .Include(l => l.Measurements)
+                .ThenInclude(m => m.Payments)
             .AsNoTracking()
             .FirstOrDefaultAsync(l => l.Id == id, ct)
             ?? throw new NotFoundException($"Lead {id} not found.");
@@ -100,7 +101,6 @@ public sealed class LeadService(
             TenantId = currentUser.TenantId,
             Name = request.Name,
             Phone = request.Phone,
-            Address = request.Address,
             Product = request.Product,
             Source = request.Source,
             Note = request.Note,
@@ -121,12 +121,10 @@ public sealed class LeadService(
 
         lead.Name = request.Name;
         lead.Phone = request.Phone;
-        lead.Address = request.Address;
         lead.Product = request.Product;
         lead.Source = request.Source;
         lead.Note = request.Note;
         lead.CallDate = request.CallDate;
-        lead.PromisedInstallDate = request.PromisedInstallDate;
 
         await db.SaveChangesAsync(ct);
 
@@ -150,23 +148,56 @@ public sealed class LeadService(
                       or LeadStatus.Closed)
             throw new ForbiddenException($"Operators cannot set status to {target}.");
 
-        var measurementCount = await db.Measurements.CountAsync(m => m.LeadId == lead.Id, ct);
-        var payments = await db.Payments.Where(p => p.LeadId == lead.Id).ToListAsync(ct);
-        var totalDepositTjs = payments.Where(p => p.Kind == PaymentKind.Deposit).Sum(p => p.AmountTjs);
-        var totalPaidTjs    = payments.Sum(p => p.AmountTjs);
+        // Pre-fetch per-measurement financial state
+        var measurementData = await (
+            from m in db.Measurements
+            where m.LeadId == lead.Id
+            select new
+            {
+                m.Id,
+                m.DealPriceTjs,
+                m.InstallationDate,
+                DepositSum = db.Payments
+                    .Where(p => p.MeasurementId == m.Id && p.Kind == PaymentKind.Deposit)
+                    .Sum(p => (decimal?)p.AmountTjs) ?? 0m,
+            }
+        ).ToListAsync(ct);
+
+        var measurementIds = measurementData.Select(m => m.Id).ToList();
+
+        var totalPaidTjs = measurementIds.Count > 0
+            ? await db.Payments
+                .Where(p => measurementIds.Contains(p.MeasurementId))
+                .SumAsync(p => p.AmountTjs, ct)
+            : 0m;
 
         var args = new LeadTransitionArgs(
             AssignedMeasurerId: request.AssignedMeasurerId,
-            Address: request.Address,
             RefusalReasonId: request.RefusalReasonId,
             RefusalNote: request.RefusalNote,
-            DealPriceTjs: request.DealPriceTjs,
-            PromisedInstallDate: request.PromisedInstallDate,
-            MeasurementCount: measurementCount,
-            TotalDepositTjs: totalDepositTjs,
-            TotalPaidTjs: totalPaidTjs);
+            MeasurementCount: measurementData.Count,
+            HasQualifyingMeasurementForBuying: measurementData.Any(m =>
+                m.DealPriceTjs > 0 &&
+                m.DepositSum >= LeadBusinessRules.MinDepositTjs),
+            TotalDealPriceTjs: measurementData.Sum(m => m.DealPriceTjs ?? 0m),
+            TotalPaidTjs: totalPaidTjs,
+            LatestInstallationDate: measurementData
+                .Where(m => m.InstallationDate.HasValue)
+                .Select(m => m.InstallationDate!.Value)
+                .DefaultIfEmpty()
+                .Max() is DateOnly d && d != default ? d : null);
 
         await transitionService.TransitionAsync(lead, target, args, ct);
+
+        // WarrantyUntil is now on Measurement; set it for all measurements when closing
+        if (target == LeadStatus.Closed && measurementIds.Count > 0)
+        {
+            var warrantyDate = DateOnly.FromDateTime(DateTime.UtcNow).AddYears(1);
+            await db.Measurements
+                .Where(m => m.LeadId == lead.Id)
+                .ExecuteUpdateAsync(s => s.SetProperty(m => m.WarrantyUntil, warrantyDate), ct);
+        }
+
         await db.SaveChangesAsync(ct);
     }
 
@@ -219,6 +250,7 @@ public sealed class LeadService(
         var lead = await db.Leads
             .Include(l => l.AssignedMeasurer)
             .Include(l => l.Measurements)
+                .ThenInclude(m => m.Payments)
             .AsNoTracking()
             .FirstAsync(l => l.Id == id, ct);
 
@@ -229,7 +261,6 @@ public sealed class LeadService(
         l.Id,
         l.Name,
         l.Phone,
-        l.Address,
         l.Product,
         l.Status.ToString(),
         l.Source,
@@ -237,11 +268,8 @@ public sealed class LeadService(
         l.RefusalReasonId,
         l.RefusalNote,
         l.CallDate,
-        l.PromisedInstallDate,
-        l.WarrantyUntil,
         l.AssignedMeasurerId,
         l.AssignedMeasurer?.FullName,
-        l.DealPriceTjs,
         l.CreatedAt,
         l.UpdatedAt);
 
@@ -249,7 +277,6 @@ public sealed class LeadService(
         l.Id,
         l.Name,
         l.Phone,
-        l.Address,
         l.Product,
         l.Status.ToString(),
         l.Source,
@@ -257,22 +284,34 @@ public sealed class LeadService(
         l.RefusalReasonId,
         l.RefusalNote,
         l.CallDate,
-        l.PromisedInstallDate,
-        l.WarrantyUntil,
         l.AssignedMeasurerId,
         l.AssignedMeasurer?.FullName,
-        l.DealPriceTjs,
         l.CreatedAt,
         l.UpdatedAt,
         l.Measurements
             .OrderByDescending(m => m.MeasuredAt)
-            .Select(m => new LeadMeasurementDto(
-                m.Id,
-                m.GlassColor.ToString(),
-                m.HardwareColor.ToString(),
-                m.MeasureMm,
-                m.HeightMm,
-                m.MeasuredAt,
-                m.CreatedAt))
+            .Select(m =>
+            {
+                var totalPaid = m.Payments.Sum(p => p.AmountTjs);
+                var balanceDue = m.DealPriceTjs.HasValue
+                    ? m.DealPriceTjs.Value - totalPaid
+                    : (decimal?)null;
+
+                return new LeadMeasurementDto(
+                    m.Id,
+                    m.Address,
+                    m.GlassColor.ToString(),
+                    m.HardwareColor.ToString(),
+                    m.MeasureMm,
+                    m.HeightMm,
+                    m.DealPriceTjs,
+                    m.DeliveryCostTjs,
+                    m.InstallationDate,
+                    m.WarrantyUntil,
+                    totalPaid,
+                    balanceDue,
+                    m.MeasuredAt,
+                    m.CreatedAt);
+            })
             .ToList());
 }

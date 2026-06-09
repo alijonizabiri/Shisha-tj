@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Shisha.Application.Finances;
 using Shisha.Application.Measurements;
 using Shisha.Domain.Exceptions;
 
@@ -10,7 +11,8 @@ namespace Shisha.Api.Controllers;
 [Authorize]
 public sealed class MeasurementsController(
     IMeasurementService measurementService,
-    IMeasurementPdfService pdfService) : ControllerBase
+    IMeasurementPdfService pdfService,
+    IProfitCalculator profitCalculator) : ControllerBase
 {
     [HttpPost]
     public async Task<ActionResult<MeasurementResponse>> Create(
@@ -59,6 +61,13 @@ public sealed class MeasurementsController(
         {
             return NotFound();
         }
+    }
+
+    [HttpGet("{id:guid}/finances")]
+    [Authorize(Roles = "Admin,Operator")]
+    public async Task<ActionResult<MeasurementFinancesDto>> GetFinances(Guid id, CancellationToken ct)
+    {
+        return Ok(await profitCalculator.CalculateForMeasurementAsync(id, ct));
     }
 
     [HttpPut("{id:guid}")]

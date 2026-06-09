@@ -164,13 +164,13 @@ For `[FULL]` steps:
 ## Current Status
 
 **Phase:** 5 — Production Polish
-**Last completed:** Phase 3.5 Step 12 [FE] — Tablet-first fullscreen Designer redesign
-**Last commit:** Phase 3.5 Step 12 [FE]: tablet-first designer — FAB, sheet, popover, floating controls
+**Last completed:** Phase 3.5 Step 13 [BE] — Move finances from Lead to Measurement (multi-measurement support)
+**Last commit:** Phase 3.5 Step 13 [BE]: move finances from Lead to Measurement (multi-measurement support)
 **Next step:** Phase 5 Step 7 [FULL] — Regression pass + Lighthouse 90+ on FE
 **Build BE:** ✅ 0 warnings, 0 errors
 **Build FE:** ✅ typecheck + lint + build passing
-**Tests:** ✅ BE 119/119 | FE 104/104
-**Updated:** 2026-06-08
+**Tests:** ✅ BE 120/120 | FE 104/104
+**Updated:** 2026-06-09
 
 ## Completed Phases
 - Phase 0 — Foundation ✅ (2026-06-03) — tag `v0.1-foundation` — [summary](docs/phase-summaries/Phase0-summary.md)

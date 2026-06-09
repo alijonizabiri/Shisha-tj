@@ -7,15 +7,22 @@ public sealed class Measurement : BaseEntity, ITenantOwned, ISoftDeletable
 {
     public Guid TenantId { get; set; }
 
-    /// <summary>The user who took this measurement (set from JWT on save).</summary>
     public Guid? MeasurerId { get; set; }
     public Guid? LeadId { get; set; }
+
+    public required string Address { get; set; }
 
     public int MeasureMm { get; set; }
     public int HeightMm { get; set; }
     public GlassColor GlassColor { get; set; }
     public HardwareColor HardwareColor { get; set; }
     public HandleSide HandleSide { get; set; } = HandleSide.Right;
+
+    public decimal? DealPriceTjs { get; set; }
+    public decimal? DeliveryCostTjs { get; set; }
+    public DateOnly? InstallationDate { get; set; }
+    public DateTime? InstalledAt { get; set; }
+    public DateOnly? WarrantyUntil { get; set; }
 
     public DateTime MeasuredAt { get; set; } = DateTime.UtcNow;
 
@@ -27,4 +34,6 @@ public sealed class Measurement : BaseEntity, ITenantOwned, ISoftDeletable
     public Lead? Lead { get; set; }
     public ICollection<Glass> Glasses { get; set; } = [];
     public Hardware? Hardware { get; set; }
+    public ICollection<Payment> Payments { get; set; } = [];
+    public ICollection<Expense> Expenses { get; set; } = [];
 }

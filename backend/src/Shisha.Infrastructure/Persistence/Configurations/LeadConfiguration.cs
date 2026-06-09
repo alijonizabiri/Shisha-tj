@@ -12,14 +12,10 @@ public sealed class LeadConfiguration : IEntityTypeConfiguration<Lead>
 
         builder.Property(l => l.Name).IsRequired().HasMaxLength(200);
         builder.Property(l => l.Phone).IsRequired().HasMaxLength(50);
-        builder.Property(l => l.Address).HasMaxLength(500);
         builder.Property(l => l.Product).IsRequired().HasMaxLength(200);
         builder.Property(l => l.Source).HasMaxLength(100);
         builder.Property(l => l.RefusalNote).HasMaxLength(1000);
         builder.Property(l => l.Note).HasMaxLength(2000);
-
-        builder.Property(l => l.DealPriceTjs)
-            .HasPrecision(18, 2);
 
         builder.HasIndex(l => l.TenantId);
         builder.HasIndex(l => l.Status);

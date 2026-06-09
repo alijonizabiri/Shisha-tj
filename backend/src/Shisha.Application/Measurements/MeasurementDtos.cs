@@ -22,6 +22,10 @@ public sealed record CreateMeasurementRequest(
     string HardwareColor,
     string? HandleSide,
     Guid? LeadId,
+    string? Address,
+    decimal? DealPriceTjs,
+    decimal? DeliveryCostTjs,
+    DateOnly? InstallationDate,
     IReadOnlyList<PanelInputDto>? Panels,
     IReadOnlyList<HoleRequest>? Holes);
 
@@ -31,6 +35,10 @@ public sealed record UpdateMeasurementRequest(
     string GlassColor,
     string HardwareColor,
     string? HandleSide,
+    string? Address,
+    decimal? DealPriceTjs,
+    decimal? DeliveryCostTjs,
+    DateOnly? InstallationDate,
     IReadOnlyList<PanelInputDto> Panels,
     IReadOnlyList<HoleRequest>? Holes);
 
@@ -54,11 +62,17 @@ public sealed record GlassResponse(
 public sealed record MeasurementResponse(
     Guid Id,
     Guid? MeasurerId,
+    Guid? LeadId,
+    string Address,
     int MeasureMm,
     int HeightMm,
     string GlassColor,
     string HardwareColor,
     string HandleSide,
+    decimal? DealPriceTjs,
+    decimal? DeliveryCostTjs,
+    DateOnly? InstallationDate,
+    DateOnly? WarrantyUntil,
     DateTime MeasuredAt,
     DateTime CreatedAt,
     IReadOnlyList<GlassResponse> Glasses);

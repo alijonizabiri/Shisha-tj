@@ -10,6 +10,11 @@ public sealed class MeasurementConfiguration : IEntityTypeConfiguration<Measurem
     {
         builder.HasKey(m => m.Id);
 
+        builder.Property(m => m.Address)
+            .IsRequired()
+            .HasMaxLength(500)
+            .HasDefaultValue("Не указан");
+
         builder.Property(m => m.MeasureMm).IsRequired();
         builder.Property(m => m.HeightMm).IsRequired();
 
@@ -27,6 +32,9 @@ public sealed class MeasurementConfiguration : IEntityTypeConfiguration<Measurem
             .HasConversion<string>()
             .HasMaxLength(10)
             .IsRequired();
+
+        builder.Property(m => m.DealPriceTjs).HasPrecision(18, 2);
+        builder.Property(m => m.DeliveryCostTjs).HasPrecision(18, 2);
 
         builder.HasIndex(m => m.TenantId);
         builder.HasIndex(m => m.LeadId);
@@ -46,6 +54,17 @@ public sealed class MeasurementConfiguration : IEntityTypeConfiguration<Measurem
         builder.HasOne(m => m.Measurer)
             .WithMany()
             .HasForeignKey(m => m.MeasurerId)
+            .OnDelete(DeleteBehavior.Restrict)
+            .IsRequired(false);
+
+        builder.HasMany(m => m.Payments)
+            .WithOne(p => p.Measurement)
+            .HasForeignKey(p => p.MeasurementId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasMany(m => m.Expenses)
+            .WithOne(e => e.Measurement)
+            .HasForeignKey(e => e.MeasurementId)
             .OnDelete(DeleteBehavior.Restrict)
             .IsRequired(false);
     }

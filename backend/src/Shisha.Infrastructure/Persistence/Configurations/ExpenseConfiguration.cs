@@ -23,12 +23,6 @@ public sealed class ExpenseConfiguration : IEntityTypeConfiguration<Expense>
             .HasMaxLength(1000);
 
         builder.HasIndex(e => e.TenantId);
-        builder.HasIndex(e => e.LeadId);
-
-        builder.HasOne(e => e.Lead)
-            .WithMany(l => l.Expenses)
-            .HasForeignKey(e => e.LeadId)
-            .OnDelete(DeleteBehavior.Restrict)
-            .IsRequired(false);
+        builder.HasIndex(e => e.MeasurementId);
     }
 }

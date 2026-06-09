@@ -42,28 +42,34 @@ public sealed class LeadStatusTransitionTests(ApiFactory factory)
         return body.GetProperty("id").GetString()!;
     }
 
-    private async Task AddMeasurementAsync(HttpClient client, string leadId)
+    /// <summary>Creates a measurement for the lead; returns the measurement id.</summary>
+    private async Task<string> AddMeasurementAsync(
+        HttpClient client, string leadId, decimal dealPriceTjs = 0m)
     {
         var resp = await client.PostAsJsonAsync("/api/v1/measurements", new
         {
-            leadId       = Guid.Parse(leadId),
-            measureMm    = 1560,
-            heightMm     = 2000,
-            configuration = "TwoGlass",
+            leadId        = Guid.Parse(leadId),
+            measureMm     = 1560,
+            heightMm      = 2000,
             glassColor    = "Transparent",
             hardwareColor = "BlackMatte",
+            address       = "ул. Рудаки 1",
+            dealPriceTjs,
         });
         resp.EnsureSuccessStatusCode();
+        var body = await resp.Content.ReadFromJsonAsync<JsonElement>(JsonOpts);
+        return body.GetProperty("id").GetString()!;
     }
 
-    private async Task AddDepositAsync(HttpClient client, string leadId, decimal amount)
+    /// <summary>Creates a Deposit payment against a measurement.</summary>
+    private async Task AddDepositAsync(HttpClient client, string measurementId, decimal amount)
     {
         var resp = await client.PostAsJsonAsync("/api/v1/payments", new
         {
-            leadId    = Guid.Parse(leadId),
-            amountTjs = amount,
-            kind      = "Deposit",
-            paidAt    = "2026-06-05",
+            measurementId = Guid.Parse(measurementId),
+            amountTjs     = amount,
+            kind          = "Deposit",
+            paidAt        = "2026-06-05",
         });
         resp.EnsureSuccessStatusCode();
     }
@@ -140,12 +146,11 @@ public sealed class LeadStatusTransitionTests(ApiFactory factory)
 
         var r1 = await client.PatchAsJsonAsync($"/api/v1/leads/{id}/status", new
         {
-            status  = "Measurement",
-            address = "ул. Рудаки 1",
+            status = "Measurement",
         });
         Assert.Equal(HttpStatusCode.NoContent, r1.StatusCode);
 
-        // Step 8: Thinking requires at least one saved measurement
+        // Thinking requires at least one saved measurement
         await AddMeasurementAsync(client, id);
 
         var r2 = await client.PatchAsJsonAsync($"/api/v1/leads/{id}/status", new
@@ -216,8 +221,7 @@ public sealed class LeadStatusTransitionTests(ApiFactory factory)
 
         await client.PatchAsJsonAsync($"/api/v1/leads/{id}/status", new
         {
-            status  = "Measurement",
-            address = "ул. Рудаки 1",
+            status = "Measurement",
         });
 
         var resp = await client.PatchAsJsonAsync($"/api/v1/leads/{id}/status", new
@@ -247,7 +251,7 @@ public sealed class LeadStatusTransitionTests(ApiFactory factory)
         Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
     }
 
-    // ── Step 8: deposit gate ─────────────────────────────────────────────────
+    // ── Deposit gate (Step 8 / Step 13) ──────────────────────────────────────
 
     [Fact]
     public async Task PatchStatus_ToBuying_WithoutDeposit_Returns400_DepositBelowMinimum()
@@ -258,13 +262,12 @@ public sealed class LeadStatusTransitionTests(ApiFactory factory)
         var id = await CreateLeadAsync(client);
 
         await client.PatchAsJsonAsync($"/api/v1/leads/{id}/status", new { status = "Measurement" });
-        await AddMeasurementAsync(client, id);
-        // No deposit payment — should fail
+        // Measurement has dealPriceTjs=2000 but no deposit payment
+        await AddMeasurementAsync(client, id, dealPriceTjs: 2000m);
 
         var resp = await client.PatchAsJsonAsync($"/api/v1/leads/{id}/status", new
         {
-            status        = "Buying",
-            dealPriceTjs  = 2000m,
+            status = "Buying",
         });
 
         Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
@@ -282,13 +285,13 @@ public sealed class LeadStatusTransitionTests(ApiFactory factory)
         var id = await CreateLeadAsync(client);
 
         await client.PatchAsJsonAsync($"/api/v1/leads/{id}/status", new { status = "Measurement" });
-        await AddMeasurementAsync(client, id);
-        await AddDepositAsync(client, id, 100m);
+        // dealPriceTjs on the measurement; deposit against the measurement's id
+        var measurementId = await AddMeasurementAsync(client, id, dealPriceTjs: 2000m);
+        await AddDepositAsync(client, measurementId, 100m);
 
         var resp = await client.PatchAsJsonAsync($"/api/v1/leads/{id}/status", new
         {
-            status       = "Buying",
-            dealPriceTjs = 2000m,
+            status = "Buying",
         });
 
         Assert.Equal(HttpStatusCode.NoContent, resp.StatusCode);

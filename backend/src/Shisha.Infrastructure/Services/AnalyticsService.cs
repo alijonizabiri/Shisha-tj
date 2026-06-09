@@ -48,7 +48,9 @@ public sealed class AnalyticsService(
         var closedCount = await closedQ.CountAsync(ct);
 
         var revenue = closedCount > 0
-            ? await closedQ.SumAsync(l => l.DealPriceTjs ?? 0m, ct)
+            ? await closedQ
+                .SelectMany(l => l.Measurements)
+                .SumAsync(m => m.DealPriceTjs ?? 0m, ct)
             : 0m;
 
         decimal? conversionRate = total > 0
@@ -56,10 +58,15 @@ public sealed class AnalyticsService(
             : null;
 
         decimal? avgDeal = closedCount > 0
-            ? Math.Round(await closedQ
-                .Where(l => l.DealPriceTjs != null)
-                .AverageAsync(l => l.DealPriceTjs!.Value, ct), 2)
+            ? await closedQ
+                .SelectMany(l => l.Measurements)
+                .Where(m => m.DealPriceTjs != null && m.DealPriceTjs > 0)
+                .Select(m => (decimal?)m.DealPriceTjs)
+                .AverageAsync(ct)
             : null;
+
+        if (avgDeal.HasValue)
+            avgDeal = Math.Round(avgDeal.Value, 2);
 
         return new DashboardDto(total, active, revenue, conversionRate, avgDeal);
     }
@@ -138,12 +145,19 @@ public sealed class AnalyticsService(
         var rows = await db.Leads
             .Where(l => (!from.HasValue || l.CallDate >= from)
                      && (!to.HasValue   || l.CallDate <= to))
+            .Select(l => new
+            {
+                l.Product,
+                l.Status,
+                Revenue = ClosedStatuses.Contains(l.Status)
+                    ? (decimal?)l.Measurements.Sum(m => m.DealPriceTjs ?? 0m)
+                    : null,
+            })
             .GroupBy(l => l.Product)
             .Select(g => new ProductRow(
                 g.Key,
                 g.Count(),
-                g.Where(l => ClosedStatuses.Contains(l.Status))
-                 .Sum(l => l.DealPriceTjs ?? 0m)))
+                g.Sum(l => l.Revenue ?? 0m)))
             .OrderByDescending(r => r.LeadCount)
             .ToListAsync(ct);
 
@@ -187,20 +201,30 @@ public sealed class AnalyticsService(
 
     private async Task<ByMeasurerDto> ComputeByMeasurerAsync(DateOnly? from, DateOnly? to, CancellationToken ct)
     {
-        var data = await db.Leads
+        var leadData = await db.Leads
             .Where(l => l.AssignedMeasurerId != null
                      && (!from.HasValue || l.CallDate >= from)
                      && (!to.HasValue   || l.CallDate <= to))
-            .GroupBy(l => l.AssignedMeasurerId!.Value)
+            .Select(l => new
+            {
+                UserId      = l.AssignedMeasurerId!.Value,
+                IsClosed    = ClosedStatuses.Contains(l.Status),
+                Revenue     = ClosedStatuses.Contains(l.Status)
+                    ? (decimal?)l.Measurements.Sum(m => m.DealPriceTjs ?? 0m)
+                    : null,
+            })
+            .ToListAsync(ct);
+
+        var data = leadData
+            .GroupBy(l => l.UserId)
             .Select(g => new
             {
                 UserId      = g.Key,
                 LeadCount   = g.Count(),
-                ClosedCount = g.Count(l => ClosedStatuses.Contains(l.Status)),
-                RevenueTjs  = g.Where(l => ClosedStatuses.Contains(l.Status))
-                               .Sum(l => l.DealPriceTjs ?? 0m),
+                ClosedCount = g.Count(l => l.IsClosed),
+                RevenueTjs  = g.Sum(l => l.Revenue ?? 0m),
             })
-            .ToListAsync(ct);
+            .ToList();
 
         var userIds = data.Select(d => d.UserId).ToList();
         var names = await db.Users

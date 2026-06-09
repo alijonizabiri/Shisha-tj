@@ -16,7 +16,6 @@ public record LeadsQuery(
 public record CreateLeadRequest(
     string Name,
     string Phone,
-    string? Address,
     string Product,
     string? Source,
     string? Note,
@@ -25,21 +24,16 @@ public record CreateLeadRequest(
 public record UpdateLeadRequest(
     string Name,
     string Phone,
-    string? Address,
     string Product,
     string? Source,
     string? Note,
-    DateOnly CallDate,
-    DateOnly? PromisedInstallDate);
+    DateOnly CallDate);
 
 public record PatchStatusRequest(
     string Status,
     Guid? RefusalReasonId = null,
     string? RefusalNote = null,
-    decimal? DealPriceTjs = null,
-    Guid? AssignedMeasurerId = null,
-    string? Address = null,
-    DateOnly? PromisedInstallDate = null);
+    Guid? AssignedMeasurerId = null);
 
 public record AssignMeasurerRequest(Guid UserId);
 
@@ -49,7 +43,6 @@ public record LeadSummaryResponse(
     Guid Id,
     string Name,
     string Phone,
-    string? Address,
     string Product,
     string Status,
     string? Source,
@@ -57,11 +50,8 @@ public record LeadSummaryResponse(
     Guid? RefusalReasonId,
     string? RefusalNote,
     DateOnly CallDate,
-    DateOnly? PromisedInstallDate,
-    DateOnly? WarrantyUntil,
     Guid? AssignedMeasurerId,
     string? AssignedMeasurerName,
-    decimal? DealPriceTjs,
     DateTime CreatedAt,
     DateTime UpdatedAt);
 
@@ -77,10 +67,17 @@ public record KanbanResponse(IReadOnlyList<KanbanColumn> Columns);
 
 public record LeadMeasurementDto(
     Guid Id,
+    string Address,
     string GlassColor,
     string HardwareColor,
     int MeasureMm,
     int HeightMm,
+    decimal? DealPriceTjs,
+    decimal? DeliveryCostTjs,
+    DateOnly? InstallationDate,
+    DateOnly? WarrantyUntil,
+    decimal TotalPaidTjs,
+    decimal? BalanceDueTjs,
     DateTime MeasuredAt,
     DateTime CreatedAt);
 
@@ -88,7 +85,6 @@ public record LeadDetailResponse(
     Guid Id,
     string Name,
     string Phone,
-    string? Address,
     string Product,
     string Status,
     string? Source,
@@ -96,11 +92,8 @@ public record LeadDetailResponse(
     Guid? RefusalReasonId,
     string? RefusalNote,
     DateOnly CallDate,
-    DateOnly? PromisedInstallDate,
-    DateOnly? WarrantyUntil,
     Guid? AssignedMeasurerId,
     string? AssignedMeasurerName,
-    decimal? DealPriceTjs,
     DateTime CreatedAt,
     DateTime UpdatedAt,
     IReadOnlyList<LeadMeasurementDto> Measurements);

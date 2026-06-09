@@ -23,11 +23,6 @@ public sealed class PaymentConfiguration : IEntityTypeConfiguration<Payment>
             .HasMaxLength(1000);
 
         builder.HasIndex(p => p.TenantId);
-        builder.HasIndex(p => p.LeadId);
-
-        builder.HasOne(p => p.Lead)
-            .WithMany(l => l.Payments)
-            .HasForeignKey(p => p.LeadId)
-            .OnDelete(DeleteBehavior.Restrict);
+        builder.HasIndex(p => p.MeasurementId);
     }
 }

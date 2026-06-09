@@ -20,7 +20,7 @@ All FK columns are `uuid` (Guid v7). Money is `numeric(18,2)`. Dimensions are `i
 - `measurements.lead_id` → FK index
 - `glasses.measurement_id` → FK index
 - `holes.glass_id` → FK index
-- `payments.lead_id` → FK index
+- `payments.measurement_id` → FK index
 - `factory_order_items.factory_order_id` → FK index
 - `users.email` unique within tenant
 
@@ -59,7 +59,7 @@ Unique: `token_hash`.
 
 ### leads
 The single source of truth for a person who interacted with us.
-Moves through Kanban statuses; financial state attaches when status reaches `Buying`.
+Moves through Kanban statuses; financial state lives on each Measurement.
 
 | Column | Type | Notes |
 |--------|------|-------|
@@ -67,7 +67,6 @@ Moves through Kanban statuses; financial state attaches when status reaches `Buy
 | tenant_id | uuid FK | |
 | name | text not null | |
 | phone | text not null | |
-| address | text null | required from status `Measurement` onwards |
 | product | text not null | from `Product` enum/lookup |
 | status | text not null | enum: `New`, `Measurement`, `Thinking`, `Refused`, `Buying`, `OrderedAtFactory`, `GlassArrived`, `Installed`, `Closed` |
 | source | text null | how they found us |
@@ -75,15 +74,12 @@ Moves through Kanban statuses; financial state attaches when status reaches `Buy
 | refusal_reason_id | uuid null FK | only if status=Refused |
 | refusal_note | text null | |
 | call_date | date not null | |
-| promised_install_date | date null | set when status=Buying |
-| warranty_until | date null | set when status=Installed |
 | assigned_measurer_id | uuid null FK → users | |
-| deal_price_tjs | numeric(18,2) null | set when status=Buying |
 | (tenant/audit/soft-delete) | | |
 | xmin | xid concurrency | |
 
 ### measurements
-A measurer's site visit → drawing.
+A measurer's site visit → drawing. Each measurement owns its own financial data.
 
 | Column | Type | Notes |
 |--------|------|-------|
@@ -91,12 +87,18 @@ A measurer's site visit → drawing.
 | tenant_id | uuid FK | |
 | lead_id | uuid FK → leads | |
 | measurer_id | uuid FK → users | |
+| address | varchar(500) not null default 'Не указан' | installation address |
 | measure_mm | int not null | width of opening |
 | height_mm | int not null | default 2000 |
 | ~~configuration~~ | ~~text~~ | **Removed** in migration `RemoveCabinConfiguration`; glass layout is now stored in the `glasses` table |
 | glass_color | text not null | enum |
 | hardware_color | text not null | enum |
 | handle_side | text not null default 'Right' | `Left` \| `Right` |
+| deal_price_tjs | numeric(18,2) null | agreed price for this measurement |
+| delivery_cost_tjs | numeric(18,2) null | delivery cost (overrides Delivery expenses if set) |
+| installation_date | date null | planned install date |
+| installed_at | timestamptz null | actual installation timestamp |
+| warranty_until | date null | set by LeadService when lead transitions to Closed |
 | measured_at | timestamptz | |
 | (audit/soft-delete) | | |
 | xmin | concurrency | |
@@ -173,20 +175,20 @@ One row per measurement (one set per cabin).
 |--------|------|-------|
 | id | uuid PK | |
 | tenant_id | uuid FK | |
-| lead_id | uuid FK → leads | |
+| measurement_id | uuid FK → measurements NOT NULL | payment linked to a specific measurement |
 | amount_tjs | numeric(18,2) not null | positive = received, negative = refund |
 | kind | text not null | `Deposit` \| `Balance` \| `Refund` |
 | paid_at | date not null | |
 | note | text null | |
 
 ### expenses
-Other costs not tied to a specific lead (delivery is a special case — store per lead via separate field on lead, or here with `lead_id` set).
+Other costs. Global expenses (not tied to any measurement) keep `measurement_id = null`.
 
 | Column | Type | Notes |
 |--------|------|-------|
 | id | uuid PK | |
 | tenant_id | uuid FK | |
-| lead_id | uuid null FK → leads | nullable for global expenses |
+| measurement_id | uuid null FK → measurements | nullable for global expenses |
 | amount_tjs | numeric(18,2) not null | |
 | kind | text not null | `Delivery` \| `Rework` \| `Other` |
 | description | text null | |
@@ -209,17 +211,22 @@ Other costs not tied to a specific lead (delivery is a special case — store pe
 | is_active | bool default true | |
 
 ## Profit calculation (computed, not stored)
-```
-glassCost(lead)     = sum(factory_order_items.glass_cost_tjs where glass in lead.measurement.glasses, not rework)
-reworkCost(lead)    = sum(factory_order_items.glass_cost_tjs where is_rework AND rework_reason='MeasurerError')
-hardwareCost(lead)  = lead.measurement.hardware.cost_tjs
-masterFee(lead)     = lead.measurement.area * 120
-deliveryCost(lead)  = sum(expenses where lead_id = lead.id AND kind='Delivery')
-otherCosts(lead)    = sum(expenses where lead_id = lead.id AND kind='Other')
 
-cost   = glassCost + reworkCost + hardwareCost + masterFee + deliveryCost + otherCosts
-profit = lead.deal_price_tjs - cost
+Per **measurement**:
 ```
+glassCost(m)      = sum(factory_order_items.glass_cost_tjs where glass in m.glasses, not rework)
+reworkCost(m)     = sum(factory_order_items.glass_cost_tjs where is_rework AND rework_reason='MeasurerError')
+hardwareCost(m)   = m.hardware.cost_tjs
+masterFee(m)      = m.area_m2 * 120
+deliveryCost(m)   = m.delivery_cost_tjs  OR  sum(expenses where measurement_id=m.id AND kind='Delivery')
+otherCosts(m)     = sum(expenses where measurement_id=m.id AND kind='Other')
+
+cost(m)    = glassCost + reworkCost + hardwareCost + masterFee + deliveryCost + otherCosts
+profit(m)  = m.deal_price_tjs - cost(m)
+balance(m) = m.deal_price_tjs - sum(payments where measurement_id=m.id AND kind != 'Refund')
+```
+
+Per **lead** (`GET /api/v1/leads/{id}/finances`): aggregate across all measurements.
 
 Reworks caused by factory error don't count against profit (factory absorbs).
 
@@ -232,3 +239,4 @@ Reworks caused by factory error don't count against profit (factory absorbs).
 5. `AddFactoryOrders` — factory_orders, factory_order_items
 6. `AddFinances` — hardware, payments, expenses
 7. `RemoveCabinConfiguration` — drops `configuration` column from `measurements`
+8. `MoveFinancesToMeasurement` — adds address/finances to measurements; moves payment FK from leads→measurements (NOT NULL); moves expense FK from leads→measurements (nullable); drops finance columns from leads

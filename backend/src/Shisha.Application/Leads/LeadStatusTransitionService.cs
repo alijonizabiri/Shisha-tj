@@ -48,11 +48,6 @@ public sealed class LeadStatusTransitionService : ILeadStatusTransitionService
     {
         switch (to)
         {
-            case LeadStatus.Measurement:
-                if (!string.IsNullOrWhiteSpace(args.Address))
-                    lead.Address = args.Address;
-                break;
-
             case LeadStatus.Thinking:
                 if (args.MeasurementCount == 0)
                     throw new DomainValidationException("measurement",
@@ -63,15 +58,9 @@ public sealed class LeadStatusTransitionService : ILeadStatusTransitionService
                 if (args.MeasurementCount == 0)
                     throw new DomainValidationException("measurement",
                         "MEASUREMENT_REQUIRED: Lead must have at least one saved measurement.");
-                if (args.DealPriceTjs is null or <= 0)
-                    throw new DomainValidationException("dealPriceTjs",
-                        "DEAL_PRICE_REQUIRED: Deal price must be greater than zero.");
-                if (args.TotalDepositTjs < LeadBusinessRules.MinDepositTjs)
+                if (!args.HasQualifyingMeasurementForBuying)
                     throw new DomainValidationException("deposit",
-                        $"DEPOSIT_BELOW_MINIMUM: Deposit must be at least {LeadBusinessRules.MinDepositTjs} TJS. Current: {args.TotalDepositTjs:F2} TJS.");
-                lead.DealPriceTjs = args.DealPriceTjs;
-                if (args.PromisedInstallDate.HasValue)
-                    lead.PromisedInstallDate = args.PromisedInstallDate;
+                        $"DEPOSIT_BELOW_MINIMUM: No measurement has both a deal price > 0 and a deposit of at least {LeadBusinessRules.MinDepositTjs} TJS.");
                 break;
 
             case LeadStatus.Refused:
@@ -83,18 +72,14 @@ public sealed class LeadStatusTransitionService : ILeadStatusTransitionService
 
             case LeadStatus.Installed:
                 var today = DateOnly.FromDateTime(DateTime.UtcNow);
-                if (lead.PromisedInstallDate.HasValue && lead.PromisedInstallDate.Value > today)
+                if (args.LatestInstallationDate.HasValue && args.LatestInstallationDate.Value > today)
                     throw new DomainValidationException(
-                        "promisedInstallDate",
-                        $"Promised install date {lead.PromisedInstallDate} has not yet arrived.");
-                if (lead.DealPriceTjs.HasValue && args.TotalPaidTjs < lead.DealPriceTjs.Value)
+                        "installationDate",
+                        $"Installation date {args.LatestInstallationDate} has not yet arrived.");
+                if (args.TotalDealPriceTjs > 0 && args.TotalPaidTjs < args.TotalDealPriceTjs)
                     throw new DomainValidationException(
                         "balance",
-                        $"BALANCE_NOT_PAID: Full payment required. Deal: {lead.DealPriceTjs.Value:F2} TJS, Paid: {args.TotalPaidTjs:F2} TJS.");
-                break;
-
-            case LeadStatus.Closed:
-                lead.WarrantyUntil = DateOnly.FromDateTime(DateTime.UtcNow).AddYears(1);
+                        $"BALANCE_NOT_PAID: Full payment required. Deal: {args.TotalDealPriceTjs:F2} TJS, Paid: {args.TotalPaidTjs:F2} TJS.");
                 break;
 
             case LeadStatus.New:

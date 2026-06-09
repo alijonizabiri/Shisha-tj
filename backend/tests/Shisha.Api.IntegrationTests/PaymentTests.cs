@@ -26,7 +26,8 @@ public sealed class PaymentTests(ApiFactory factory)
         return client;
     }
 
-    private async Task<string> CreateLeadInMeasurementAsync(HttpClient client)
+    /// <summary>Creates a lead in Measurement status and returns a measurementId linked to it.</summary>
+    private async Task<(string leadId, string measurementId)> CreateLeadWithMeasurementAsync(HttpClient client)
     {
         var create = await client.PostAsJsonAsync("/api/v1/leads", new
         {
@@ -36,70 +37,71 @@ public sealed class PaymentTests(ApiFactory factory)
             callDate = "2026-06-06",
         });
         create.EnsureSuccessStatusCode();
-        var body = await create.Content.ReadFromJsonAsync<JsonElement>(JsonOpts);
-        var id = body.GetProperty("id").GetString()!;
+        var leadBody = await create.Content.ReadFromJsonAsync<JsonElement>(JsonOpts);
+        var leadId = leadBody.GetProperty("id").GetString()!;
 
-        await client.PatchAsJsonAsync($"/api/v1/leads/{id}/status", new { status = "Measurement" });
-        return id;
-    }
+        await client.PatchAsJsonAsync($"/api/v1/leads/{leadId}/status", new { status = "Measurement" });
 
-    private async Task AddMeasurementAsync(HttpClient client, string leadId)
-    {
-        var resp = await client.PostAsJsonAsync("/api/v1/measurements", new
+        var mResp = await client.PostAsJsonAsync("/api/v1/measurements", new
         {
             leadId        = Guid.Parse(leadId),
             measureMm     = 1560,
             heightMm      = 2000,
-            configuration = "TwoGlass",
             glassColor    = "Transparent",
             hardwareColor = "BlackMatte",
+            address       = "ул. Рудаки 1",
+            dealPriceTjs  = 5000m,
         });
-        resp.EnsureSuccessStatusCode();
+        mResp.EnsureSuccessStatusCode();
+        var mBody = await mResp.Content.ReadFromJsonAsync<JsonElement>(JsonOpts);
+        var measurementId = mBody.GetProperty("id").GetString()!;
+
+        return (leadId, measurementId);
     }
 
     [Theory]
     [InlineData("Deposit")]
     [InlineData("Balance")]
     [InlineData("Refund")]
-    public async Task CreatePayment_WithoutMeasurement_Returns400ForAllKinds(string kind)
+    public async Task CreatePayment_UnknownMeasurementId_Returns400ForAllKinds(string kind)
     {
         if (!factory.IsAvailable) return;
 
         var client = await AuthClientAsync();
-        var id = await CreateLeadInMeasurementAsync(client);
 
         var resp = await client.PostAsJsonAsync("/api/v1/payments", new
         {
-            leadId    = Guid.Parse(id),
-            amountTjs = 500m,
+            measurementId = Guid.NewGuid(),  // non-existent
+            amountTjs     = 500m,
             kind,
-            paidAt    = "2026-06-06",
+            paidAt        = "2026-06-06",
         });
 
         Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
 
         var body = await resp.Content.ReadFromJsonAsync<JsonElement>(JsonOpts);
-        Assert.Equal("MEASUREMENT_REQUIRED_FOR_PAYMENT",
-            body.GetProperty("errorCode").GetString());
+        Assert.Equal("MEASUREMENT_NOT_FOUND", body.GetProperty("errorCode").GetString());
     }
 
     [Fact]
-    public async Task CreatePayment_WithMeasurement_Returns201()
+    public async Task CreatePayment_WithValidMeasurementId_Returns201()
     {
         if (!factory.IsAvailable) return;
 
         var client = await AuthClientAsync();
-        var id = await CreateLeadInMeasurementAsync(client);
-        await AddMeasurementAsync(client, id);
+        var (_, measurementId) = await CreateLeadWithMeasurementAsync(client);
 
         var resp = await client.PostAsJsonAsync("/api/v1/payments", new
         {
-            leadId    = Guid.Parse(id),
-            amountTjs = 500m,
-            kind      = "Deposit",
-            paidAt    = "2026-06-06",
+            measurementId = Guid.Parse(measurementId),
+            amountTjs     = 500m,
+            kind          = "Deposit",
+            paidAt        = "2026-06-06",
         });
 
         Assert.Equal(HttpStatusCode.Created, resp.StatusCode);
+
+        var body = await resp.Content.ReadFromJsonAsync<JsonElement>(JsonOpts);
+        Assert.Equal(measurementId, body.GetProperty("measurementId").GetString());
     }
 }

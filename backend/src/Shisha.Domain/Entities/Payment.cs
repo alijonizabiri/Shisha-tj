@@ -7,7 +7,7 @@ public sealed class Payment : BaseEntity, ITenantOwned, ISoftDeletable
 {
     public Guid TenantId { get; set; }
 
-    public Guid LeadId { get; set; }
+    public Guid MeasurementId { get; set; }
     public decimal AmountTjs { get; set; }
     public PaymentKind Kind { get; set; }
     public DateOnly PaidAt { get; set; }
@@ -17,5 +17,5 @@ public sealed class Payment : BaseEntity, ITenantOwned, ISoftDeletable
     public DateTime? DeletedAt { get; set; }
     public Guid? DeletedByUserId { get; set; }
 
-    public Lead Lead { get; set; } = null!;
+    public Measurement Measurement { get; set; } = null!;
 }

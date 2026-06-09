@@ -35,7 +35,7 @@ public sealed class FinancesTests(ApiFactory factory)
     };
 
     [Fact]
-    public async Task GetFinances_LeadWithNoDealPrice_ReturnsZeroCostsAndNullFields()
+    public async Task GetLeadFinances_LeadWithNoMeasurements_ReturnsZeroCostsAndNullFields()
     {
         if (!factory.IsAvailable) return;
 
@@ -58,7 +58,7 @@ public sealed class FinancesTests(ApiFactory factory)
     }
 
     [Fact]
-    public async Task GetFinances_WithMeasurementAndPayment_ReturnsCorrectBreakdown()
+    public async Task GetLeadFinances_WithMeasurementAndPayment_ReturnsCorrectBreakdown()
     {
         if (!factory.IsAvailable) return;
 
@@ -72,42 +72,47 @@ public sealed class FinancesTests(ApiFactory factory)
         // New → Measurement
         await client.PatchAsJsonAsync($"/api/v1/leads/{id}/status", new { status = "Measurement" });
 
-        // Step 8: Measurement and deposit must exist before → Buying
-        // Measurement: 1560 mm width × 2000 mm height, TwoGlass
-        // PanelComputer: total=1600, equal split → two 800×2000 panels
+        // Create measurement with dealPrice=5000
+        // measureMm=1560, heightMm=2000, TwoGlass: 2 panels of 800×2000
         // area = (800*2000 + 800*2000) / 1_000_000 = 3.2 m²
         // masterFee = 3.2 * 120 = 384 TJS
-        await client.PostAsJsonAsync("/api/v1/measurements", new
+        var mResp = await client.PostAsJsonAsync("/api/v1/measurements", new
         {
             leadId,
             measureMm     = 1560,
             heightMm      = 2000,
-            configuration = "TwoGlass",
             glassColor    = "Transparent",
             hardwareColor = "BlackMatte",
+            address       = "ул. Рудаки 5",
+            dealPriceTjs  = 5000m,
         });
+        mResp.EnsureSuccessStatusCode();
+        var mBody = await mResp.Content.ReadFromJsonAsync<JsonElement>(JsonOpts);
+        var measurementId = Guid.Parse(mBody.GetProperty("id").GetString()!);
 
-        // Deposit payment of 1000 TJS (≥ MinDepositTjs=100, satisfies gate)
+        // Deposit payment of 1000 TJS against this measurement (≥ MinDepositTjs=100)
         await client.PostAsJsonAsync("/api/v1/payments", new
         {
-            leadId,
+            measurementId,
             amountTjs = 1000m,
             kind      = "Deposit",
             paidAt    = "2026-06-05",
         });
 
-        // Now move → Buying (deal price = 5000)
-        await client.PatchAsJsonAsync($"/api/v1/leads/{id}/status", new { status = "Buying", dealPriceTjs = 5000m });
+        // Transition → Buying (dealPriceTjs comes from measurement, no longer in request)
+        var buyingResp = await client.PatchAsJsonAsync($"/api/v1/leads/{id}/status", new { status = "Buying" });
+        Assert.Equal(HttpStatusCode.NoContent, buyingResp.StatusCode);
 
+        // Verify lead finances aggregate
         var resp = await client.GetAsync($"/api/v1/leads/{id}/finances");
         Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
 
         var body = await resp.Content.ReadFromJsonAsync<JsonElement>(JsonOpts);
         Assert.Equal(id, body.GetProperty("leadId").GetString());
         Assert.Equal(5000m, body.GetProperty("dealPriceTjs").GetDecimal());
-        Assert.Equal(0m, body.GetProperty("glassCostTjs").GetDecimal());    // no factory order items yet
+        Assert.Equal(0m, body.GetProperty("glassCostTjs").GetDecimal());
         Assert.Equal(0m, body.GetProperty("reworkCostTjs").GetDecimal());
-        Assert.Equal(0m, body.GetProperty("hardwareCostTjs").GetDecimal()); // no hardware record yet
+        Assert.Equal(0m, body.GetProperty("hardwareCostTjs").GetDecimal());
         Assert.Equal(384m, body.GetProperty("masterFeeTjs").GetDecimal());
         Assert.Equal(0m, body.GetProperty("deliveryCostTjs").GetDecimal());
         Assert.Equal(0m, body.GetProperty("otherCostsTjs").GetDecimal());
@@ -119,7 +124,53 @@ public sealed class FinancesTests(ApiFactory factory)
     }
 
     [Fact]
-    public async Task GetFinances_NotFound_Returns404()
+    public async Task GetMeasurementFinances_WithMeasurementAndPayment_ReturnsCorrectBreakdown()
+    {
+        if (!factory.IsAvailable) return;
+
+        var client = await AuthClientAsync();
+
+        var create = await client.PostAsJsonAsync("/api/v1/leads", DefaultLeadRequest());
+        var leadId = (await create.Content.ReadFromJsonAsync<JsonElement>(JsonOpts)).GetProperty("id").GetString()!;
+
+        await client.PatchAsJsonAsync($"/api/v1/leads/{leadId}/status", new { status = "Measurement" });
+
+        var mResp = await client.PostAsJsonAsync("/api/v1/measurements", new
+        {
+            leadId = Guid.Parse(leadId),
+            measureMm     = 1560,
+            heightMm      = 2000,
+            glassColor    = "Transparent",
+            hardwareColor = "BlackMatte",
+            address       = "пр. Дусти 10",
+            dealPriceTjs  = 3000m,
+        });
+        mResp.EnsureSuccessStatusCode();
+        var mBody = await mResp.Content.ReadFromJsonAsync<JsonElement>(JsonOpts);
+        var measurementId = mBody.GetProperty("id").GetString()!;
+
+        await client.PostAsJsonAsync("/api/v1/payments", new
+        {
+            measurementId = Guid.Parse(measurementId),
+            amountTjs     = 500m,
+            kind          = "Deposit",
+            paidAt        = "2026-06-05",
+        });
+
+        var resp = await client.GetAsync($"/api/v1/measurements/{measurementId}/finances");
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+
+        var body = await resp.Content.ReadFromJsonAsync<JsonElement>(JsonOpts);
+        Assert.Equal(measurementId, body.GetProperty("measurementId").GetString());
+        Assert.Equal(3000m, body.GetProperty("dealPriceTjs").GetDecimal());
+        Assert.Equal(384m, body.GetProperty("masterFeeTjs").GetDecimal());
+        Assert.Equal(500m, body.GetProperty("totalPaidTjs").GetDecimal());
+        Assert.Equal(500m, body.GetProperty("totalDepositTjs").GetDecimal());
+        Assert.Equal(2500m, body.GetProperty("balanceDueTjs").GetDecimal()); // 3000 - 500
+    }
+
+    [Fact]
+    public async Task GetLeadFinances_NotFound_Returns404()
     {
         if (!factory.IsAvailable) return;
 
@@ -129,7 +180,7 @@ public sealed class FinancesTests(ApiFactory factory)
     }
 
     [Fact]
-    public async Task GetFinances_Unauthenticated_Returns401()
+    public async Task GetLeadFinances_Unauthenticated_Returns401()
     {
         if (!factory.IsAvailable) return;
 

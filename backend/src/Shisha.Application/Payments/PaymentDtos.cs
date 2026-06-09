@@ -3,7 +3,7 @@ namespace Shisha.Application.Payments;
 // ── Requests ──────────────────────────────────────────────────────────────────
 
 public record CreatePaymentRequest(
-    Guid LeadId,
+    Guid MeasurementId,
     decimal AmountTjs,
     string Kind,
     DateOnly PaidAt,
@@ -13,7 +13,7 @@ public record CreatePaymentRequest(
 
 public record PaymentDto(
     Guid Id,
-    Guid LeadId,
+    Guid MeasurementId,
     decimal AmountTjs,
     string Kind,
     DateOnly PaidAt,
