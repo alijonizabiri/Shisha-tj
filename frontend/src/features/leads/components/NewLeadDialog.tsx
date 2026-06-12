@@ -37,7 +37,6 @@ export function NewLeadDialog({ open, onClose }: Props) {
     defaultValues: {
       name:     '',
       phone:    '',
-      address:  '',
       product:  '',
       source:   '',
       note:     '',
@@ -64,7 +63,6 @@ export function NewLeadDialog({ open, onClose }: Props) {
     const result = await createLead.mutateAsync({
       name:     values.name,
       phone:    values.phone,
-      address:  values.address || null,
       product:  values.product,
       source:   values.source || null,
       note:     values.note || null,
@@ -153,16 +151,6 @@ export function NewLeadDialog({ open, onClose }: Props) {
               {...register('callDate')}
             />
             {errors.callDate && <p className="text-xs text-destructive">{errors.callDate.message}</p>}
-          </div>
-
-          {/* Address */}
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="lead-address">Адрес</Label>
-            <Input
-              id="lead-address"
-              placeholder="ул. Рудаки 1, кв. 5"
-              {...register('address')}
-            />
           </div>
 
           {/* Source */}

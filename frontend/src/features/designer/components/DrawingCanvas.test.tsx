@@ -2,7 +2,7 @@ import { fireEvent, render } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { computeInitialPanels } from '../lib/computePanels'
 import { defaultHoles } from '../lib/defaultHoles'
-import { DrawingCanvas } from './DrawingCanvas'
+import { DrawingCanvas, computeSnap } from './DrawingCanvas'
 
 const CABIN_H = 2000
 const panels = computeInitialPanels(1560, CABIN_H)
@@ -155,5 +155,33 @@ describe('DrawingCanvas', () => {
     const svg = container.querySelector('svg')!
     fireEvent.click(svg)
     expect(onSelectPanel).toHaveBeenCalledWith(null)
+  })
+})
+
+describe('computeSnap', () => {
+  it('snaps x to neighbour when delta ≤ 5mm', () => {
+    const { x, guides } = computeSnap(100, 200, [{ x: 104, y: 999 }])
+    expect(x).toBe(104)
+    expect(guides.x).toBe(104)
+  })
+
+  it('does not snap x when delta > 5mm', () => {
+    const { x, guides } = computeSnap(100, 200, [{ x: 106, y: 999 }])
+    expect(x).toBe(100)
+    expect(guides.x).toBeNull()
+  })
+
+  it('no snap guide elements are rendered when not dragging', () => {
+    const { container } = render(
+      <DrawingCanvas
+        panels={panels}
+        holesByPanel={holesByPanel}
+        cabinHeightMm={CABIN_H}
+        zoom={1}
+        onZoomChange={vi.fn()}
+      />,
+    )
+    expect(container.querySelector('[data-testid="snap-guide-h"]')).toBeNull()
+    expect(container.querySelector('[data-testid="snap-guide-v"]')).toBeNull()
   })
 })

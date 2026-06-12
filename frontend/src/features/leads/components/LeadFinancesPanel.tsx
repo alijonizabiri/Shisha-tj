@@ -8,6 +8,7 @@ import { cn } from '@/shared/lib/cn'
 interface Props {
   leadId: string
   hasMeasurements: boolean
+  measurementId?: string
 }
 
 interface RowProps {
@@ -48,7 +49,7 @@ function Divider() {
   return <div className="my-1 border-t border-border" />
 }
 
-export function LeadFinancesPanel({ leadId, hasMeasurements }: Props) {
+export function LeadFinancesPanel({ leadId, hasMeasurements, measurementId }: Props) {
   const { data, isLoading, isError } = useLeadFinances(leadId)
   const [addPaymentOpen, setAddPaymentOpen] = useState(false)
 
@@ -120,7 +121,7 @@ export function LeadFinancesPanel({ leadId, hasMeasurements }: Props) {
             <Button
               size="sm"
               variant="outline"
-              disabled={!hasMeasurements}
+              disabled={!hasMeasurements || !measurementId}
               onClick={() => setAddPaymentOpen(true)}
             >
               + Добавить платёж
@@ -132,9 +133,9 @@ export function LeadFinancesPanel({ leadId, hasMeasurements }: Props) {
         </div>
       )}
 
-      {addPaymentOpen && (
+      {addPaymentOpen && measurementId && (
         <AddPaymentDialog
-          leadId={leadId}
+          measurementId={measurementId}
           onClose={() => setAddPaymentOpen(false)}
         />
       )}

@@ -28,12 +28,11 @@ public sealed class LeadTests(ApiFactory factory)
 
     private static object DefaultCreateRequest() => new
     {
-        name = "Иван Иванов",
-        phone = "+992901234567",
-        address = "ул. Рудаки 5, кв. 12",
-        product = "Душевая кабина",
-        source = "Instagram",
-        note = "Замер в пятницу",
+        name     = "Иван Иванов",
+        phone    = "+992901234567",
+        product  = "Душевая кабина",
+        source   = "Instagram",
+        note     = "Замер в пятницу",
         callDate = "2026-06-04",
     };
 
@@ -52,7 +51,6 @@ public sealed class LeadTests(ApiFactory factory)
 
         var body = await resp.Content.ReadFromJsonAsync<JsonElement>(JsonOpts);
         Assert.NotEqual(Guid.Empty, Guid.Parse(body.GetProperty("id").GetString()!));
-        Assert.Equal("New", body.GetProperty("status").GetString());
         Assert.Equal("Иван Иванов", body.GetProperty("name").GetString());
     }
 
@@ -113,10 +111,9 @@ public sealed class LeadTests(ApiFactory factory)
 
         var updateResp = await client.PutAsJsonAsync($"/api/v1/leads/{id}", new
         {
-            name = "Пётр Петров",
-            phone = "+992901234567",
-            address = "Новый адрес",
-            product = "Стеклянная дверь",
+            name     = "Пётр Петров",
+            phone    = "+992901234567",
+            product  = "Стеклянная дверь",
             callDate = "2026-06-05",
         });
 
@@ -139,104 +136,8 @@ public sealed class LeadTests(ApiFactory factory)
         var deleteResp = await client.DeleteAsync($"/api/v1/leads/{id}");
         Assert.Equal(HttpStatusCode.NoContent, deleteResp.StatusCode);
 
-        // Soft delete — should return 404 now
         var getResp = await client.GetAsync($"/api/v1/leads/{id}");
         Assert.Equal(HttpStatusCode.NotFound, getResp.StatusCode);
-    }
-
-    // ── Kanban ────────────────────────────────────────────────────────────────
-
-    [Fact]
-    public async Task GetKanban_ReturnsAllStatusColumns()
-    {
-        if (!factory.IsAvailable) return;
-
-        var client = await AuthClientAsync();
-        var resp = await client.GetAsync("/api/v1/leads/kanban");
-        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
-
-        var body = await resp.Content.ReadFromJsonAsync<JsonElement>(JsonOpts);
-        var columns = body.GetProperty("columns");
-        // Should have a column for each LeadStatus value
-        Assert.True(columns.GetArrayLength() >= 7);
-        Assert.Equal("New", columns[0].GetProperty("status").GetString());
-    }
-
-    // ── Status transitions ────────────────────────────────────────────────────
-
-    [Fact]
-    public async Task PatchStatus_NewToRefused_WithReasonId_Returns204()
-    {
-        if (!factory.IsAvailable) return;
-
-        var client = await AuthClientAsync();
-        var create = await client.PostAsJsonAsync("/api/v1/leads", DefaultCreateRequest());
-        var created = await create.Content.ReadFromJsonAsync<JsonElement>(JsonOpts);
-        var id = created.GetProperty("id").GetString()!;
-
-        var patchResp = await client.PatchAsJsonAsync($"/api/v1/leads/{id}/status", new
-        {
-            status = "Refused",
-            refusalReasonId = Guid.NewGuid(),
-        });
-
-        Assert.Equal(HttpStatusCode.NoContent, patchResp.StatusCode);
-    }
-
-    [Fact]
-    public async Task PatchStatus_NewToRefused_MissingReasonId_Returns400()
-    {
-        if (!factory.IsAvailable) return;
-
-        var client = await AuthClientAsync();
-        var create = await client.PostAsJsonAsync("/api/v1/leads", DefaultCreateRequest());
-        var created = await create.Content.ReadFromJsonAsync<JsonElement>(JsonOpts);
-        var id = created.GetProperty("id").GetString()!;
-
-        var patchResp = await client.PatchAsJsonAsync($"/api/v1/leads/{id}/status", new
-        {
-            status = "Refused",
-            // refusalReasonId intentionally missing
-        });
-
-        Assert.Equal(HttpStatusCode.BadRequest, patchResp.StatusCode);
-    }
-
-    [Fact]
-    public async Task PatchStatus_InvalidTransition_Returns409()
-    {
-        if (!factory.IsAvailable) return;
-
-        var client = await AuthClientAsync();
-        var create = await client.PostAsJsonAsync("/api/v1/leads", DefaultCreateRequest());
-        var created = await create.Content.ReadFromJsonAsync<JsonElement>(JsonOpts);
-        var id = created.GetProperty("id").GetString()!;
-
-        // New → OrderedAtFactory is not an allowed transition
-        var patchResp = await client.PatchAsJsonAsync($"/api/v1/leads/{id}/status", new
-        {
-            status = "OrderedAtFactory",
-        });
-
-        Assert.Equal(HttpStatusCode.Conflict, patchResp.StatusCode);
-    }
-
-    [Fact]
-    public async Task PatchStatus_UnknownStatus_Returns400()
-    {
-        if (!factory.IsAvailable) return;
-
-        var client = await AuthClientAsync();
-        var create = await client.PostAsJsonAsync("/api/v1/leads", DefaultCreateRequest());
-        var created = await create.Content.ReadFromJsonAsync<JsonElement>(JsonOpts);
-        var id = created.GetProperty("id").GetString()!;
-
-        var patchResp = await client.PatchAsJsonAsync($"/api/v1/leads/{id}/status", new
-        {
-            status = "NonExistentStatus",
-        });
-
-        Assert.Equal(HttpStatusCode.BadRequest, patchResp.StatusCode);
     }
 
     // ── Auth / role guards ─────────────────────────────────────────────────────

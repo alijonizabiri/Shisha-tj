@@ -32,13 +32,13 @@ const KIND_LABELS: Record<'Deposit' | 'Balance' | 'Refund', string> = {
 }
 
 interface Props {
-  leadId: string
+  measurementId: string
   onClose: () => void
 }
 
 // Conditionally rendered in parent — mounts fresh each time
-export function AddPaymentDialog({ leadId, onClose }: Props) {
-  const createPayment = useCreatePayment(leadId)
+export function AddPaymentDialog({ measurementId, onClose }: Props) {
+  const createPayment = useCreatePayment(measurementId)
 
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -60,7 +60,7 @@ export function AddPaymentDialog({ leadId, onClose }: Props) {
     try {
       const amount = Number(values.amountStr)
       await createPayment.mutateAsync({
-        leadId,
+        measurementId,
         amountTjs: values.kind === 'Refund' ? -amount : amount,
         kind: values.kind,
         paidAt: values.paidAt,

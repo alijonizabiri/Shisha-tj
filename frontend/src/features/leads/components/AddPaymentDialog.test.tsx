@@ -19,7 +19,7 @@ const DEFAULT_MUTATION = {
 }
 
 function renderDialog(onClose = vi.fn()) {
-  return render(<AddPaymentDialog leadId="lead-1" onClose={onClose} />)
+  return render(<AddPaymentDialog measurementId="m-1" onClose={onClose} />)
 }
 
 describe('AddPaymentDialog', () => {

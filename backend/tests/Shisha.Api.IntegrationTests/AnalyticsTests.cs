@@ -41,7 +41,7 @@ public sealed class AnalyticsTests(ApiFactory factory)
         return body.GetProperty("id").GetString()!;
     }
 
-    private async Task AddMeasurementAsync(HttpClient client, string leadId,
+    private async Task<string> AddMeasurementAsync(HttpClient client, string leadId,
         string glassColor = "Transparent", string hardwareColor = "BlackMatte")
     {
         var resp = await client.PostAsJsonAsync("/api/v1/measurements", new
@@ -49,11 +49,12 @@ public sealed class AnalyticsTests(ApiFactory factory)
             leadId        = Guid.Parse(leadId),
             measureMm     = 1560,
             heightMm      = 2000,
-            configuration = "TwoGlass",
             glassColor,
             hardwareColor,
         });
         resp.EnsureSuccessStatusCode();
+        var body = await resp.Content.ReadFromJsonAsync<JsonElement>(JsonOpts);
+        return body.GetProperty("id").GetString()!;
     }
 
     // ── Auth guard ────────────────────────────────────────────────────────────
@@ -123,9 +124,10 @@ public sealed class AnalyticsTests(ApiFactory factory)
         if (!factory.IsAvailable) return;
 
         var client = await AuthClientAsync();
-        var id = await CreateLeadAsync(client);
+        var leadId = await CreateLeadAsync(client);
+        var mId = await AddMeasurementAsync(client, leadId);
 
-        var patch = await client.PatchAsJsonAsync($"/api/v1/leads/{id}/status", new
+        var patch = await client.PatchAsJsonAsync($"/api/v1/measurements/{mId}/status", new
         {
             status          = "Refused",
             refusalReasonId = Guid.NewGuid(),
@@ -173,7 +175,6 @@ public sealed class AnalyticsTests(ApiFactory factory)
         var client = await AuthClientAsync();
         var id = await CreateLeadAsync(client);
 
-        await client.PatchAsJsonAsync($"/api/v1/leads/{id}/status", new { status = "Measurement" });
         await AddMeasurementAsync(client, id, "Matte", "Gold");
 
         var resp = await client.GetAsync("/api/v1/analytics/by-color");
@@ -196,10 +197,9 @@ public sealed class AnalyticsTests(ApiFactory factory)
 
         var client = await AuthClientAsync();
         var id = await CreateLeadAsync(client);
+        var mId = await AddMeasurementAsync(client, id);
 
-        await client.PatchAsJsonAsync($"/api/v1/leads/{id}/status", new { status = "Measurement" });
-
-        var assign = await client.PostAsJsonAsync($"/api/v1/leads/{id}/assign-measurer", new
+        var assign = await client.PostAsJsonAsync($"/api/v1/measurements/{mId}/assign-measurer", new
         {
             userId = factory.MeasurerId,
         });

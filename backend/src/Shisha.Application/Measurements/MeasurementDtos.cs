@@ -1,5 +1,24 @@
 namespace Shisha.Application.Measurements;
 
+// ── Kanban ────────────────────────────────────────────────────────────────────
+
+public record MeasurementKanbanItemResponse(
+    Guid Id,
+    Guid? LeadId,
+    string LeadName,
+    string LeadPhone,
+    string Product,
+    string Status,
+    string? AssignedMeasurerName,
+    decimal? DealPriceTjs,
+    decimal TotalPaidTjs,
+    DateOnly? InstallationDate,
+    DateTime CreatedAt);
+
+public record MeasurementKanbanColumn(string Status, IReadOnlyList<MeasurementKanbanItemResponse> Items);
+
+public record MeasurementKanbanResponse(IReadOnlyList<MeasurementKanbanColumn> Columns);
+
 // ── Requests ──────────────────────────────────────────────────────────────────
 
 public sealed record PanelInputDto(
@@ -14,6 +33,13 @@ public sealed record HoleRequest(
     int YMm,
     int RadiusMm,
     string HoleType);
+
+public sealed record PatchMeasurementStatusRequest(
+    string Status,
+    Guid? RefusalReasonId = null,
+    string? RefusalNote = null);
+
+public sealed record AssignMeasurerRequest(Guid UserId);
 
 public sealed record CreateMeasurementRequest(
     int MeasureMm,
@@ -64,6 +90,11 @@ public sealed record MeasurementResponse(
     Guid? MeasurerId,
     Guid? LeadId,
     string Address,
+    string Status,
+    Guid? AssignedMeasurerId,
+    string? AssignedMeasurerName,
+    Guid? RefusalReasonId,
+    string? RefusalNote,
     int MeasureMm,
     int HeightMm,
     string GlassColor,

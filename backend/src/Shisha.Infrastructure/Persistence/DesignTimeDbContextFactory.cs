@@ -11,7 +11,7 @@ public sealed class DesignTimeDbContextFactory : IDesignTimeDbContextFactory<App
     {
         var nullUser = new NullCurrentUser();
         var options = new DbContextOptionsBuilder<AppDbContext>()
-            .UseNpgsql("Host=localhost;Port=5432;Database=shisha_tj;Username=shisha;Password=shisha_dev_pass")
+            .UseNpgsql("Host=localhost;Port=5432;Database=shisha_tj;Username=postgres;Password=mai2026")
             .UseSnakeCaseNamingConvention()
             .AddInterceptors(new AuditInterceptor(nullUser))
             .Options;

@@ -22,14 +22,12 @@ const LEAD_SOURCES = [
 ] as const
 
 const schema = z.object({
-  name:                z.string().min(2, 'Мин. 2 символа').max(200),
-  phone:               z.string().regex(/^\+?\d{9,15}$/, 'Формат: +992xxxxxxxxx'),
-  address:             z.string().max(500).optional(),
-  product:             z.string().min(1, 'Выберите продукт'),
-  source:              z.string().max(100).optional(),
-  note:                z.string().max(2000).optional(),
-  callDate:            z.string().min(1, 'Укажите дату звонка'),
-  promisedInstallDate: z.string().optional(),
+  name:     z.string().min(2, 'Мин. 2 символа').max(200),
+  phone:    z.string().regex(/^\+?\d{9,15}$/, 'Формат: +992xxxxxxxxx'),
+  product:  z.string().min(1, 'Выберите продукт'),
+  source:   z.string().max(100).optional(),
+  note:     z.string().max(2000).optional(),
+  callDate: z.string().min(1, 'Укажите дату звонка'),
 })
 
 type FormValues = z.infer<typeof schema>
@@ -46,14 +44,12 @@ export function EditLeadDialog({ lead, onClose }: Props) {
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
-      name:                lead.name,
-      phone:               lead.phone,
-      address:             lead.address ?? '',
-      product:             lead.product,
-      source:              lead.source ?? '',
-      note:                lead.note ?? '',
-      callDate:            lead.callDate,
-      promisedInstallDate: lead.promisedInstallDate ?? '',
+      name:     lead.name,
+      phone:    lead.phone,
+      product:  lead.product,
+      source:   lead.source ?? '',
+      note:     lead.note ?? '',
+      callDate: lead.callDate,
     },
   })
 
@@ -65,14 +61,12 @@ export function EditLeadDialog({ lead, onClose }: Props) {
 
   async function onSubmit(values: FormValues) {
     await updateLead.mutateAsync({
-      name:                values.name,
-      phone:               values.phone,
-      address:             values.address || null,
-      product:             values.product,
-      source:              values.source || null,
-      note:                values.note || null,
-      callDate:            values.callDate,
-      promisedInstallDate: values.promisedInstallDate || null,
+      name:     values.name,
+      phone:    values.phone,
+      product:  values.product,
+      source:   values.source || null,
+      note:     values.note || null,
+      callDate: values.callDate,
     })
     onClose()
   }
@@ -83,7 +77,6 @@ export function EditLeadDialog({ lead, onClose }: Props) {
       onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
     >
       <div className="w-full max-w-lg rounded-lg border border-border bg-card shadow-xl max-h-[90vh] flex flex-col">
-        {/* Header */}
         <div className="flex items-center justify-between border-b border-border px-5 py-4 shrink-0">
           <h2 className="text-base font-semibold">Редактировать лид</h2>
           <button
@@ -95,20 +88,17 @@ export function EditLeadDialog({ lead, onClose }: Props) {
           </button>
         </div>
 
-        {/* Body */}
         <form
           onSubmit={handleSubmit(onSubmit)}
           className="flex flex-col gap-4 overflow-y-auto p-5"
           noValidate
         >
-          {/* Name */}
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="edit-lead-name">ФИО клиента *</Label>
             <Input id="edit-lead-name" placeholder="Иванов Иван" {...register('name')} />
             {errors.name && <p className="text-xs text-destructive">{errors.name.message}</p>}
           </div>
 
-          {/* Phone */}
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="edit-lead-phone">Телефон *</Label>
             <Input
@@ -121,7 +111,6 @@ export function EditLeadDialog({ lead, onClose }: Props) {
             {errors.phone && <p className="text-xs text-destructive">{errors.phone.message}</p>}
           </div>
 
-          {/* Product */}
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="edit-lead-product">Продукт *</Label>
             {products.length > 0 ? (
@@ -137,30 +126,12 @@ export function EditLeadDialog({ lead, onClose }: Props) {
             {errors.product && <p className="text-xs text-destructive">{errors.product.message}</p>}
           </div>
 
-          {/* Call date */}
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="edit-lead-callDate">Дата звонка *</Label>
             <Input id="edit-lead-callDate" type="date" {...register('callDate')} />
             {errors.callDate && <p className="text-xs text-destructive">{errors.callDate.message}</p>}
           </div>
 
-          {/* Promised install date */}
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="edit-lead-installDate">Дата установки</Label>
-            <Input id="edit-lead-installDate" type="date" {...register('promisedInstallDate')} />
-          </div>
-
-          {/* Address */}
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="edit-lead-address">Адрес</Label>
-            <Input
-              id="edit-lead-address"
-              placeholder="ул. Рудаки 1, кв. 5"
-              {...register('address')}
-            />
-          </div>
-
-          {/* Source */}
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="edit-lead-source">Источник</Label>
             <select id="edit-lead-source" {...register('source')} className={SELECT_CLASS}>
@@ -171,7 +142,6 @@ export function EditLeadDialog({ lead, onClose }: Props) {
             </select>
           </div>
 
-          {/* Note */}
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="edit-lead-note">Заметка</Label>
             <textarea
@@ -187,7 +157,6 @@ export function EditLeadDialog({ lead, onClose }: Props) {
             <p className="text-sm text-destructive">Ошибка сохранения. Попробуйте снова.</p>
           )}
 
-          {/* Footer */}
           <div className="flex gap-3 pt-1">
             <Button type="button" variant="outline" onClick={onClose} className="flex-1">
               Отмена

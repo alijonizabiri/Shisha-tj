@@ -69,9 +69,6 @@ public sealed class FinancesTests(ApiFactory factory)
         var id = (await create.Content.ReadFromJsonAsync<JsonElement>(JsonOpts)).GetProperty("id").GetString()!;
         var leadId = Guid.Parse(id);
 
-        // New → Measurement
-        await client.PatchAsJsonAsync($"/api/v1/leads/{id}/status", new { status = "Measurement" });
-
         // Create measurement with dealPrice=5000
         // measureMm=1560, heightMm=2000, TwoGlass: 2 panels of 800×2000
         // area = (800*2000 + 800*2000) / 1_000_000 = 3.2 m²
@@ -99,8 +96,9 @@ public sealed class FinancesTests(ApiFactory factory)
             paidAt    = "2026-06-05",
         });
 
-        // Transition → Buying (dealPriceTjs comes from measurement, no longer in request)
-        var buyingResp = await client.PatchAsJsonAsync($"/api/v1/leads/{id}/status", new { status = "Buying" });
+        // Transition measurement New → Measurement → Buying
+        await client.PatchAsJsonAsync($"/api/v1/measurements/{measurementId}/status", new { status = "Measurement" });
+        var buyingResp = await client.PatchAsJsonAsync($"/api/v1/measurements/{measurementId}/status", new { status = "Buying" });
         Assert.Equal(HttpStatusCode.NoContent, buyingResp.StatusCode);
 
         // Verify lead finances aggregate
@@ -132,8 +130,6 @@ public sealed class FinancesTests(ApiFactory factory)
 
         var create = await client.PostAsJsonAsync("/api/v1/leads", DefaultLeadRequest());
         var leadId = (await create.Content.ReadFromJsonAsync<JsonElement>(JsonOpts)).GetProperty("id").GetString()!;
-
-        await client.PatchAsJsonAsync($"/api/v1/leads/{leadId}/status", new { status = "Measurement" });
 
         var mResp = await client.PostAsJsonAsync("/api/v1/measurements", new
         {

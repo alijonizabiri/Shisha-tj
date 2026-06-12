@@ -42,8 +42,7 @@ public sealed class LeadStatusTransitionTests(ApiFactory factory)
         return body.GetProperty("id").GetString()!;
     }
 
-    /// <summary>Creates a measurement for the lead; returns the measurement id.</summary>
-    private async Task<string> AddMeasurementAsync(
+    private async Task<string> CreateMeasurementAsync(
         HttpClient client, string leadId, decimal dealPriceTjs = 0m)
     {
         var resp = await client.PostAsJsonAsync("/api/v1/measurements", new
@@ -52,7 +51,7 @@ public sealed class LeadStatusTransitionTests(ApiFactory factory)
             measureMm     = 1560,
             heightMm      = 2000,
             glassColor    = "Transparent",
-            hardwareColor = "BlackMatte",
+            hardwareColor = "Chrome",
             address       = "ул. Рудаки 1",
             dealPriceTjs,
         });
@@ -61,7 +60,6 @@ public sealed class LeadStatusTransitionTests(ApiFactory factory)
         return body.GetProperty("id").GetString()!;
     }
 
-    /// <summary>Creates a Deposit payment against a measurement.</summary>
     private async Task AddDepositAsync(HttpClient client, string measurementId, decimal amount)
     {
         var resp = await client.PostAsJsonAsync("/api/v1/payments", new
@@ -87,10 +85,11 @@ public sealed class LeadStatusTransitionTests(ApiFactory factory)
         if (!factory.IsAvailable) return;
 
         var client = await AuthClientAsync();
-        var id = await CreateLeadAsync(client);
+        var leadId = await CreateLeadAsync(client);
+        var mId = await CreateMeasurementAsync(client, leadId);
 
         var resp = await client.PatchAsJsonAsync(
-            $"/api/v1/leads/{id}/status",
+            $"/api/v1/measurements/{mId}/status",
             new { status = target });
 
         Assert.Equal(HttpStatusCode.Conflict, resp.StatusCode);
@@ -104,14 +103,14 @@ public sealed class LeadStatusTransitionTests(ApiFactory factory)
         if (!factory.IsAvailable) return;
 
         var client = await AuthClientAsync();
-        var id = await CreateLeadAsync(client);
+        var leadId = await CreateLeadAsync(client);
+        var mId = await CreateMeasurementAsync(client, leadId);
 
         var resp = await client.PatchAsJsonAsync(
-            $"/api/v1/leads/{id}/status",
+            $"/api/v1/measurements/{mId}/status",
             new { status = "Buying" });
 
         Assert.Equal(HttpStatusCode.Conflict, resp.StatusCode);
-
         var body = await resp.Content.ReadFromJsonAsync<JsonElement>(JsonOpts);
         Assert.Equal(409, body.GetProperty("status").GetInt32());
         Assert.False(string.IsNullOrWhiteSpace(body.GetProperty("detail").GetString()));
@@ -125,10 +124,11 @@ public sealed class LeadStatusTransitionTests(ApiFactory factory)
         if (!factory.IsAvailable) return;
 
         var client = await AuthClientAsync();
-        var id = await CreateLeadAsync(client);
+        var leadId = await CreateLeadAsync(client);
+        var mId = await CreateMeasurementAsync(client, leadId);
 
         var resp = await client.PatchAsJsonAsync(
-            $"/api/v1/leads/{id}/status",
+            $"/api/v1/measurements/{mId}/status",
             new { status = "New" });
 
         Assert.Equal(HttpStatusCode.NoContent, resp.StatusCode);
@@ -142,21 +142,16 @@ public sealed class LeadStatusTransitionTests(ApiFactory factory)
         if (!factory.IsAvailable) return;
 
         var client = await AuthClientAsync();
-        var id = await CreateLeadAsync(client);
+        var leadId = await CreateLeadAsync(client);
+        var mId = await CreateMeasurementAsync(client, leadId);
 
-        var r1 = await client.PatchAsJsonAsync($"/api/v1/leads/{id}/status", new
-        {
-            status = "Measurement",
-        });
+        var r1 = await client.PatchAsJsonAsync($"/api/v1/measurements/{mId}/status",
+            new { status = "Measurement" });
         Assert.Equal(HttpStatusCode.NoContent, r1.StatusCode);
 
-        // Thinking requires at least one saved measurement
-        await AddMeasurementAsync(client, id);
-
-        var r2 = await client.PatchAsJsonAsync($"/api/v1/leads/{id}/status", new
-        {
-            status = "Thinking",
-        });
+        // Thinking requires at least one glass — measurement created via POST already has glasses
+        var r2 = await client.PatchAsJsonAsync($"/api/v1/measurements/{mId}/status",
+            new { status = "Thinking" });
         Assert.Equal(HttpStatusCode.NoContent, r2.StatusCode);
     }
 
@@ -168,9 +163,10 @@ public sealed class LeadStatusTransitionTests(ApiFactory factory)
         if (!factory.IsAvailable) return;
 
         var client = await AuthClientAsync();
-        var id = await CreateLeadAsync(client);
+        var leadId = await CreateLeadAsync(client);
+        var mId = await CreateMeasurementAsync(client, leadId);
 
-        var resp = await client.PatchAsJsonAsync($"/api/v1/leads/{id}/status", new
+        var resp = await client.PatchAsJsonAsync($"/api/v1/measurements/{mId}/status", new
         {
             status          = "Refused",
             refusalReasonId = Guid.NewGuid(),
@@ -188,21 +184,20 @@ public sealed class LeadStatusTransitionTests(ApiFactory factory)
         if (!factory.IsAvailable) return;
 
         var client = await AuthClientAsync();
-        var id = await CreateLeadAsync(client);
+        var leadId = await CreateLeadAsync(client);
+        var mId = await CreateMeasurementAsync(client, leadId);
 
-        await client.PatchAsJsonAsync($"/api/v1/leads/{id}/status", new
+        await client.PatchAsJsonAsync($"/api/v1/measurements/{mId}/status", new
         {
             status          = "Refused",
             refusalReasonId = Guid.NewGuid(),
         });
 
-        var reopenResp = await client.PatchAsJsonAsync($"/api/v1/leads/{id}/status", new
-        {
-            status = "New",
-        });
+        var reopenResp = await client.PatchAsJsonAsync($"/api/v1/measurements/{mId}/status",
+            new { status = "New" });
         Assert.Equal(HttpStatusCode.NoContent, reopenResp.StatusCode);
 
-        var detail = await (await client.GetAsync($"/api/v1/leads/{id}"))
+        var detail = await (await client.GetAsync($"/api/v1/measurements/{mId}"))
             .Content.ReadFromJsonAsync<JsonElement>(JsonOpts);
         Assert.Equal("New", detail.GetProperty("status").GetString());
         Assert.Equal(JsonValueKind.Null, detail.GetProperty("refusalReasonId").ValueKind);
@@ -212,22 +207,19 @@ public sealed class LeadStatusTransitionTests(ApiFactory factory)
     // ── Backwards transition (Measurement → New) is forbidden ────────────────
 
     [Fact]
-    public async Task PatchStatus_BackwardsFromMeasurement_ToNew_Returns409()
+    public async Task PatchStatus_BackwardsFromMeasurementToNew_Returns409()
     {
         if (!factory.IsAvailable) return;
 
         var client = await AuthClientAsync();
-        var id = await CreateLeadAsync(client);
+        var leadId = await CreateLeadAsync(client);
+        var mId = await CreateMeasurementAsync(client, leadId);
 
-        await client.PatchAsJsonAsync($"/api/v1/leads/{id}/status", new
-        {
-            status = "Measurement",
-        });
+        await client.PatchAsJsonAsync($"/api/v1/measurements/{mId}/status",
+            new { status = "Measurement" });
 
-        var resp = await client.PatchAsJsonAsync($"/api/v1/leads/{id}/status", new
-        {
-            status = "New",
-        });
+        var resp = await client.PatchAsJsonAsync($"/api/v1/measurements/{mId}/status",
+            new { status = "New" });
 
         Assert.Equal(HttpStatusCode.Conflict, resp.StatusCode);
     }
@@ -240,64 +232,93 @@ public sealed class LeadStatusTransitionTests(ApiFactory factory)
         if (!factory.IsAvailable) return;
 
         var client = await AuthClientAsync();
-        var id = await CreateLeadAsync(client);
+        var leadId = await CreateLeadAsync(client);
+        var mId = await CreateMeasurementAsync(client, leadId);
 
-        var resp = await client.PatchAsJsonAsync($"/api/v1/leads/{id}/status", new
-        {
-            status = "Refused",
-            // refusalReasonId intentionally omitted
-        });
+        var resp = await client.PatchAsJsonAsync($"/api/v1/measurements/{mId}/status",
+            new { status = "Refused" });
 
         Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
     }
 
-    // ── Deposit gate (Step 8 / Step 13) ──────────────────────────────────────
+    // ── Deposit gate ──────────────────────────────────────────────────────────
 
     [Fact]
-    public async Task PatchStatus_ToBuying_WithoutDeposit_Returns400_DepositBelowMinimum()
+    public async Task PatchStatus_ToBuying_WithoutDeposit_Returns400()
     {
         if (!factory.IsAvailable) return;
 
         var client = await AuthClientAsync();
-        var id = await CreateLeadAsync(client);
+        var leadId = await CreateLeadAsync(client);
+        var mId = await CreateMeasurementAsync(client, leadId, dealPriceTjs: 2000m);
 
-        await client.PatchAsJsonAsync($"/api/v1/leads/{id}/status", new { status = "Measurement" });
-        // Measurement has dealPriceTjs=2000 but no deposit payment
-        await AddMeasurementAsync(client, id, dealPriceTjs: 2000m);
+        await client.PatchAsJsonAsync($"/api/v1/measurements/{mId}/status",
+            new { status = "Measurement" });
 
-        var resp = await client.PatchAsJsonAsync($"/api/v1/leads/{id}/status", new
-        {
-            status = "Buying",
-        });
+        var resp = await client.PatchAsJsonAsync($"/api/v1/measurements/{mId}/status",
+            new { status = "Buying" });
 
         Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
         var body = await resp.Content.ReadFromJsonAsync<JsonElement>(JsonOpts);
-        var errors = body.GetProperty("errors");
-        Assert.True(errors.TryGetProperty("deposit", out _));
+        Assert.True(body.GetProperty("errors").TryGetProperty("deposit", out _));
     }
 
     [Fact]
-    public async Task PatchStatus_ToBuying_WithMeasurementAndDeposit_Returns204()
+    public async Task PatchStatus_ToBuying_WithDeposit_Returns204()
     {
         if (!factory.IsAvailable) return;
 
         var client = await AuthClientAsync();
-        var id = await CreateLeadAsync(client);
+        var leadId = await CreateLeadAsync(client);
+        var mId = await CreateMeasurementAsync(client, leadId, dealPriceTjs: 2000m);
 
-        await client.PatchAsJsonAsync($"/api/v1/leads/{id}/status", new { status = "Measurement" });
-        // dealPriceTjs on the measurement; deposit against the measurement's id
-        var measurementId = await AddMeasurementAsync(client, id, dealPriceTjs: 2000m);
-        await AddDepositAsync(client, measurementId, 100m);
+        await client.PatchAsJsonAsync($"/api/v1/measurements/{mId}/status",
+            new { status = "Measurement" });
+        await AddDepositAsync(client, mId, 100m);
 
-        var resp = await client.PatchAsJsonAsync($"/api/v1/leads/{id}/status", new
-        {
-            status = "Buying",
-        });
+        var resp = await client.PatchAsJsonAsync($"/api/v1/measurements/{mId}/status",
+            new { status = "Buying" });
 
         Assert.Equal(HttpStatusCode.NoContent, resp.StatusCode);
     }
 
-    // ── Lookups: GET /api/v1/refusal-reasons and /products ───────────────────
+    // ── One Lead, two Measurements with independent statuses ─────────────────
+
+    [Fact]
+    public async Task TwoMeasurementsForOneLead_IndependentStatuses()
+    {
+        if (!factory.IsAvailable) return;
+
+        var client = await AuthClientAsync();
+        var leadId = await CreateLeadAsync(client);
+
+        var mId1 = await CreateMeasurementAsync(client, leadId);
+        var mId2 = await CreateMeasurementAsync(client, leadId);
+
+        // Advance first measurement to Measurement status
+        var r1 = await client.PatchAsJsonAsync($"/api/v1/measurements/{mId1}/status",
+            new { status = "Measurement" });
+        Assert.Equal(HttpStatusCode.NoContent, r1.StatusCode);
+
+        // Refuse second measurement
+        var r2 = await client.PatchAsJsonAsync($"/api/v1/measurements/{mId2}/status", new
+        {
+            status          = "Refused",
+            refusalReasonId = Guid.NewGuid(),
+        });
+        Assert.Equal(HttpStatusCode.NoContent, r2.StatusCode);
+
+        // Verify each measurement has its own status
+        var m1 = await (await client.GetAsync($"/api/v1/measurements/{mId1}"))
+            .Content.ReadFromJsonAsync<JsonElement>(JsonOpts);
+        var m2 = await (await client.GetAsync($"/api/v1/measurements/{mId2}"))
+            .Content.ReadFromJsonAsync<JsonElement>(JsonOpts);
+
+        Assert.Equal("Measurement", m1.GetProperty("status").GetString());
+        Assert.Equal("Refused",     m2.GetProperty("status").GetString());
+    }
+
+    // ── Lookups ───────────────────────────────────────────────────────────────
 
     [Fact]
     public async Task GetRefusalReasons_AuthenticatedUser_Returns200WithList()

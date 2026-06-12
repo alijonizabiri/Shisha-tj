@@ -7,8 +7,6 @@ import * as api from '../api'
 vi.mock('../api')
 vi.mock('./LeadFinancesPanel', () => ({ LeadFinancesPanel: () => null }))
 vi.mock('./EditLeadDialog', () => ({ EditLeadDialog: () => null }))
-vi.mock('./BuyingTransitionDialog', () => ({ BuyingTransitionDialog: () => null }))
-vi.mock('./TransitionRequirements', () => ({ TransitionRequirements: () => null }))
 
 const mockNavigate = vi.fn()
 vi.mock('react-router-dom', () => ({
@@ -19,23 +17,15 @@ vi.mock('react-router-dom', () => ({
 }))
 
 const mockUseLead = vi.mocked(api.useLead)
-const mockUseLeadFinances = vi.mocked(api.useLeadFinances)
 
 const LEAD_NO_MEASUREMENTS = {
   id: 'lead-123',
   name: 'Тест Лид',
-  status: 'Measurement',
   phone: '+992900000001',
   product: 'Душевая кабина',
   source: null,
   callDate: '2026-06-06',
-  address: null,
   note: null,
-  refusalNote: null,
-  assignedMeasurerName: null,
-  dealPriceTjs: null,
-  promisedInstallDate: null,
-  warrantyUntil: null,
   measurements: [],
 }
 
@@ -48,7 +38,11 @@ const LEAD_WITH_MEASUREMENTS = {
       heightMm: 2000,
       configuration: 'TwoGlass',
       glassColor: 'Transparent',
+      hardwareColor: 'BlackMatte',
+      status: 'New',
+      assignedMeasurerName: null,
       measuredAt: '2026-06-06',
+      createdAt: '2026-06-06T10:00:00Z',
     },
   ],
 }
@@ -56,11 +50,6 @@ const LEAD_WITH_MEASUREMENTS = {
 describe('LeadDetailDrawer — measurements section', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockUseLeadFinances.mockReturnValue({
-      data: undefined,
-      isLoading: false,
-      isError: false,
-    } as ReturnType<typeof api.useLeadFinances>)
   })
 
   it('shows "+ Создать замер" button when measurements list is empty', () => {

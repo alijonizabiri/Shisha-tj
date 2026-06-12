@@ -37,33 +37,39 @@ public sealed class AnalyticsService(
 
     private async Task<DashboardDto> ComputeDashboardAsync(DateOnly? from, DateOnly? to, CancellationToken ct)
     {
-        var q = db.Leads
+        var leadsQ = db.Leads
             .Where(l => (!from.HasValue || l.CallDate >= from)
                      && (!to.HasValue   || l.CallDate <= to));
 
-        var total  = await q.CountAsync(ct);
-        var active = await q.CountAsync(l => !ActiveExcluded.Contains(l.Status), ct);
+        var total = await leadsQ.CountAsync(ct);
 
-        var closedQ = q.Where(l => ClosedStatuses.Contains(l.Status));
-        var closedCount = await closedQ.CountAsync(ct);
+        // Lead is active if it has at least one measurement NOT in {Refused, Closed}
+        var active = await leadsQ.CountAsync(l =>
+            l.Measurements.Any(m => !ActiveExcluded.Contains(m.Status)), ct);
 
-        var revenue = closedCount > 0
-            ? await closedQ
-                .SelectMany(l => l.Measurements)
-                .SumAsync(m => m.DealPriceTjs ?? 0m, ct)
-            : 0m;
+        // Lead is "closed/won" if it has at least one measurement in {Installed, Closed}
+        var closedCount = await leadsQ.CountAsync(l =>
+            l.Measurements.Any(m => ClosedStatuses.Contains(m.Status)), ct);
+
+        var revenue = await db.Measurements
+            .Where(m => ClosedStatuses.Contains(m.Status)
+                     && m.Lead != null
+                     && (!from.HasValue || m.Lead.CallDate >= from)
+                     && (!to.HasValue   || m.Lead.CallDate <= to))
+            .SumAsync(m => m.DealPriceTjs ?? 0m, ct);
 
         decimal? conversionRate = total > 0
             ? Math.Round((decimal)closedCount / total * 100, 1)
             : null;
 
-        decimal? avgDeal = closedCount > 0
-            ? await closedQ
-                .SelectMany(l => l.Measurements)
-                .Where(m => m.DealPriceTjs != null && m.DealPriceTjs > 0)
-                .Select(m => (decimal?)m.DealPriceTjs)
-                .AverageAsync(ct)
-            : null;
+        decimal? avgDeal = await db.Measurements
+            .Where(m => ClosedStatuses.Contains(m.Status)
+                     && m.Lead != null
+                     && (!from.HasValue || m.Lead.CallDate >= from)
+                     && (!to.HasValue   || m.Lead.CallDate <= to)
+                     && m.DealPriceTjs != null && m.DealPriceTjs > 0)
+            .Select(m => (decimal?)m.DealPriceTjs)
+            .AverageAsync(ct);
 
         if (avgDeal.HasValue)
             avgDeal = Math.Round(avgDeal.Value, 2);
@@ -78,10 +84,12 @@ public sealed class AnalyticsService(
 
     private async Task<FunnelDto> ComputeFunnelAsync(DateOnly? from, DateOnly? to, CancellationToken ct)
     {
-        var counts = await db.Leads
-            .Where(l => (!from.HasValue || l.CallDate >= from)
-                     && (!to.HasValue   || l.CallDate <= to))
-            .GroupBy(l => l.Status)
+        // Funnel by measurement status; date filter via lead.callDate
+        var counts = await db.Measurements
+            .Where(m => m.Lead != null
+                     && (!from.HasValue || m.Lead.CallDate >= from)
+                     && (!to.HasValue   || m.Lead.CallDate <= to))
+            .GroupBy(m => m.Status)
             .Select(g => new { Status = g.Key, Count = g.Count() })
             .ToListAsync(ct);
 
@@ -101,11 +109,12 @@ public sealed class AnalyticsService(
 
     private async Task<RefusalsDto> ComputeRefusalsAsync(DateOnly? from, DateOnly? to, CancellationToken ct)
     {
-        var groups = await db.Leads
-            .Where(l => l.Status == LeadStatus.Refused
-                     && (!from.HasValue || l.CallDate >= from)
-                     && (!to.HasValue   || l.CallDate <= to))
-            .GroupBy(l => l.RefusalReasonId)
+        var groups = await db.Measurements
+            .Where(m => m.Status == LeadStatus.Refused
+                     && m.Lead != null
+                     && (!from.HasValue || m.Lead.CallDate >= from)
+                     && (!to.HasValue   || m.Lead.CallDate <= to))
+            .GroupBy(m => m.RefusalReasonId)
             .Select(g => new { ReasonId = g.Key, Count = g.Count() })
             .ToListAsync(ct);
 
@@ -148,10 +157,9 @@ public sealed class AnalyticsService(
             .Select(l => new
             {
                 l.Product,
-                l.Status,
-                Revenue = ClosedStatuses.Contains(l.Status)
-                    ? (decimal?)l.Measurements.Sum(m => m.DealPriceTjs ?? 0m)
-                    : null,
+                Revenue = (decimal?)l.Measurements
+                    .Where(m => ClosedStatuses.Contains(m.Status))
+                    .Sum(m => m.DealPriceTjs ?? 0m),
             })
             .GroupBy(l => l.Product)
             .Select(g => new ProductRow(
@@ -171,7 +179,6 @@ public sealed class AnalyticsService(
 
     private async Task<ByColorDto> ComputeByColorAsync(DateOnly? from, DateOnly? to, CancellationToken ct)
     {
-        // Convert DateOnly to DateTime boundaries for the DateTime field
         var fromDt = from?.ToDateTime(TimeOnly.MinValue);
         var toDt   = to?.ToDateTime(TimeOnly.MaxValue);
 
@@ -201,28 +208,29 @@ public sealed class AnalyticsService(
 
     private async Task<ByMeasurerDto> ComputeByMeasurerAsync(DateOnly? from, DateOnly? to, CancellationToken ct)
     {
-        var leadData = await db.Leads
-            .Where(l => l.AssignedMeasurerId != null
-                     && (!from.HasValue || l.CallDate >= from)
-                     && (!to.HasValue   || l.CallDate <= to))
-            .Select(l => new
+        var measurementData = await db.Measurements
+            .Where(m => m.AssignedMeasurerId != null
+                     && m.Lead != null
+                     && (!from.HasValue || m.Lead.CallDate >= from)
+                     && (!to.HasValue   || m.Lead.CallDate <= to))
+            .Select(m => new
             {
-                UserId      = l.AssignedMeasurerId!.Value,
-                IsClosed    = ClosedStatuses.Contains(l.Status),
-                Revenue     = ClosedStatuses.Contains(l.Status)
-                    ? (decimal?)l.Measurements.Sum(m => m.DealPriceTjs ?? 0m)
+                UserId   = m.AssignedMeasurerId!.Value,
+                IsClosed = ClosedStatuses.Contains(m.Status),
+                Revenue  = ClosedStatuses.Contains(m.Status)
+                    ? (decimal?)m.DealPriceTjs
                     : null,
             })
             .ToListAsync(ct);
 
-        var data = leadData
-            .GroupBy(l => l.UserId)
+        var data = measurementData
+            .GroupBy(m => m.UserId)
             .Select(g => new
             {
-                UserId      = g.Key,
-                LeadCount   = g.Count(),
-                ClosedCount = g.Count(l => l.IsClosed),
-                RevenueTjs  = g.Sum(l => l.Revenue ?? 0m),
+                UserId       = g.Key,
+                Count        = g.Count(),
+                ClosedCount  = g.Count(m => m.IsClosed),
+                RevenueTjs   = g.Sum(m => m.Revenue ?? 0m),
             })
             .ToList();
 
@@ -236,10 +244,10 @@ public sealed class AnalyticsService(
             .Select(d => new MeasurerRow(
                 d.UserId,
                 names.GetValueOrDefault(d.UserId, "Неизвестно"),
-                d.LeadCount,
+                d.Count,
                 d.RevenueTjs,
-                d.LeadCount > 0
-                    ? Math.Round((decimal)d.ClosedCount / d.LeadCount * 100, 1)
+                d.Count > 0
+                    ? Math.Round((decimal)d.ClosedCount / d.Count * 100, 1)
                     : null))
             .ToList();
 

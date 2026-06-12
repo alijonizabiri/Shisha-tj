@@ -4,21 +4,16 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
-import { useCreatePayment, useLead, useLeadFinances, usePatchLeadStatus } from '../api'
+import {
+  usePatchMeasurementStatus,
+  useMeasurementFinances,
+  useCreateMeasurementPayment,
+} from '@/features/measurements/api'
 import { Button } from '@/shared/ui/button'
 import { Input } from '@/shared/ui/input'
-import { Label } from '@/shared/ui/label'
 import { formatMoney } from '@/shared/lib/formatMoney'
 
 const MIN_DEPOSIT = 100
-
-const schema = z.object({
-  dealPriceStr: z
-    .string()
-    .min(1, 'Введите сумму сделки')
-    .refine((s) => !isNaN(Number(s)) && Number(s) > 0, 'Сумма должна быть > 0'),
-  promisedInstallDate: z.string().optional(),
-})
 
 const depositSchema = z.object({
   depositStr: z
@@ -30,34 +25,22 @@ const depositSchema = z.object({
     ),
 })
 
-type FormValues = z.infer<typeof schema>
 type DepositValues = z.infer<typeof depositSchema>
 
-
 interface Props {
-  leadId: string
+  measurementId: string
   onClose: () => void
 }
 
-export function BuyingTransitionDialog({ leadId, onClose }: Props) {
-  const { data: lead } = useLead(leadId)
-  const { data: finances, refetch: refetchFinances } = useLeadFinances(leadId)
-  const patchStatus = usePatchLeadStatus()
-  const createPayment = useCreatePayment(leadId)
+export function BuyingTransitionDialog({ measurementId, onClose }: Props) {
+  const { data: finances, refetch: refetchFinances } = useMeasurementFinances(measurementId)
+  const patchStatus = usePatchMeasurementStatus()
+  const createPayment = useCreateMeasurementPayment(measurementId)
 
   const totalDeposit = finances?.totalDepositTjs ?? 0
   const depositSufficient = totalDeposit >= MIN_DEPOSIT
+  const hasDealPrice = finances?.dealPriceTjs != null && finances.dealPriceTjs > 0
 
-  // Main form
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormValues>({
-    resolver: zodResolver(schema),
-    defaultValues: {
-      dealPriceStr:        lead?.dealPriceTjs != null ? String(lead.dealPriceTjs) : '',
-      promisedInstallDate: lead?.promisedInstallDate ?? '',
-    },
-  })
-
-  // Inline deposit mini-form
   const depositForm = useForm<DepositValues>({
     resolver: zodResolver(depositSchema),
     defaultValues: { depositStr: '' },
@@ -72,31 +55,22 @@ export function BuyingTransitionDialog({ leadId, onClose }: Props) {
 
   async function handleAddDeposit(values: DepositValues) {
     await createPayment.mutateAsync({
-      leadId,
+      measurementId,
       amountTjs: Number(values.depositStr),
       kind:      'Deposit',
       paidAt:    new Date().toISOString().split('T')[0],
-      note:      null,
     })
     await refetchFinances()
     setDepositSaved(true)
     depositForm.reset({ depositStr: '' })
   }
 
-  async function onSubmit(values: FormValues) {
-    await patchStatus.mutateAsync({
-      id: leadId,
-      body: {
-        status:              'Buying',
-        dealPriceTjs:        Number(values.dealPriceStr),
-        promisedInstallDate: values.promisedInstallDate || null,
-      },
-    })
+  async function handleConfirm() {
+    await patchStatus.mutateAsync({ id: measurementId, body: { status: 'Buying' } })
     onClose()
   }
 
-  const hasMeasurement = (lead?.measurements.length ?? 0) > 0
-  const canSubmit = hasMeasurement && depositSufficient
+  const canSubmit = hasDealPrice && depositSufficient
 
   return createPortal(
     <div
@@ -104,7 +78,6 @@ export function BuyingTransitionDialog({ leadId, onClose }: Props) {
       onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
     >
       <div className="w-full max-w-sm rounded-lg border border-border bg-card shadow-xl" onClick={(e) => e.stopPropagation()}>
-        {/* Header */}
         <div className="flex items-center justify-between border-b border-border px-5 py-4">
           <h2 className="text-base font-semibold">Перевести в «Покупает»</h2>
           <button onClick={onClose} className="rounded-md p-1 hover:bg-accent transition-colors" aria-label="Закрыть">
@@ -113,32 +86,10 @@ export function BuyingTransitionDialog({ leadId, onClose }: Props) {
         </div>
 
         <div className="flex flex-col gap-4 p-5">
-          {/* Deal price */}
-          <form id="buying-form" onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4" noValidate>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="buying-deal-price">Сумма сделки (сом) *</Label>
-              <Input
-                id="buying-deal-price"
-                type="number"
-                min="0.01"
-                step="0.01"
-                placeholder="0.00"
-                {...register('dealPriceStr')}
-              />
-              {errors.dealPriceStr && (
-                <p className="text-xs text-destructive">{errors.dealPriceStr.message}</p>
-              )}
-            </div>
+          {!hasDealPrice && (
+            <p className="text-sm text-destructive">Укажите сумму сделки на замере перед переводом.</p>
+          )}
 
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="buying-install-date">
-                Дата установки <span className="text-muted-foreground">(необязательно)</span>
-              </Label>
-              <Input id="buying-install-date" type="date" {...register('promisedInstallDate')} />
-            </div>
-          </form>
-
-          {/* Deposit section */}
           <div className="rounded-md border border-border p-3 flex flex-col gap-2">
             <div className="flex items-center justify-between">
               <p className="text-sm font-medium">Депозит</p>
@@ -174,10 +125,6 @@ export function BuyingTransitionDialog({ leadId, onClose }: Props) {
               </form>
             )}
 
-            {!hasMeasurement && (
-              <p className="text-xs text-destructive">Нет замера — сначала откройте Дизайнер.</p>
-            )}
-
             {depositSaved && depositSufficient && (
               <p className="text-xs text-green-600 dark:text-green-400">Депозит принят ✓</p>
             )}
@@ -187,18 +134,17 @@ export function BuyingTransitionDialog({ leadId, onClose }: Props) {
             <p className="text-sm text-destructive">Ошибка. Попробуйте снова.</p>
           )}
 
-          {/* Footer */}
           <div className="flex gap-3">
             <Button type="button" variant="outline" onClick={onClose} className="flex-1">
               Отмена
             </Button>
             <Button
-              form="buying-form"
-              type="submit"
-              disabled={!canSubmit || isSubmitting}
+              type="button"
+              disabled={!canSubmit || patchStatus.isPending}
+              onClick={handleConfirm}
               className="flex-1"
             >
-              {isSubmitting ? 'Сохранение…' : 'Подтвердить'}
+              {patchStatus.isPending ? 'Сохранение…' : 'Подтвердить'}
             </Button>
           </div>
         </div>

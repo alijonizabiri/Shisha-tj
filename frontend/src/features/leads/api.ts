@@ -5,30 +5,25 @@ import type { components } from '@/shared/api/types'
 
 export type Lead = components['schemas']['LeadSummaryResponse']
 export type LeadDetail = components['schemas']['LeadDetailResponse']
+export type LeadMeasurement = components['schemas']['LeadMeasurementDto']
 export type PagedLeads = components['schemas']['PagedLeadsResponse']
-export type KanbanData = components['schemas']['KanbanResponse']
-export type PatchStatusRequest = components['schemas']['PatchStatusRequest']
 export type CreateLeadRequest = components['schemas']['CreateLeadRequest']
 
 export interface UpdateLeadRequest {
   name: string
   phone: string
-  address?: string | null
   product: string
   source?: string | null
   note?: string | null
   callDate: string
-  promisedInstallDate?: string | null
 }
 export type ProductDto = components['schemas']['ProductDto']
 export type RefusalReasonDto = components['schemas']['RefusalReasonDto']
-// LeadFinancesDto extended with Step 8 field (not yet in generated types)
 export type LeadFinances = components['schemas']['LeadFinancesDto'] & {
   totalDepositTjs: number
 }
 
 export interface LeadFilters {
-  status?: string
   search?: string
   page: number
   pageSize: number
@@ -36,7 +31,6 @@ export interface LeadFilters {
 
 function fetchLeads(filters: LeadFilters): Promise<PagedLeads> {
   const params: Record<string, unknown> = { page: filters.page, pageSize: filters.pageSize }
-  if (filters.status) params['status'] = filters.status
   if (filters.search) params['search'] = filters.search
   return apiClient.get<PagedLeads>('/api/v1/leads', { params }).then((r) => r.data)
 }
@@ -62,13 +56,6 @@ export function useLead(id: string) {
     queryKey: queryKeys.leads.detail(id),
     queryFn: () => apiClient.get<LeadDetail>(`/api/v1/leads/${id}`).then((r) => r.data),
     enabled: !!id,
-  })
-}
-
-export function useKanban() {
-  return useQuery({
-    queryKey: queryKeys.leads.kanban(),
-    queryFn: () => apiClient.get<KanbanData>('/api/v1/leads/kanban').then((r) => r.data),
   })
 }
 
@@ -117,7 +104,7 @@ export function useLeadFinances(leadId: string) {
 }
 
 interface CreatePaymentBody {
-  leadId: string
+  measurementId: string
   amountTjs: number
   kind: string
   paidAt: string
@@ -151,11 +138,3 @@ export function useDeletePayment(leadId: string) {
   })
 }
 
-export function usePatchLeadStatus() {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: ({ id, body }: { id: string; body: PatchStatusRequest }) =>
-      apiClient.patch(`/api/v1/leads/${id}/status`, body),
-    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.leads.all }),
-  })
-}

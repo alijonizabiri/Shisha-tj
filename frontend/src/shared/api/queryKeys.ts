@@ -7,7 +7,10 @@ export const queryKeys = {
     finances: (id: string) => ['leads', id, 'finances'] as const,
   },
   measurements: {
+    all: ['measurements'] as const,
     detail: (id: string) => ['measurements', id] as const,
+    kanban: () => ['measurements', 'kanban'] as const,
+    finances: (id: string) => ['measurements', id, 'finances'] as const,
   },
   factoryOrders: {
     all: ['factory-orders'] as const,

@@ -5,9 +5,7 @@ import { useLead } from './api'
 import { LeadStatusBadge } from './components/LeadStatusBadge'
 import { LeadFinancesPanel } from './components/LeadFinancesPanel'
 import { AddHardwareDialog } from './components/AddHardwareDialog'
-import { RefuseLeadDialog } from './components/RefuseLeadDialog'
 import { formatDate } from '@/shared/lib/formatDate'
-import { formatMoney } from '@/shared/lib/formatMoney'
 
 function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
@@ -34,10 +32,7 @@ const CONFIG_LABELS: Record<string, string> = {
 export function LeadDetailPage() {
   const { id } = useParams<{ id: string }>()
   const { data: lead, isLoading, isError } = useLead(id ?? '')
-  const [refuseOpen, setRefuseOpen] = useState(false)
   const [hwMeasurementId, setHwMeasurementId] = useState<string | null>(null)
-
-  const canRefuse = ['New', 'Measurement', 'Thinking'].includes(lead?.status ?? '')
 
   if (isLoading) {
     return <div className="py-16 text-center text-muted-foreground">Загрузка…</div>
@@ -56,7 +51,6 @@ export function LeadDetailPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Breadcrumb */}
       <Link
         to="/leads"
         className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors w-fit"
@@ -65,38 +59,17 @@ export function LeadDetailPage() {
         Все лиды
       </Link>
 
-      {/* Header */}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-semibold">{lead.name}</h1>
-            <LeadStatusBadge status={lead.status} />
-          </div>
+          <h1 className="text-2xl font-semibold">{lead.name}</h1>
           <p className="mt-1 text-sm text-muted-foreground">{lead.phone}</p>
-        </div>
-        <div className="flex gap-2">
-          <button
-            disabled
-            className="h-9 rounded-md border border-input bg-background px-3 text-sm opacity-50 cursor-not-allowed"
-          >
-            Редактировать
-          </button>
-          {canRefuse && (
-            <button
-              onClick={() => setRefuseOpen(true)}
-              className="h-9 rounded-md border border-destructive/50 bg-background px-3 text-sm text-destructive hover:bg-destructive/10 transition-colors"
-            >
-              Отказать
-            </button>
-          )}
         </div>
       </div>
 
-      {/* Two-column layout */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Left — main content */}
         <div className="lg:col-span-2 flex flex-col gap-6">
-          {/* Contact & product info */}
+          {/* Contact info */}
           <div className="rounded-lg border border-border bg-card p-5">
             <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
               Информация
@@ -104,27 +77,14 @@ export function LeadDetailPage() {
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
               <InfoRow label="Имя" value={lead.name} />
               <InfoRow label="Телефон" value={lead.phone} />
-              <InfoRow label="Адрес" value={lead.address} />
               <InfoRow label="Продукт" value={lead.product} />
               <InfoRow label="Источник" value={lead.source} />
               <InfoRow label="Дата звонка" value={formatDate(lead.callDate)} />
-              {lead.promisedInstallDate && (
-                <InfoRow label="Дата установки" value={formatDate(lead.promisedInstallDate)} />
-              )}
-              {lead.warrantyUntil && (
-                <InfoRow label="Гарантия до" value={formatDate(lead.warrantyUntil)} />
-              )}
             </div>
             {lead.note && (
               <div className="mt-4 border-t border-border pt-4">
                 <p className="text-xs text-muted-foreground">Заметка</p>
                 <p className="mt-1 text-sm whitespace-pre-wrap">{lead.note}</p>
-              </div>
-            )}
-            {lead.refusalNote && (
-              <div className="mt-4 border-t border-border pt-4">
-                <p className="text-xs text-muted-foreground">Причина отказа</p>
-                <p className="mt-1 text-sm text-destructive">{lead.refusalNote}</p>
               </div>
             )}
           </div>
@@ -146,13 +106,17 @@ export function LeadDetailPage() {
                     <div className="flex items-center gap-3">
                       <Ruler className="h-4 w-4 shrink-0 text-muted-foreground" />
                       <div>
-                        <p className="text-sm font-medium">
-                          {m.measureMm} × {m.heightMm} мм
-                        </p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-medium">
+                            {m.measureMm} × {m.heightMm} мм
+                          </p>
+                          <LeadStatusBadge status={m.status} />
+                        </div>
                         <p className="text-xs text-muted-foreground">
                           {CONFIG_LABELS[m.configuration] ?? m.configuration}
                           {' · '}
                           {GLASS_COLOR_LABELS[m.glassColor] ?? m.glassColor}
+                          {m.assignedMeasurerName && ` · 👤 ${m.assignedMeasurerName}`}
                         </p>
                       </div>
                     </div>
@@ -179,26 +143,15 @@ export function LeadDetailPage() {
             )}
           </div>
 
-          {/* Finances panel */}
-          <LeadFinancesPanel leadId={lead.id} hasMeasurements={lead.measurements.length > 0} />
+          <LeadFinancesPanel
+            leadId={lead.id}
+            hasMeasurements={lead.measurements.length > 0}
+            measurementId={lead.measurements[0]?.id}
+          />
         </div>
 
         {/* Right sidebar */}
         <div className="flex flex-col gap-4">
-          {/* Status & finances */}
-          <div className="rounded-lg border border-border bg-card p-4">
-            <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Сделка
-            </h3>
-            <div className="flex flex-col gap-3">
-              <InfoRow label="Статус" value={<LeadStatusBadge status={lead.status} />} />
-              {lead.dealPriceTjs != null && (
-                <InfoRow label="Сумма сделки" value={formatMoney(lead.dealPriceTjs)} />
-              )}
-            </div>
-          </div>
-
-          {/* Timestamps */}
           <div className="rounded-lg border border-border bg-card p-4">
             <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               Хронология
@@ -210,13 +163,6 @@ export function LeadDetailPage() {
           </div>
         </div>
       </div>
-
-      <RefuseLeadDialog
-        open={refuseOpen}
-        onClose={() => setRefuseOpen(false)}
-        leadId={lead.id}
-        leadName={lead.name}
-      />
 
       {hwMeasurementId && (
         <AddHardwareDialog

@@ -9,9 +9,122 @@ using Shisha.Infrastructure.Persistence;
 
 namespace Shisha.Infrastructure.Services;
 
-public sealed class MeasurementService(AppDbContext db, ICurrentUser currentUser) : IMeasurementService
+public sealed class MeasurementService(
+    AppDbContext db,
+    ICurrentUser currentUser,
+    IMeasurementStatusTransitionService transitionService) : IMeasurementService
 {
     private const string DefaultAddress = "Не указан";
+
+    private bool IsMeasurer => currentUser.Role == nameof(UserRole.Measurer);
+
+    // ── Kanban ────────────────────────────────────────────────────────────────
+
+    public async Task<MeasurementKanbanResponse> GetKanbanAsync(CancellationToken ct = default)
+    {
+        var measurements = await db.Measurements
+            .Include(m => m.Lead)
+            .Include(m => m.AssignedMeasurer)
+            .Include(m => m.Payments)
+            .AsNoTracking()
+            .OrderByDescending(m => m.CreatedAt)
+            .ToListAsync(ct);
+
+        if (IsMeasurer)
+        {
+            measurements = measurements
+                .Where(m => m.AssignedMeasurerId == currentUser.UserId
+                         && (m.Status == LeadStatus.Measurement || m.Status == LeadStatus.Buying))
+                .ToList();
+        }
+
+        var columns = Enum.GetValues<LeadStatus>()
+            .Select(status => new MeasurementKanbanColumn(
+                status.ToString(),
+                measurements
+                    .Where(m => m.Status == status)
+                    .Select(m => new MeasurementKanbanItemResponse(
+                        m.Id,
+                        m.LeadId,
+                        m.Lead?.Name ?? string.Empty,
+                        m.Lead?.Phone ?? string.Empty,
+                        m.Lead?.Product ?? string.Empty,
+                        m.Status.ToString(),
+                        m.AssignedMeasurer?.FullName,
+                        m.DealPriceTjs,
+                        m.Payments.Sum(p => p.AmountTjs),
+                        m.InstallationDate,
+                        m.CreatedAt))
+                    .ToList()))
+            .ToList();
+
+        return new MeasurementKanbanResponse(columns);
+    }
+
+    // ── Status transition ─────────────────────────────────────────────────────
+
+    public async Task PatchStatusAsync(
+        Guid id,
+        PatchMeasurementStatusRequest request,
+        CancellationToken ct = default)
+    {
+        var measurement = await db.Measurements.FindAsync([id], ct)
+            ?? throw new NotFoundException($"Measurement {id} not found.");
+
+        if (!Enum.TryParse<LeadStatus>(request.Status, ignoreCase: true, out var target))
+            throw new DomainValidationException("status", $"Unknown status '{request.Status}'.");
+
+        if (currentUser.Role == nameof(UserRole.Operator)
+            && target is LeadStatus.OrderedAtFactory
+                      or LeadStatus.GlassArrived
+                      or LeadStatus.Installed
+                      or LeadStatus.Closed)
+            throw new ForbiddenException($"Operators cannot set status to {target}.");
+
+        var glassCount = await db.Glasses.CountAsync(g => g.MeasurementId == id, ct);
+
+        var depositSum = await db.Payments
+            .Where(p => p.MeasurementId == id && p.Kind == PaymentKind.Deposit)
+            .SumAsync(p => (decimal?)p.AmountTjs, ct) ?? 0m;
+
+        var totalPaid = await db.Payments
+            .Where(p => p.MeasurementId == id)
+            .SumAsync(p => p.AmountTjs, ct);
+
+        var args = new MeasurementTransitionArgs(
+            RefusalReasonId: request.RefusalReasonId,
+            RefusalNote: request.RefusalNote,
+            GlassCount: glassCount,
+            DepositSumTjs: depositSum,
+            TotalPaidTjs: totalPaid);
+
+        await transitionService.TransitionAsync(measurement, target, args, ct);
+
+        if (target == LeadStatus.Closed)
+            measurement.WarrantyUntil = DateOnly.FromDateTime(DateTime.UtcNow).AddYears(1);
+
+        await db.SaveChangesAsync(ct);
+    }
+
+    // ── Assign measurer ───────────────────────────────────────────────────────
+
+    public async Task AssignMeasurerAsync(
+        Guid id,
+        AssignMeasurerRequest request,
+        CancellationToken ct = default)
+    {
+        var measurement = await db.Measurements.FindAsync([id], ct)
+            ?? throw new NotFoundException($"Measurement {id} not found.");
+
+        var measurer = await db.Users
+            .FirstOrDefaultAsync(u => u.Id == request.UserId && u.Role == UserRole.Measurer, ct)
+            ?? throw new NotFoundException($"Measurer {request.UserId} not found.");
+
+        measurement.AssignedMeasurerId = measurer.Id;
+        await db.SaveChangesAsync(ct);
+    }
+
+    // ── CRUD ──────────────────────────────────────────────────────────────────
 
     public async Task<MeasurementResponse> CreateAsync(
         CreateMeasurementRequest request,
@@ -26,14 +139,8 @@ public sealed class MeasurementService(AppDbContext db, ICurrentUser currentUser
 
         if (request.LeadId.HasValue)
         {
-            var lead = await db.Leads.FindAsync([request.LeadId.Value], ct)
-                ?? throw new NotFoundException($"Lead {request.LeadId.Value} not found.");
-
-            if (lead.Status is not (LeadStatus.Measurement or LeadStatus.Buying
-                    or LeadStatus.OrderedAtFactory or LeadStatus.GlassArrived))
-                throw new DomainValidationException(
-                    "leadId",
-                    $"Lead must be in Measurement, Buying, OrderedAtFactory, or GlassArrived status. Got: {lead.Status}.");
+            if (!await db.Leads.AnyAsync(l => l.Id == request.LeadId.Value, ct))
+                throw new NotFoundException($"Lead {request.LeadId.Value} not found.");
         }
 
         IReadOnlyList<PanelInputDto> panels;
@@ -97,7 +204,6 @@ public sealed class MeasurementService(AppDbContext db, ICurrentUser currentUser
         ValidateRange(request.HeightMm, 1500, 2500, "heightMm");
         ValidatePanels(request.Panels, request.HeightMm);
 
-        // Soft-delete old glasses and holes
         var oldGlasses = await db.Glasses
             .Include(g => g.Holes)
             .Where(g => g.MeasurementId == id)
@@ -203,6 +309,7 @@ public sealed class MeasurementService(AppDbContext db, ICurrentUser currentUser
             .AsNoTracking()
             .Include(m => m.Glasses)
                 .ThenInclude(g => g.Holes)
+            .Include(m => m.AssignedMeasurer)
             .FirstAsync(m => m.Id == id, ct);
 
         return new MeasurementResponse(
@@ -210,6 +317,11 @@ public sealed class MeasurementService(AppDbContext db, ICurrentUser currentUser
             m.MeasurerId,
             m.LeadId,
             m.Address,
+            m.Status.ToString(),
+            m.AssignedMeasurerId,
+            m.AssignedMeasurer?.FullName,
+            m.RefusalReasonId,
+            m.RefusalNote,
             m.MeasureMm,
             m.HeightMm,
             m.GlassColor.ToString(),

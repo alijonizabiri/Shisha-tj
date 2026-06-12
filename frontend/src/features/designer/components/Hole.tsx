@@ -20,12 +20,13 @@ interface HoleProps {
   panelWidthMm: number
   panelHeightMm: number
   onMove: (xMm: number, yMm: number) => void
+  onDragEnd?: () => void
 }
 
 export function Hole({
   xMm, yMm, radiusMm, holeType,
   panelX, panelWidthMm, panelHeightMm,
-  onMove,
+  onMove, onDragEnd,
 }: HoleProps) {
   const dragging = useRef(false)
 
@@ -64,6 +65,7 @@ export function Hole({
     if (!dragging.current) return
     dragging.current = false
     e.currentTarget.releasePointerCapture(e.pointerId)
+    onDragEnd?.()
   }
 
   return (

@@ -1,7 +1,6 @@
 import { useDraggable } from '@dnd-kit/core'
 import { CSS } from '@dnd-kit/utilities'
 import { cn } from '@/shared/lib/cn'
-import { formatMoney } from '@/shared/lib/formatMoney'
 import type { Lead } from '../api'
 
 interface Props {
@@ -43,16 +42,6 @@ export function LeadCard({ lead, isDragOverlay = false, onSelect }: Props) {
       </button>
       <p className="mt-0.5 text-xs text-muted-foreground">{lead.phone}</p>
       <p className="mt-1 text-xs text-muted-foreground truncate">{lead.product}</p>
-      {lead.dealPriceTjs != null && (
-        <p className="mt-1 text-xs font-medium tabular-nums">
-          {formatMoney(lead.dealPriceTjs)}
-        </p>
-      )}
-      {lead.assignedMeasurerName && (
-        <p className="mt-1 text-xs text-muted-foreground truncate">
-          👤 {lead.assignedMeasurerName}
-        </p>
-      )}
     </div>
   )
 }

@@ -102,7 +102,8 @@ Update via `/done` command after each completed step.
 - [x] Step 11 [FE] — Designer mobile-first layout: collapsible form/calc sidebars + panel action bar moved from SVG to HTML toolbar below canvas
 - [x] Step 12 [FE] — Tablet-first fullscreen Designer redesign: DesignerTopBar, DesignerInfoCard (floating), DesignerZoomControls (floating), DesignerFab (FAB), DesignerSheet (bottom/right sheet), GlassContextPopover (fixed-position); /designer outside AppShell; Apply model; tests rewritten 104/104
 - [x] Step 13 [BE] — Multi-measurement finances: `address`, `dealPriceTjs`, `deliveryCostTjs`, `installationDate`, `installedAt`, `warrantyUntil` moved from `Lead` to `Measurement`; `Payment.leadId` → `measurementId` (NOT NULL); `Expense.leadId` → `measurementId` (nullable); new `GET /api/v1/measurements/{id}/finances`; `GET /api/v1/leads/{id}/finances` now aggregates across all measurements; migration `MoveFinancesToMeasurement`; all tests passing 120/120
-- [x] ~~**Phase 3.5 complete** → tag `v0.4.1-ux-polish`~~ *(extended with Steps 9–13)*
+- [x] Step 14 [FULL] — State machine moved from Lead to Measurement: `status`, `assignedMeasurerId`, `refusalReasonId`, `refusalNote` migrated from `Lead` to `Measurement`; `MeasurementStatusTransitionService` replaces `LeadStatusTransitionService`; new endpoints `GET /measurements/kanban`, `PATCH /measurements/{id}/status`, `POST /measurements/{id}/assign-measurer`; removed from LeadsController; migration `MoveStatusToMeasurement` with SQL data copy; FE: `MeasurementKanbanPage`, `MeasurementCard`, `RefuseMeasurementDialog`, `useMeasurementKanban`, `usePatchMeasurementStatus`; Lead is now a contact-only entity; all tests passing 115 BE / 108 FE
+- [x] ~~**Phase 3.5 complete** → tag `v0.4.1-ux-polish`~~ *(extended with Steps 9–14)*
 
 ---
 

@@ -10,6 +10,11 @@ public sealed class Measurement : BaseEntity, ITenantOwned, ISoftDeletable
     public Guid? MeasurerId { get; set; }
     public Guid? LeadId { get; set; }
 
+    public LeadStatus Status { get; set; } = LeadStatus.New;
+    public Guid? AssignedMeasurerId { get; set; }
+    public Guid? RefusalReasonId { get; set; }
+    public string? RefusalNote { get; set; }
+
     public required string Address { get; set; }
 
     public int MeasureMm { get; set; }
@@ -31,6 +36,7 @@ public sealed class Measurement : BaseEntity, ITenantOwned, ISoftDeletable
     public Guid? DeletedByUserId { get; set; }
 
     public User? Measurer { get; set; }
+    public User? AssignedMeasurer { get; set; }
     public Lead? Lead { get; set; }
     public ICollection<Glass> Glasses { get; set; } = [];
     public Hardware? Hardware { get; set; }

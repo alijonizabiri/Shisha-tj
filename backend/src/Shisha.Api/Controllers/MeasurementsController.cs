@@ -14,6 +14,13 @@ public sealed class MeasurementsController(
     IMeasurementPdfService pdfService,
     IProfitCalculator profitCalculator) : ControllerBase
 {
+    [HttpGet("kanban")]
+    [Authorize(Roles = "Admin,Operator,Measurer")]
+    public async Task<ActionResult<MeasurementKanbanResponse>> GetKanban(CancellationToken ct)
+    {
+        return Ok(await measurementService.GetKanbanAsync(ct));
+    }
+
     [HttpPost]
     public async Task<ActionResult<MeasurementResponse>> Create(
         CreateMeasurementRequest request, CancellationToken ct)
@@ -87,6 +94,52 @@ public sealed class MeasurementsController(
         {
             return ValidationProblem(new ValidationProblemDetails(
                 new Dictionary<string, string[]>(ex.Errors)));
+        }
+    }
+
+    [HttpPatch("{id:guid}/status")]
+    [Authorize(Roles = "Admin,Operator")]
+    public async Task<IActionResult> PatchStatus(
+        Guid id, PatchMeasurementStatusRequest request, CancellationToken ct)
+    {
+        try
+        {
+            await measurementService.PatchStatusAsync(id, request, ct);
+            return NoContent();
+        }
+        catch (NotFoundException)
+        {
+            return NotFound();
+        }
+        catch (ConflictException ex)
+        {
+            return Conflict(new ProblemDetails { Status = 409, Detail = ex.Message });
+        }
+        catch (DomainValidationException ex)
+        {
+            return ValidationProblem(new ValidationProblemDetails(
+                new Dictionary<string, string[]>(ex.Errors)));
+        }
+        catch (ForbiddenException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ProblemDetails { Status = 403, Detail = ex.Message });
+        }
+    }
+
+    [HttpPost("{id:guid}/assign-measurer")]
+    [Authorize(Roles = "Admin,Operator")]
+    public async Task<IActionResult> AssignMeasurer(
+        Guid id, AssignMeasurerRequest request, CancellationToken ct)
+    {
+        try
+        {
+            await measurementService.AssignMeasurerAsync(id, request, ct);
+            return NoContent();
+        }
+        catch (NotFoundException)
+        {
+            return NotFound();
         }
     }
 }

@@ -15,7 +15,7 @@ export function CreateBatchDialog({ onClose }: Props) {
   const navigate = useNavigate()
   const [selected, setSelected] = useState<Set<string>>(new Set())
 
-  const { data, isLoading } = useLeads({ status: 'Buying', page: 1, pageSize: 100 })
+  const { data, isLoading } = useLeads({ page: 1, pageSize: 100 })
   const createBatch = useCreateBatchOrder()
 
   useEffect(() => {

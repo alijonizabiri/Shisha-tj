@@ -14,6 +14,9 @@ const MIN_FIXED_W = 200
 const MAX_FIXED_W = 3000
 const MIN_HEIGHT  = 200
 
+const SNAP_THRESHOLD  = 5  // mm
+const HOLE_EDGE_MARGIN = 20 // mirrors Hole.tsx EDGE_MARGIN
+
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 interface DragState {
@@ -25,11 +28,45 @@ interface DragState {
   startClientY: number
 }
 
+interface AbsPos { x: number; y: number }
+
 export interface PanelScreenRect {
   x: number
   y: number
   w: number
   h: number
+}
+
+// ── Snap computation ──────────────────────────────────────────────────────────
+
+/**
+ * Finds the nearest aligned neighbour within `threshold` mm on each axis.
+ * Snaps only the closer axis (X or Y, not both). Returns final position and
+ * the guide coordinates to draw (both X and Y guides shown when within threshold).
+ */
+export function computeSnap(
+  currentX: number,
+  currentY: number,
+  others: AbsPos[],
+  threshold = SNAP_THRESHOLD,
+): { x: number; y: number; guides: { x: number | null; y: number | null } } {
+  let guideX: number | null = null
+  let guideY: number | null = null
+  let minDistX = Infinity
+  let minDistY = Infinity
+
+  for (const other of others) {
+    const dx = Math.abs(currentX - other.x)
+    const dy = Math.abs(currentY - other.y)
+    if (dx <= threshold && dx < minDistX) { minDistX = dx; guideX = other.x }
+    if (dy <= threshold && dy < minDistY) { minDistY = dy; guideY = other.y }
+  }
+
+  return {
+    x: guideX !== null ? guideX : currentX,
+    y: guideY !== null ? guideY : currentY,
+    guides: { x: guideX, y: guideY },
+  }
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -112,13 +149,24 @@ export function DrawingCanvas({
   const [holes, setHoles] = useState<HoleData[][]>(initialHoles)
   const [localPanels, setLocalPanels] = useState<Panel[] | null>(null)
   const [isDragging, setIsDragging] = useState(false)
+  const [activeGuides, setActiveGuides] = useState<{ x: number | null; y: number | null }>({ x: null, y: null })
 
   const svgRef = useRef<SVGSVGElement>(null)
   const activeDragRef = useRef<DragState | null>(null)
 
+  // Refs for stable access inside useCallback without stale closures
+  const holesRef = useRef<HoleData[][]>(holes)
+  const xsRef = useRef<number[]>([])
+  const renderPanelsRef = useRef<Panel[]>([])
+
   const renderPanels = localPanels ?? panels
   const totalWidthMm = renderPanels.reduce((acc, p) => acc + p.widthMm, 0)
   const xs = xPositions(renderPanels)
+
+  // Keep refs in sync every render
+  holesRef.current = holes
+  xsRef.current = xs
+  renderPanelsRef.current = renderPanels
 
   const fullW = totalWidthMm + PAD * 2
   const fullH = cabinHeightMm + PAD * 2
@@ -131,18 +179,53 @@ export function DrawingCanvas({
 
   const handleHoleMove = useCallback(
     (panelIdx: number, holeIdx: number, xMm: number, yMm: number) => {
+      const currentHoles = holesRef.current
+      const currentXs = xsRef.current
+      const currentPanels = renderPanelsRef.current
+      const panel = currentPanels[panelIdx]
+      if (!panel) return
+
+      const absX = currentXs[panelIdx] + xMm
+      const absY = (cabinHeightMm - panel.heightMm) + yMm
+
+      const others: AbsPos[] = []
+      for (let i = 0; i < currentHoles.length; i++) {
+        const rp = currentPanels[i]
+        if (!rp) continue
+        const yOff = cabinHeightMm - rp.heightMm
+        for (let j = 0; j < currentHoles[i].length; j++) {
+          if (i === panelIdx && j === holeIdx) continue
+          const h = currentHoles[i][j]
+          others.push({ x: currentXs[i] + h.xMm, y: yOff + h.yMm })
+        }
+      }
+
+      const { x: snapAbsX, y: snapAbsY, guides } = computeSnap(absX, absY, others)
+      setActiveGuides(guides)
+
+      const finalX = Math.round(
+        Math.min(Math.max(snapAbsX - currentXs[panelIdx], HOLE_EDGE_MARGIN), panel.widthMm - HOLE_EDGE_MARGIN),
+      )
+      const finalY = Math.round(
+        Math.min(Math.max(snapAbsY - (cabinHeightMm - panel.heightMm), HOLE_EDGE_MARGIN), panel.heightMm - HOLE_EDGE_MARGIN),
+      )
+
       setHoles((prev) => {
         const next = prev.map((pHoles, i) =>
           i === panelIdx
-            ? pHoles.map((h, j) => (j === holeIdx ? { ...h, xMm, yMm } : h))
+            ? pHoles.map((h, j) => (j === holeIdx ? { ...h, xMm: finalX, yMm: finalY } : h))
             : pHoles,
         )
         onHolesChange?.(next)
         return next
       })
     },
-    [onHolesChange],
+    [onHolesChange, cabinHeightMm],
   )
+
+  const handleHoleDragEnd = useCallback(() => {
+    setActiveGuides({ x: null, y: null })
+  }, [])
 
   // ── Wheel zoom ────────────────────────────────────────────────────────────
 
@@ -368,6 +451,7 @@ export function DrawingCanvas({
               panelWidthMm={panel.widthMm}
               panelHeightMm={panel.heightMm}
               onMove={(x, y) => handleHoleMove(i, j, x, y - yOffset)}
+              onDragEnd={handleHoleDragEnd}
             />
           ))
         })}
@@ -382,6 +466,26 @@ export function DrawingCanvas({
         ))}
         <HorizDim x1={0} x2={totalWidthMm} y={cabinHeightMm + 50} label={`${totalWidthMm}`} bold />
         <VertDim x={totalWidthMm + 22} y1={0} y2={cabinHeightMm} label={`${cabinHeightMm}`} />
+
+        {/* ── 6. Snap guides (always on top) ── */}
+        {activeGuides.y !== null && (
+          <line
+            data-testid="snap-guide-h"
+            x1={vbX} y1={activeGuides.y}
+            x2={vbX + scaledW} y2={activeGuides.y}
+            stroke="#4f46e5" strokeDasharray="6 4" strokeWidth={2.5} opacity={1}
+            pointerEvents="none"
+          />
+        )}
+        {activeGuides.x !== null && (
+          <line
+            data-testid="snap-guide-v"
+            x1={activeGuides.x} y1={vbY}
+            x2={activeGuides.x} y2={vbY + scaledH}
+            stroke="#4f46e5" strokeDasharray="6 4" strokeWidth={2.5} opacity={1}
+            pointerEvents="none"
+          />
+        )}
       </svg>
     </div>
   )

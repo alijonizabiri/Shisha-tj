@@ -40,8 +40,6 @@ public sealed class PaymentTests(ApiFactory factory)
         var leadBody = await create.Content.ReadFromJsonAsync<JsonElement>(JsonOpts);
         var leadId = leadBody.GetProperty("id").GetString()!;
 
-        await client.PatchAsJsonAsync($"/api/v1/leads/{leadId}/status", new { status = "Measurement" });
-
         var mResp = await client.PostAsJsonAsync("/api/v1/measurements", new
         {
             leadId        = Guid.Parse(leadId),

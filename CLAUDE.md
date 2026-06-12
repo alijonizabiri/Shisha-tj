@@ -164,13 +164,13 @@ For `[FULL]` steps:
 ## Current Status
 
 **Phase:** 5 — Production Polish
-**Last completed:** Phase 3.5 Step 13 [BE] — Move finances from Lead to Measurement (multi-measurement support)
-**Last commit:** Phase 3.5 Step 13 [BE]: move finances from Lead to Measurement (multi-measurement support)
+**Last completed:** Phase 3.5 Step 14 [FULL] — State machine moved from Lead to Measurement
+**Last commit:** Phase 3.5 Step 14 [FULL]: move state machine from Lead to Measurement
 **Next step:** Phase 5 Step 7 [FULL] — Regression pass + Lighthouse 90+ on FE
 **Build BE:** ✅ 0 warnings, 0 errors
 **Build FE:** ✅ typecheck + lint + build passing
-**Tests:** ✅ BE 120/120 | FE 104/104
-**Updated:** 2026-06-09
+**Tests:** ✅ BE 115/115 | FE 108/108
+**Updated:** 2026-06-12
 
 ## Completed Phases
 - Phase 0 — Foundation ✅ (2026-06-03) — tag `v0.1-foundation` — [summary](docs/phase-summaries/Phase0-summary.md)

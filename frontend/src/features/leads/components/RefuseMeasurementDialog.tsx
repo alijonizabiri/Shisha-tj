@@ -16,7 +16,7 @@ interface Props {
   title: string
 }
 
-export function RefuseLeadDialog({ open, onClose, measurementId, title }: Props) {
+export function RefuseMeasurementDialog({ open, onClose, measurementId, title }: Props) {
   const { data: reasons = [], isLoading } = useRefusalReasons()
   const patchStatus = usePatchMeasurementStatus()
 
@@ -32,9 +32,7 @@ export function RefuseLeadDialog({ open, onClose, measurementId, title }: Props)
 
   useEffect(() => {
     if (!open) return
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
-    }
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
     document.addEventListener('keydown', handler)
     return () => document.removeEventListener('keydown', handler)
   }, [open, onClose])
@@ -60,9 +58,7 @@ export function RefuseLeadDialog({ open, onClose, measurementId, title }: Props)
   return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose()
-      }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
     >
       <div className="w-full max-w-md rounded-lg border border-border bg-card shadow-xl">
         <div className="flex items-center justify-between border-b border-border px-5 py-4">
@@ -124,12 +120,7 @@ export function RefuseLeadDialog({ open, onClose, measurementId, title }: Props)
             <Button type="button" variant="outline" onClick={onClose} className="flex-1">
               Отмена
             </Button>
-            <Button
-              type="submit"
-              variant="destructive"
-              disabled={isSubmitting}
-              className="flex-1"
-            >
+            <Button type="submit" variant="destructive" disabled={isSubmitting} className="flex-1">
               {isSubmitting ? 'Сохранение…' : 'Отказать'}
             </Button>
           </div>

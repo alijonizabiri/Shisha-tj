@@ -48,20 +48,20 @@ describe('LeadFinancesPanel — Добавить платёж button', () => {
     expect(screen.getByText('Сначала создайте замер')).toBeTruthy()
   })
 
-  it('button is enabled when hasMeasurements=true', () => {
-    render(<LeadFinancesPanel leadId="lead-1" hasMeasurements={true} />)
+  it('button is enabled when hasMeasurements=true and measurementId provided', () => {
+    render(<LeadFinancesPanel leadId="lead-1" hasMeasurements={true} measurementId="m-1" />)
     const btn = screen.getByRole('button', { name: /Добавить платёж/i })
     expect((btn as HTMLButtonElement).disabled).toBe(false)
   })
 
   it('hint is not shown when hasMeasurements=true', () => {
-    render(<LeadFinancesPanel leadId="lead-1" hasMeasurements={true} />)
+    render(<LeadFinancesPanel leadId="lead-1" hasMeasurements={true} measurementId="m-1" />)
     expect(screen.queryByText('Сначала создайте замер')).toBeNull()
   })
 
   it('clicking button opens AddPaymentDialog when hasMeasurements=true', async () => {
     const user = userEvent.setup()
-    render(<LeadFinancesPanel leadId="lead-1" hasMeasurements={true} />)
+    render(<LeadFinancesPanel leadId="lead-1" hasMeasurements={true} measurementId="m-1" />)
 
     await user.click(screen.getByRole('button', { name: /Добавить платёж/i }))
 

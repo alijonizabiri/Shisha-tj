@@ -36,8 +36,11 @@ public sealed class MeasurementConfiguration : IEntityTypeConfiguration<Measurem
         builder.Property(m => m.DealPriceTjs).HasPrecision(18, 2);
         builder.Property(m => m.DeliveryCostTjs).HasPrecision(18, 2);
 
+        builder.Property(m => m.RefusalNote).HasMaxLength(1000);
+
         builder.HasIndex(m => m.TenantId);
         builder.HasIndex(m => m.LeadId);
+        builder.HasIndex(m => m.Status);
 
         builder.HasOne(m => m.Lead)
             .WithMany(l => l.Measurements)
@@ -54,6 +57,18 @@ public sealed class MeasurementConfiguration : IEntityTypeConfiguration<Measurem
         builder.HasOne(m => m.Measurer)
             .WithMany()
             .HasForeignKey(m => m.MeasurerId)
+            .OnDelete(DeleteBehavior.Restrict)
+            .IsRequired(false);
+
+        builder.HasOne(m => m.AssignedMeasurer)
+            .WithMany()
+            .HasForeignKey(m => m.AssignedMeasurerId)
+            .OnDelete(DeleteBehavior.Restrict)
+            .IsRequired(false);
+
+        builder.HasOne<RefusalReason>()
+            .WithMany()
+            .HasForeignKey(m => m.RefusalReasonId)
             .OnDelete(DeleteBehavior.Restrict)
             .IsRequired(false);
 

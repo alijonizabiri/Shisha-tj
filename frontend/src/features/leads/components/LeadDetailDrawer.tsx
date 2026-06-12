@@ -1,15 +1,12 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { ArrowUpRight, Pencil, Plus, Ruler, X } from 'lucide-react'
+import { ArrowUpRight, Pencil, Plus, X } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
-import { useLead, useLeadFinances } from '../api'
+import { useLead } from '../api'
 import { LeadStatusBadge } from './LeadStatusBadge'
 import { LeadFinancesPanel } from './LeadFinancesPanel'
 import { EditLeadDialog } from './EditLeadDialog'
-import { BuyingTransitionDialog } from './BuyingTransitionDialog'
-import { TransitionRequirements } from './TransitionRequirements'
 import { formatDate } from '@/shared/lib/formatDate'
-import { formatMoney } from '@/shared/lib/formatMoney'
 
 interface Props {
   leadId: string | null
@@ -34,49 +31,33 @@ const GLASS_COLOR_LABELS: Record<string, string> = {
   EuroBronze:  'Евробронза',
 }
 
-const CONFIG_LABELS: Record<string, string> = {
-  TwoGlass:   '2 стекла',
-  ThreeGlass: '3 стекла',
-}
-
-const BUYING_FROM = new Set(['Measurement', 'Thinking'])
-const MIN_DEPOSIT = 100
-
 export function LeadDetailDrawer({ leadId, onClose }: Props) {
   const { data: lead, isLoading } = useLead(leadId ?? '')
-  const { data: finances } = useLeadFinances(leadId ?? '')
   const [editOpen, setEditOpen] = useState(false)
-  const [buyingOpen, setBuyingOpen] = useState(false)
   const navigate = useNavigate()
 
   useEffect(() => {
     if (!leadId) return
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !editOpen && !buyingOpen) onClose()
+      if (e.key === 'Escape' && !editOpen) onClose()
     }
     document.addEventListener('keydown', handler)
     return () => document.removeEventListener('keydown', handler)
-  }, [leadId, onClose, editOpen, buyingOpen])
+  }, [leadId, onClose, editOpen])
 
   if (!leadId) return null
 
   const panel = createPortal(
     <div className="fixed inset-0 z-40 flex justify-end">
-      {/* Dimmed backdrop */}
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
 
-      {/* Panel */}
       <div className="relative z-10 flex h-full w-full max-w-[640px] flex-col bg-background border-l border-border shadow-2xl overflow-hidden">
-
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border px-6 py-4 shrink-0">
           {isLoading || !lead ? (
             <div className="h-6 w-48 rounded bg-muted animate-pulse" />
           ) : (
-            <div className="flex items-center gap-3 min-w-0">
-              <h2 className="text-lg font-semibold truncate">{lead.name}</h2>
-              <LeadStatusBadge status={lead.status} />
-            </div>
+            <h2 className="text-lg font-semibold truncate">{lead.name}</h2>
           )}
           <div className="flex items-center gap-1 ml-3 shrink-0">
             {lead && (
@@ -123,7 +104,7 @@ export function LeadDetailDrawer({ leadId, onClose }: Props) {
 
           {lead && (
             <div className="flex flex-col gap-5">
-              {/* Contact & deal info */}
+              {/* Contact info */}
               <section className="rounded-lg border border-border bg-card p-4">
                 <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                   Информация
@@ -133,26 +114,10 @@ export function LeadDetailDrawer({ leadId, onClose }: Props) {
                   <InfoRow label="Продукт" value={lead.product} />
                   <InfoRow label="Источник" value={lead.source} />
                   <InfoRow label="Дата звонка" value={formatDate(lead.callDate)} />
-                  <InfoRow label="Адрес" value={lead.address} />
-                  <InfoRow label="Замерщик" value={lead.assignedMeasurerName} />
-                  {lead.dealPriceTjs != null && (
-                    <InfoRow label="Сумма сделки" value={formatMoney(lead.dealPriceTjs)} />
-                  )}
-                  {lead.promisedInstallDate && (
-                    <InfoRow label="Дата установки" value={formatDate(lead.promisedInstallDate)} />
-                  )}
-                  {lead.warrantyUntil && (
-                    <InfoRow label="Гарантия до" value={formatDate(lead.warrantyUntil)} />
-                  )}
                 </div>
                 {lead.note && (
                   <p className="mt-3 border-t border-border pt-3 text-sm text-muted-foreground whitespace-pre-wrap">
                     {lead.note}
-                  </p>
-                )}
-                {lead.refusalNote && (
-                  <p className="mt-3 border-t border-border pt-3 text-sm text-destructive">
-                    Причина отказа: {lead.refusalNote}
                   </p>
                 )}
               </section>
@@ -180,26 +145,25 @@ export function LeadDetailDrawer({ leadId, onClose }: Props) {
                         key={m.id}
                         className="flex items-center justify-between rounded-md border border-border px-3 py-2.5"
                       >
-                        <div className="flex items-center gap-2.5">
-                          <Ruler className="h-4 w-4 shrink-0 text-muted-foreground" />
-                          <div>
+                        <div className="flex flex-col gap-0.5">
+                          <div className="flex items-center gap-2">
                             <p className="text-sm font-medium">
                               {m.measureMm} × {m.heightMm} мм
                             </p>
-                            <p className="text-xs text-muted-foreground">
-                              {CONFIG_LABELS[m.configuration] ?? m.configuration}
-                              {' · '}
-                              {GLASS_COLOR_LABELS[m.glassColor] ?? m.glassColor}
-                              {' · '}
-                              {formatDate(m.measuredAt)}
-                            </p>
+                            <LeadStatusBadge status={m.status} />
                           </div>
+                          <p className="text-xs text-muted-foreground">
+                            {GLASS_COLOR_LABELS[m.glassColor] ?? m.glassColor}
+                            {m.assignedMeasurerName && ` · 👤 ${m.assignedMeasurerName}`}
+                            {' · '}
+                            {formatDate(m.measuredAt)}
+                          </p>
                         </div>
                         <Link
                           to={`/designer?measurementId=${m.id}`}
                           className="shrink-0 ml-3 text-xs text-primary hover:underline"
                         >
-                          Открыть в Дизайнере →
+                          Дизайнер →
                         </Link>
                       </div>
                     ))}
@@ -214,40 +178,11 @@ export function LeadDetailDrawer({ leadId, onClose }: Props) {
                 )}
               </section>
 
-              {/* Status transitions */}
-              {BUYING_FROM.has(lead.status) && (() => {
-                const hasMeasurement = lead.measurements.length > 0
-                const hasDealPrice   = lead.dealPriceTjs != null && lead.dealPriceTjs > 0
-                const totalDeposit   = finances?.totalDepositTjs ?? 0
-                const depositOk      = totalDeposit >= MIN_DEPOSIT
-                const canBuy         = hasMeasurement && hasDealPrice && depositOk
-                return (
-                  <section className="rounded-lg border border-border bg-card p-4">
-                    <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                      Действия
-                    </h3>
-                    <button
-                      onClick={() => setBuyingOpen(true)}
-                      disabled={!canBuy}
-                      className="w-full rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Перевести в «Покупает»
-                    </button>
-                    {!canBuy && (
-                      <TransitionRequirements
-                        hasMeasurement={hasMeasurement}
-                        hasDealPrice={hasDealPrice}
-                        totalDepositTjs={totalDeposit}
-                      />
-                    )}
-                  </section>
-                )
-              })()}
-
               {/* Finances */}
               <LeadFinancesPanel
                 leadId={lead.id}
                 hasMeasurements={lead.measurements.length > 0}
+                measurementId={lead.measurements[0]?.id}
               />
             </div>
           )}
@@ -262,9 +197,6 @@ export function LeadDetailDrawer({ leadId, onClose }: Props) {
       {panel}
       {lead && editOpen && (
         <EditLeadDialog lead={lead} onClose={() => setEditOpen(false)} />
-      )}
-      {lead && buyingOpen && (
-        <BuyingTransitionDialog leadId={lead.id} onClose={() => setBuyingOpen(false)} />
       )}
     </>
   )

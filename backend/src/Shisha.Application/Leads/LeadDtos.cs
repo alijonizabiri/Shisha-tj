@@ -3,8 +3,6 @@ namespace Shisha.Application.Leads;
 // ── Queries ───────────────────────────────────────────────────────────────────
 
 public record LeadsQuery(
-    string? Status = null,
-    Guid? AssignedTo = null,
     string? Search = null,
     DateOnly? From = null,
     DateOnly? To = null,
@@ -29,14 +27,6 @@ public record UpdateLeadRequest(
     string? Note,
     DateOnly CallDate);
 
-public record PatchStatusRequest(
-    string Status,
-    Guid? RefusalReasonId = null,
-    string? RefusalNote = null,
-    Guid? AssignedMeasurerId = null);
-
-public record AssignMeasurerRequest(Guid UserId);
-
 // ── Responses ─────────────────────────────────────────────────────────────────
 
 public record LeadSummaryResponse(
@@ -44,14 +34,9 @@ public record LeadSummaryResponse(
     string Name,
     string Phone,
     string Product,
-    string Status,
     string? Source,
     string? Note,
-    Guid? RefusalReasonId,
-    string? RefusalNote,
     DateOnly CallDate,
-    Guid? AssignedMeasurerId,
-    string? AssignedMeasurerName,
     DateTime CreatedAt,
     DateTime UpdatedAt);
 
@@ -61,13 +46,10 @@ public record PagedLeadsResponse(
     int Page,
     int PageSize);
 
-public record KanbanColumn(string Status, IReadOnlyList<LeadSummaryResponse> Items);
-
-public record KanbanResponse(IReadOnlyList<KanbanColumn> Columns);
-
 public record LeadMeasurementDto(
     Guid Id,
     string Address,
+    string Status,
     string GlassColor,
     string HardwareColor,
     int MeasureMm,
@@ -78,6 +60,7 @@ public record LeadMeasurementDto(
     DateOnly? WarrantyUntil,
     decimal TotalPaidTjs,
     decimal? BalanceDueTjs,
+    string? AssignedMeasurerName,
     DateTime MeasuredAt,
     DateTime CreatedAt);
 
@@ -86,14 +69,9 @@ public record LeadDetailResponse(
     string Name,
     string Phone,
     string Product,
-    string Status,
     string? Source,
     string? Note,
-    Guid? RefusalReasonId,
-    string? RefusalNote,
     DateOnly CallDate,
-    Guid? AssignedMeasurerId,
-    string? AssignedMeasurerName,
     DateTime CreatedAt,
     DateTime UpdatedAt,
     IReadOnlyList<LeadMeasurementDto> Measurements);

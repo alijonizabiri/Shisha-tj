@@ -1,17 +1,20 @@
 import type { HandleSide, Hole } from './types'
 
-const MOUNT_RADIUS = 12
-const HANDLE_RADIUS = 10
-const EDGE_OFFSET = 10      // all holes: 10 mm from the panel edge
-const ROLLER_GAP = 30       // distance between paired roller holes
-const HANDLE_HALF_SPAN = 137.5  // half of 275 mm handle hole spacing
+const MOUNT_RADIUS = 27
+const HANDLE_RADIUS = 23
+
+const CLAMP_X_OFFSET = 150 // symmetric inset from each side edge
+const CLAMP_Y1 = 150        // row 1: same for both fixed and door panels
+const CLAMP_Y2 = 320        // row 2: door panel only
+
+const HANDLE_X_OFFSET = 80  // door panel: handle 80mm from handle-side edge
 
 /**
  * Returns default hole positions for a single glass panel.
  * All coordinates are from the panel's top-left corner.
  *
- * Fixed panel → 2 mount holes (top corners).
- * Door panel  → 4 roller holes (top edge) + 2 handle holes (side).
+ * Fixed panel → 2 clamp holes (y=150, symmetric).
+ * Door panel  → 4 clamp holes (2 rows, y=150 and y=320) + 2 handle holes (side).
  */
 export function defaultHoles(
   panel: { widthMm: number; isDoor: boolean },
@@ -26,30 +29,24 @@ export function defaultHoles(
 
 function fixedHoles(widthMm: number): Hole[] {
   return [
-    { xMm: EDGE_OFFSET, yMm: EDGE_OFFSET, radiusMm: MOUNT_RADIUS, holeType: 'Mount' },
-    { xMm: widthMm - EDGE_OFFSET, yMm: EDGE_OFFSET, radiusMm: MOUNT_RADIUS, holeType: 'Mount' },
+    { xMm: CLAMP_X_OFFSET, yMm: CLAMP_Y1, radiusMm: MOUNT_RADIUS, holeType: 'Mount' },
+    { xMm: widthMm - CLAMP_X_OFFSET, yMm: CLAMP_Y1, radiusMm: MOUNT_RADIUS, holeType: 'Mount' },
   ]
 }
 
 function doorHoles(widthMm: number, heightMm: number, handleSide: HandleSide): Hole[] {
-  // Roller holes — 2 pairs at top, near left and right edges
-  const rollers: Hole[] = [
-    { xMm: EDGE_OFFSET, yMm: EDGE_OFFSET, radiusMm: MOUNT_RADIUS, holeType: 'Roller' },
-    { xMm: EDGE_OFFSET + ROLLER_GAP, yMm: EDGE_OFFSET, radiusMm: MOUNT_RADIUS, holeType: 'Roller' },
-    { xMm: widthMm - EDGE_OFFSET - ROLLER_GAP, yMm: EDGE_OFFSET, radiusMm: MOUNT_RADIUS, holeType: 'Roller' },
-    { xMm: widthMm - EDGE_OFFSET, yMm: EDGE_OFFSET, radiusMm: MOUNT_RADIUS, holeType: 'Roller' },
+  const clamps: Hole[] = [
+    { xMm: CLAMP_X_OFFSET,             yMm: CLAMP_Y1, radiusMm: MOUNT_RADIUS, holeType: 'Mount' },
+    { xMm: widthMm - CLAMP_X_OFFSET,   yMm: CLAMP_Y1, radiusMm: MOUNT_RADIUS, holeType: 'Mount' },
+    { xMm: CLAMP_X_OFFSET,             yMm: CLAMP_Y2, radiusMm: MOUNT_RADIUS, holeType: 'Mount' },
+    { xMm: widthMm - CLAMP_X_OFFSET,   yMm: CLAMP_Y2, radiusMm: MOUNT_RADIUS, holeType: 'Mount' },
   ]
 
-  // Handle holes — vertical center shifted down by 5% of height, 275 mm apart
-  const centerY = Math.round(heightMm * 0.55) // h/2 + h*0.05 = h * 0.55
-  const topY = Math.round(centerY - HANDLE_HALF_SPAN)
-  const bottomY = topY + 275 // exact 275 mm gap
-  const handleX = handleSide === 'Left' ? EDGE_OFFSET : widthMm - EDGE_OFFSET
-
+  const handleX = handleSide === 'Left' ? HANDLE_X_OFFSET : widthMm - HANDLE_X_OFFSET
   const handles: Hole[] = [
-    { xMm: handleX, yMm: topY, radiusMm: HANDLE_RADIUS, holeType: 'Handle' },
-    { xMm: handleX, yMm: bottomY, radiusMm: HANDLE_RADIUS, holeType: 'Handle' },
+    { xMm: handleX, yMm: Math.round(heightMm * 0.525), radiusMm: HANDLE_RADIUS, holeType: 'Handle' },
+    { xMm: handleX, yMm: Math.round(heightMm * 0.625), radiusMm: HANDLE_RADIUS, holeType: 'Handle' },
   ]
 
-  return [...rollers, ...handles]
+  return [...clamps, ...handles]
 }

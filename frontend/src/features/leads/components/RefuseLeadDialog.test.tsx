@@ -3,11 +3,13 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { RefuseLeadDialog } from './RefuseLeadDialog'
 import * as api from '../api'
+import * as measurementsApi from '@/features/measurements/api'
 
 vi.mock('../api')
+vi.mock('@/features/measurements/api')
 
 const mockUseRefusalReasons = vi.mocked(api.useRefusalReasons)
-const mockUsePatchLeadStatus = vi.mocked(api.usePatchLeadStatus)
+const mockUsePatchMeasurementStatus = vi.mocked(measurementsApi.usePatchMeasurementStatus)
 
 const REASONS = [
   { id: 'r1', label: 'Дорого' },
@@ -25,8 +27,8 @@ function renderDialog(open = true, onClose = vi.fn()) {
     <RefuseLeadDialog
       open={open}
       onClose={onClose}
-      leadId="lead-123"
-      leadName="Иван Иванов"
+      measurementId="m-123"
+      title="Иван Иванов"
     />,
   )
 }
@@ -38,8 +40,8 @@ describe('RefuseLeadDialog', () => {
       data: REASONS,
       isLoading: false,
     } as ReturnType<typeof api.useRefusalReasons>)
-    mockUsePatchLeadStatus.mockReturnValue(
-      DEFAULT_PATCH as unknown as ReturnType<typeof api.usePatchLeadStatus>,
+    mockUsePatchMeasurementStatus.mockReturnValue(
+      DEFAULT_PATCH as unknown as ReturnType<typeof measurementsApi.usePatchMeasurementStatus>,
     )
   })
 
@@ -78,10 +80,10 @@ describe('RefuseLeadDialog', () => {
 
   it('calls patchStatus with Refused + selected reasonId on submit', async () => {
     const mutateAsync = vi.fn().mockResolvedValue(undefined)
-    mockUsePatchLeadStatus.mockReturnValue({
+    mockUsePatchMeasurementStatus.mockReturnValue({
       ...DEFAULT_PATCH,
       mutateAsync,
-    } as unknown as ReturnType<typeof api.usePatchLeadStatus>)
+    } as unknown as ReturnType<typeof measurementsApi.usePatchMeasurementStatus>)
 
     const user = userEvent.setup()
     renderDialog()
@@ -92,7 +94,7 @@ describe('RefuseLeadDialog', () => {
 
     await waitFor(() => {
       expect(mutateAsync).toHaveBeenCalledWith({
-        id: 'lead-123',
+        id: 'm-123',
         body: {
           status: 'Refused',
           refusalReasonId: 'r1',
@@ -105,18 +107,18 @@ describe('RefuseLeadDialog', () => {
   it('calls onClose after successful submit', async () => {
     const mutateAsync = vi.fn().mockResolvedValue(undefined)
     const onClose = vi.fn()
-    mockUsePatchLeadStatus.mockReturnValue({
+    mockUsePatchMeasurementStatus.mockReturnValue({
       ...DEFAULT_PATCH,
       mutateAsync,
-    } as unknown as ReturnType<typeof api.usePatchLeadStatus>)
+    } as unknown as ReturnType<typeof measurementsApi.usePatchMeasurementStatus>)
 
     const user = userEvent.setup()
     render(
       <RefuseLeadDialog
         open
         onClose={onClose}
-        leadId="lead-123"
-        leadName="Иван Иванов"
+        measurementId="m-123"
+        title="Иван Иванов"
       />,
     )
 
@@ -135,8 +137,8 @@ describe('RefuseLeadDialog', () => {
       <RefuseLeadDialog
         open
         onClose={onClose}
-        leadId="lead-123"
-        leadName="Иван Иванов"
+        measurementId="m-123"
+        title="Иван Иванов"
       />,
     )
 
@@ -145,10 +147,10 @@ describe('RefuseLeadDialog', () => {
   })
 
   it('shows error message when patchStatus fails', () => {
-    mockUsePatchLeadStatus.mockReturnValue({
+    mockUsePatchMeasurementStatus.mockReturnValue({
       ...DEFAULT_PATCH,
       isError: true,
-    } as unknown as ReturnType<typeof api.usePatchLeadStatus>)
+    } as unknown as ReturnType<typeof measurementsApi.usePatchMeasurementStatus>)
     renderDialog()
     expect(screen.getByText('Ошибка. Попробуйте снова.')).toBeTruthy()
   })
@@ -160,8 +162,8 @@ describe('RefuseLeadDialog', () => {
       <RefuseLeadDialog
         open
         onClose={onClose}
-        leadId="lead-123"
-        leadName="Иван Иванов"
+        measurementId="m-123"
+        title="Иван Иванов"
       />,
     )
 

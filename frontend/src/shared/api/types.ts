@@ -81,21 +81,11 @@ export interface components {
       id: string
       name: string
       phone: string
-      address: string | null
       product: string
-      /** LeadStatus enum value as string */
-      status: string
       source: string | null
       note: string | null
-      refusalReasonId: string | null
-      refusalNote: string | null
       /** DateOnly: "YYYY-MM-DD" */
       callDate: string
-      promisedInstallDate: string | null
-      warrantyUntil: string | null
-      assignedMeasurerId: string | null
-      assignedMeasurerName: string | null
-      dealPriceTjs: number | null
       createdAt: string
       updatedAt: string
     }
@@ -105,22 +95,6 @@ export interface components {
       page: number
       pageSize: number
     }
-    KanbanColumn: {
-      status: string
-      items: components['schemas']['LeadSummaryResponse'][]
-    }
-    KanbanResponse: {
-      columns: components['schemas']['KanbanColumn'][]
-    }
-    PatchStatusRequest: {
-      status: string
-      refusalReasonId?: string | null
-      refusalNote?: string | null
-      dealPriceTjs?: number | null
-      assignedMeasurerId?: string | null
-      address?: string | null
-      promisedInstallDate?: string | null
-    }
     LeadMeasurementDto: {
       id: string
       configuration: string
@@ -128,6 +102,9 @@ export interface components {
       hardwareColor: string
       measureMm: number
       heightMm: number
+      /** LeadStatus enum value as string */
+      status: string
+      assignedMeasurerName: string | null
       measuredAt: string
       createdAt: string
     }
@@ -142,7 +119,6 @@ export interface components {
     CreateLeadRequest: {
       name: string
       phone: string
-      address?: string | null
       product: string
       source?: string | null
       note?: string | null
@@ -161,22 +137,55 @@ export interface components {
       id: string
       name: string
       phone: string
-      address: string | null
       product: string
-      status: string
       source: string | null
       note: string | null
-      refusalReasonId: string | null
-      refusalNote: string | null
       callDate: string
-      promisedInstallDate: string | null
-      warrantyUntil: string | null
-      assignedMeasurerId: string | null
-      assignedMeasurerName: string | null
-      dealPriceTjs: number | null
       createdAt: string
       updatedAt: string
       measurements: components['schemas']['LeadMeasurementDto'][]
+    }
+    MeasurementKanbanItemResponse: {
+      id: string
+      leadId: string | null
+      leadName: string
+      leadPhone: string
+      product: string
+      /** LeadStatus enum value as string */
+      status: string
+      assignedMeasurerName: string | null
+      dealPriceTjs: number | null
+      totalPaidTjs: number
+      /** DateOnly: "YYYY-MM-DD" */
+      installationDate: string | null
+      createdAt: string
+    }
+    MeasurementKanbanColumn: {
+      status: string
+      items: components['schemas']['MeasurementKanbanItemResponse'][]
+    }
+    MeasurementKanbanResponse: {
+      columns: components['schemas']['MeasurementKanbanColumn'][]
+    }
+    PatchMeasurementStatusRequest: {
+      status: string
+      refusalReasonId?: string | null
+      refusalNote?: string | null
+    }
+    MeasurementFinancesDto: {
+      measurementId: string
+      dealPriceTjs: number | null
+      glassCostTjs: number
+      reworkCostTjs: number
+      hardwareCostTjs: number
+      masterFeeTjs: number
+      deliveryCostTjs: number
+      otherCostsTjs: number
+      totalCostTjs: number
+      profitTjs: number | null
+      totalPaidTjs: number
+      totalDepositTjs: number
+      balanceDueTjs: number | null
     }
     FactoryOrderItemDto: {
       id: string

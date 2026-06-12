@@ -10,41 +10,36 @@ import {
   type DragStartEvent,
 } from '@dnd-kit/core'
 import { List } from 'lucide-react'
-import { useKanban, usePatchLeadStatus, type Lead } from './api'
+import { useMeasurementKanban, usePatchMeasurementStatus, type MeasurementKanbanItem } from '@/features/measurements/api'
 import { KanbanColumn } from './components/KanbanColumn'
-import { LeadCard } from './components/LeadCard'
+import { MeasurementCard } from './components/MeasurementCard'
 import { NewLeadDialog } from './components/NewLeadDialog'
-import { LeadDetailDrawer } from './components/LeadDetailDrawer'
-import { RefuseLeadDialog } from './components/RefuseLeadDialog'
-import { BuyingTransitionDialog } from './components/BuyingTransitionDialog'
+import { RefuseMeasurementDialog } from './components/RefuseMeasurementDialog'
 import { LEAD_STATUS_META } from './lib/leadStatuses'
 import { Button } from '@/shared/ui/button'
 
 interface PendingTransition {
-  leadId: string
-  leadName: string
-  targetStatus: 'Buying' | 'Refused'
+  measurementId: string
+  measurementTitle: string
+  targetStatus: 'Refused'
 }
 
-// Ordered list of status keys for column display
 const COLUMN_ORDER = Object.keys(LEAD_STATUS_META)
 
 export function LeadsKanbanPage() {
-  const { data, isLoading, isError } = useKanban()
-  const patchStatus = usePatchLeadStatus()
+  const { data, isLoading, isError } = useMeasurementKanban()
+  const patchStatus = usePatchMeasurementStatus()
 
   const [activeId, setActiveId] = useState<string | null>(null)
   const [dragError, setDragError] = useState<string | null>(null)
   const [pending, setPending] = useState<PendingTransition | null>(null)
   const [newLeadOpen, setNewLeadOpen] = useState(false)
-  const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null)
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
   )
 
-  // Build a lookup: status → leads (using server data as base)
-  const columnMap: Record<string, Lead[]> = {}
+  const columnMap: Record<string, MeasurementKanbanItem[]> = {}
   for (const status of COLUMN_ORDER) columnMap[status] = []
   if (data) {
     for (const col of data.columns) {
@@ -52,8 +47,8 @@ export function LeadsKanbanPage() {
     }
   }
 
-  const activeLead = activeId
-    ? Object.values(columnMap).flat().find((l) => l.id === activeId) ?? null
+  const activeItem = activeId
+    ? Object.values(columnMap).flat().find((m) => m.id === activeId) ?? null
     : null
 
   function handleDragStart(event: DragStartEvent) {
@@ -66,21 +61,19 @@ export function LeadsKanbanPage() {
     const { active, over } = event
     if (!over) return
 
-    const leadId = String(active.id)
+    const measurementId = String(active.id)
     const targetStatus = String(over.id)
 
-    // Find current status of the dragged lead
-    const lead = Object.values(columnMap).flat().find((l) => l.id === leadId)
-    if (!lead || lead.status === targetStatus) return
+    const item = Object.values(columnMap).flat().find((m) => m.id === measurementId)
+    if (!item || item.status === targetStatus) return
 
-    // Statuses that require extra data — show a dialog instead of patching immediately
-    if (targetStatus === 'Buying' || targetStatus === 'Refused') {
-      setPending({ leadId, leadName: lead.name, targetStatus })
+    if (targetStatus === 'Refused') {
+      setPending({ measurementId, measurementTitle: item.leadName, targetStatus })
       return
     }
 
     try {
-      await patchStatus.mutateAsync({ id: leadId, body: { status: targetStatus } })
+      await patchStatus.mutateAsync({ id: measurementId, body: { status: targetStatus } })
     } catch (err: unknown) {
       const status = (err as { response?: { status?: number } })?.response?.status
       const detail = (err as { response?: { data?: { detail?: string; title?: string } } })
@@ -109,7 +102,6 @@ export function LeadsKanbanPage() {
 
   return (
     <div className="flex flex-col gap-4 h-full">
-      {/* Page header */}
       <div className="flex items-center justify-between shrink-0">
         <h1 className="text-2xl font-semibold">Канбан</h1>
         <div className="flex items-center gap-2">
@@ -127,7 +119,6 @@ export function LeadsKanbanPage() {
         </div>
       </div>
 
-      {/* Board */}
       <DndContext
         sensors={sensors}
         onDragStart={handleDragStart}
@@ -138,32 +129,22 @@ export function LeadsKanbanPage() {
             <KanbanColumn
               key={status}
               status={status}
-              leads={columnMap[status] ?? []}
-              onSelectLead={setSelectedLeadId}
+              items={columnMap[status] ?? []}
             />
           ))}
         </div>
 
         <DragOverlay>
-          {activeLead ? <LeadCard lead={activeLead} isDragOverlay /> : null}
+          {activeItem ? <MeasurementCard item={activeItem} isDragOverlay /> : null}
         </DragOverlay>
       </DndContext>
 
       <NewLeadDialog open={newLeadOpen} onClose={() => setNewLeadOpen(false)} />
 
-      <LeadDetailDrawer leadId={selectedLeadId} onClose={() => setSelectedLeadId(null)} />
-
-      {pending?.targetStatus === 'Buying' && (
-        <BuyingTransitionDialog
-          leadId={pending.leadId}
-          onClose={() => setPending(null)}
-        />
-      )}
-
-      <RefuseLeadDialog
+      <RefuseMeasurementDialog
         open={pending?.targetStatus === 'Refused'}
-        leadId={pending?.leadId ?? ''}
-        leadName={pending?.leadName ?? ''}
+        measurementId={pending?.measurementId ?? ''}
+        title={pending?.measurementTitle ?? ''}
         onClose={() => setPending(null)}
       />
     </div>

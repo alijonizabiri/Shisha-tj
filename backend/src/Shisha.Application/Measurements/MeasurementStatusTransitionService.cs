@@ -1,10 +1,11 @@
+using Shisha.Application.Leads;
 using Shisha.Domain.Entities;
 using Shisha.Domain.Enums;
 using Shisha.Domain.Exceptions;
 
-namespace Shisha.Application.Leads;
+namespace Shisha.Application.Measurements;
 
-public sealed class LeadStatusTransitionService : ILeadStatusTransitionService
+public sealed class MeasurementStatusTransitionService : IMeasurementStatusTransitionService
 {
     private static readonly HashSet<(LeadStatus From, LeadStatus To)> AllowedTransitions =
     [
@@ -26,66 +27,66 @@ public sealed class LeadStatusTransitionService : ILeadStatusTransitionService
         => from == to || AllowedTransitions.Contains((from, to));
 
     public Task TransitionAsync(
-        Lead lead,
+        Measurement measurement,
         LeadStatus to,
-        LeadTransitionArgs args,
+        MeasurementTransitionArgs args,
         CancellationToken ct = default)
     {
-        if (lead.Status == to)
+        if (measurement.Status == to)
             return Task.CompletedTask;
 
-        if (!CanTransition(lead.Status, to))
+        if (!CanTransition(measurement.Status, to))
             throw new ConflictException(
-                $"Transition {lead.Status} → {to} is not allowed.");
+                $"Transition {measurement.Status} → {to} is not allowed.");
 
-        ApplyTransition(lead, to, args);
-        lead.Status = to;
+        ApplyTransition(measurement, to, args);
+        measurement.Status = to;
 
         return Task.CompletedTask;
     }
 
-    private static void ApplyTransition(Lead lead, LeadStatus to, LeadTransitionArgs args)
+    private static void ApplyTransition(Measurement measurement, LeadStatus to, MeasurementTransitionArgs args)
     {
         switch (to)
         {
             case LeadStatus.Thinking:
-                if (args.MeasurementCount == 0)
-                    throw new DomainValidationException("measurement",
-                        "MEASUREMENT_REQUIRED: Lead must have at least one saved measurement.");
+                if (args.GlassCount == 0)
+                    throw new DomainValidationException("glasses",
+                        "GLASSES_REQUIRED: Measurement must have at least one glass panel.");
                 break;
 
             case LeadStatus.Buying:
-                if (args.MeasurementCount == 0)
-                    throw new DomainValidationException("measurement",
-                        "MEASUREMENT_REQUIRED: Lead must have at least one saved measurement.");
-                if (!args.HasQualifyingMeasurementForBuying)
+                if (measurement.DealPriceTjs is null or <= 0)
+                    throw new DomainValidationException("dealPrice",
+                        "DEAL_PRICE_REQUIRED: Measurement must have a deal price greater than 0.");
+                if (args.DepositSumTjs < LeadBusinessRules.MinDepositTjs)
                     throw new DomainValidationException("deposit",
-                        $"DEPOSIT_BELOW_MINIMUM: No measurement has both a deal price > 0 and a deposit of at least {LeadBusinessRules.MinDepositTjs} TJS.");
+                        $"DEPOSIT_BELOW_MINIMUM: A deposit of at least {LeadBusinessRules.MinDepositTjs} TJS is required.");
                 break;
 
             case LeadStatus.Refused:
                 if (args.RefusalReasonId is null)
                     throw new DomainValidationException("refusalReasonId", "Required for Refused status.");
-                lead.RefusalReasonId = args.RefusalReasonId;
-                lead.RefusalNote = args.RefusalNote;
+                measurement.RefusalReasonId = args.RefusalReasonId;
+                measurement.RefusalNote = args.RefusalNote;
                 break;
 
             case LeadStatus.Installed:
                 var today = DateOnly.FromDateTime(DateTime.UtcNow);
-                if (args.LatestInstallationDate.HasValue && args.LatestInstallationDate.Value > today)
+                if (measurement.InstallationDate.HasValue && measurement.InstallationDate.Value > today)
                     throw new DomainValidationException(
                         "installationDate",
-                        $"Installation date {args.LatestInstallationDate} has not yet arrived.");
-                if (args.TotalDealPriceTjs > 0 && args.TotalPaidTjs < args.TotalDealPriceTjs)
+                        $"Installation date {measurement.InstallationDate} has not yet arrived.");
+                if (measurement.DealPriceTjs > 0 && args.TotalPaidTjs < measurement.DealPriceTjs)
                     throw new DomainValidationException(
                         "balance",
-                        $"BALANCE_NOT_PAID: Full payment required. Deal: {args.TotalDealPriceTjs:F2} TJS, Paid: {args.TotalPaidTjs:F2} TJS.");
+                        $"BALANCE_NOT_PAID: Full payment required. Deal: {measurement.DealPriceTjs:F2} TJS, Paid: {args.TotalPaidTjs:F2} TJS.");
                 break;
 
             case LeadStatus.New:
                 // Re-open from Refused: clear refusal data
-                lead.RefusalReasonId = null;
-                lead.RefusalNote = null;
+                measurement.RefusalReasonId = null;
+                measurement.RefusalNote = null;
                 break;
         }
     }
