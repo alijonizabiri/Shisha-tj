@@ -255,55 +255,61 @@ export function DesignerPage() {
     : !!formValues.leadId && panels.length > 0 && !leadIneligible
 
   function handleSave() {
-    infoForm.handleSubmit((infoValues) => {
-      const merged = { ...formValues, deliveryTjs: infoValues.deliveryTjs, depositTjs: infoValues.depositTjs }
-      const panelData = panels.map((p) => ({
-        position: p.position,
-        widthMm:  p.widthMm,
-        heightMm: p.heightMm,
-        isDoor:   p.isDoor,
-      }))
-      const holeData = flattenHoles(currentHoles)
+    const infoValues = infoForm.getValues()
+    const merged = { ...formValues, deliveryTjs: infoValues.deliveryTjs, depositTjs: infoValues.depositTjs }
+    const deliveryCostTjs = Number(merged.deliveryTjs) || 0
+    const dealPriceTjs = (metrics?.masterFeeTjs ?? 0) + deliveryCostTjs
 
-      const onSuccess = (id: string) => {
-        setSavedId(id)
-        toast.success('Замер сохранён')
-        if (leadIdFromUrl || isEditMode) navigate(-1)
-      }
-      const onError = () => toast.error('Ошибка сохранения. Попробуйте ещё раз.')
+    const panelData = panels.map((p) => ({
+      position: p.position,
+      widthMm:  p.widthMm,
+      heightMm: p.heightMm,
+      isDoor:   p.isDoor,
+    }))
+    const holeData = flattenHoles(currentHoles)
 
-      if (isEditMode && measurementIdFromUrl) {
-        updateMutation.mutate(
-          {
-            id: measurementIdFromUrl,
-            request: {
-              product:       merged.product || null,
-              measureMm:     merged.measureMm,
-              heightMm:      merged.heightMm,
-              glassColor:    merged.glassColor,
-              hardwareColor: merged.hardwareColor,
-              panels:        panelData,
-              holes:         holeData,
-            },
+    const onSuccess = (id: string) => {
+      setSavedId(id)
+      toast.success('Замер сохранён')
+      if (leadIdFromUrl || isEditMode) navigate(-1)
+    }
+    const onError = () => toast.error('Ошибка сохранения. Попробуйте ещё раз.')
+
+    if (isEditMode && measurementIdFromUrl) {
+      updateMutation.mutate(
+        {
+          id: measurementIdFromUrl,
+          request: {
+            product:         merged.product || null,
+            measureMm:       merged.measureMm,
+            heightMm:        merged.heightMm,
+            glassColor:      merged.glassColor,
+            hardwareColor:   merged.hardwareColor,
+            dealPriceTjs:    dealPriceTjs > 0 ? dealPriceTjs : null,
+            deliveryCostTjs: deliveryCostTjs > 0 ? deliveryCostTjs : null,
+            panels:          panelData,
+            holes:           holeData,
           },
-          { onSuccess: (data) => onSuccess(data.id), onError },
-        )
-      } else {
-        saveMutation.mutate(
-          {
-            leadId:        merged.leadId,
-            product:       merged.product || null,
-            measureMm:     merged.measureMm,
-            heightMm:      merged.heightMm,
-            glassColor:    merged.glassColor,
-            hardwareColor: merged.hardwareColor,
-            panels:        panelData,
-            holes:         holeData,
-          },
-          { onSuccess: (data) => onSuccess(data.id), onError },
-        )
-      }
-    })()
+        },
+        { onSuccess: (data) => onSuccess(data.id), onError },
+      )
+    } else {
+      saveMutation.mutate(
+        {
+          leadId:          merged.leadId,
+          product:         merged.product || null,
+          measureMm:       merged.measureMm,
+          heightMm:        merged.heightMm,
+          glassColor:      merged.glassColor,
+          hardwareColor:   merged.hardwareColor,
+          dealPriceTjs:    dealPriceTjs > 0 ? dealPriceTjs : null,
+          deliveryCostTjs: deliveryCostTjs > 0 ? deliveryCostTjs : null,
+          panels:          panelData,
+          holes:           holeData,
+        },
+        { onSuccess: (data) => onSuccess(data.id), onError },
+      )
+    }
   }
 
   return (

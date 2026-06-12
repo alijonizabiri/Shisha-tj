@@ -26,6 +26,8 @@ export interface CreateMeasurementRequest {
   handleSide?: string
   leadId?: string | null
   product?: string | null
+  dealPriceTjs?: number | null
+  deliveryCostTjs?: number | null
   panels?: PanelInput[]
   holes?: HoleRequest[]
 }
@@ -71,6 +73,8 @@ export interface UpdateMeasurementRequest {
   hardwareColor: string
   handleSide?: string
   product?: string | null
+  dealPriceTjs?: number | null
+  deliveryCostTjs?: number | null
   panels: PanelInput[]
   holes?: HoleRequest[]
 }
