@@ -226,6 +226,8 @@ public sealed class MeasurementService(
         measurement.GlassColor = glassColor;
         measurement.HardwareColor = hardwareColor;
         measurement.HandleSide = handleSide;
+        if (request.Product is not null)
+            measurement.Product = request.Product;
 
         if (!string.IsNullOrWhiteSpace(request.Address))
             measurement.Address = request.Address;
@@ -321,6 +323,7 @@ public sealed class MeasurementService(
             m.Id,
             m.MeasurerId,
             m.LeadId,
+            m.Product,
             m.Address,
             m.Status.ToString(),
             m.AssignedMeasurerId,

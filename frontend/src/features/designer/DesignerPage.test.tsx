@@ -15,8 +15,17 @@ vi.mock('./api', () => ({
     data: undefined,
     error: null,
   }),
+  useUpdateMeasurement: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+    isError: false,
+  }),
+  useGetMeasurement: () => ({
+    data: undefined,
+    isLoading: false,
+  }),
   useDesignerLeads: () => ({
-    data: [{ id: 'lead-abc', name: 'Иван', phone: '999123456', status: 'Measurement' }],
+    data: [{ id: 'lead-abc', name: 'Иван', phone: '999123456', product: 'Душевая кабина', status: 'Measurement' }],
     isLoading: false,
     isFetching: false,
   }),

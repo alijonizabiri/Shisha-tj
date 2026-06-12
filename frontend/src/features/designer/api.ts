@@ -50,14 +50,29 @@ export interface GlassResponse {
 export interface MeasurementApiResponse {
   id: string
   measurerId: string | null
+  leadId: string | null
+  product: string | null
   measureMm: number
   heightMm: number
   glassColor: string
   hardwareColor: string
   handleSide: string
+  dealPriceTjs: number | null
+  deliveryCostTjs: number | null
   measuredAt: string
   createdAt: string
   glasses: GlassResponse[]
+}
+
+export interface UpdateMeasurementRequest {
+  measureMm: number
+  heightMm: number
+  glassColor: string
+  hardwareColor: string
+  handleSide?: string
+  product?: string | null
+  panels: PanelInput[]
+  holes?: HoleRequest[]
 }
 
 // ── Designer lead selector ────────────────────────────────────────────────────
@@ -117,11 +132,29 @@ export function useDesignerLeads(search?: string) {
 
 // ── Mutation ──────────────────────────────────────────────────────────────────
 
+export function useGetMeasurement(id: string | null) {
+  return useQuery({
+    queryKey: ['measurement', id],
+    queryFn: () =>
+      apiClient.get<MeasurementApiResponse>(`/api/v1/measurements/${id}`).then((r) => r.data),
+    enabled: !!id,
+  })
+}
+
 export function useSaveMeasurement() {
   return useMutation({
     mutationFn: (request: CreateMeasurementRequest) =>
       apiClient
         .post<MeasurementApiResponse>('/api/v1/measurements', request)
+        .then((r) => r.data),
+  })
+}
+
+export function useUpdateMeasurement() {
+  return useMutation({
+    mutationFn: ({ id, request }: { id: string; request: UpdateMeasurementRequest }) =>
+      apiClient
+        .put<MeasurementApiResponse>(`/api/v1/measurements/${id}`, request)
         .then((r) => r.data),
   })
 }

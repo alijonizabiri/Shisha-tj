@@ -1,13 +1,13 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { toast, Toaster } from 'sonner'
 import { computeInitialPanels, computeMetrics } from './lib/computePanels'
 import { defaultHoles } from './lib/defaultHoles'
-import type { Hole, Panel } from './lib/types'
-import { measurementFormSchema, type MeasurementFormValues } from './schemas'
-import { downloadMeasurementPdf, useDesignerLeads, useSaveMeasurement, type HoleRequest } from './api'
+import type { Hole, Panel, HoleType } from './lib/types'
+import { measurementFormSchema, type MeasurementFormValues, type GlassColor, type HardwareColor } from './schemas'
+import { downloadMeasurementPdf, useDesignerLeads, useGetMeasurement, useSaveMeasurement, useUpdateMeasurement, type HoleRequest } from './api'
 import { DrawingCanvas, type PanelScreenRect } from './components/DrawingCanvas'
 import { DesignerTopBar } from './components/DesignerTopBar'
 import { DesignerInfoCard } from './components/DesignerInfoCard'
@@ -43,13 +43,16 @@ export function DesignerPage() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const leadIdFromUrl = searchParams.get('leadId')
+  const measurementIdFromUrl = searchParams.get('measurementId')
+
+  const isEditMode = !!measurementIdFromUrl
 
   const { data: leads = [], isLoading: leadsLoading } = useDesignerLeads()
+  const { data: existingMeasurement } = useGetMeasurement(measurementIdFromUrl)
 
   const initialLeadId = leadIdFromUrl ?? ''
 
   // ── Form state for the info card (delivery/deposit inputs) ─────────────────
-  // Separate from the sheet form; this form persists across sheet open/close.
   const infoForm = useForm<MeasurementFormValues>({
     resolver: zodResolver(measurementFormSchema),
     mode: 'onBlur',
@@ -62,10 +65,55 @@ export function DesignerPage() {
     leadId: initialLeadId,
   }))
 
+  // ── Load existing measurement into form + canvas (edit mode) ───────────────
+  const initializedRef = useRef(false)
+  useEffect(() => {
+    if (!existingMeasurement || initializedRef.current) return
+    initializedRef.current = true
+
+    const sorted = [...existingMeasurement.glasses].sort((a, b) => a.position - b.position)
+
+    const loadedPanels: Panel[] = sorted.map((g) => ({
+      id: crypto.randomUUID(),
+      position: g.position,
+      widthMm: g.widthMm,
+      heightMm: g.heightMm,
+      isDoor: g.isDoor,
+    }))
+
+    const loadedHoles: Hole[][] = sorted.map((g) =>
+      g.holes.map((h) => ({
+        xMm: h.xMm,
+        yMm: h.yMm,
+        radiusMm: h.radiusMm,
+        holeType: h.holeType as HoleType,
+      })),
+    )
+
+    const values: MeasurementFormValues = {
+      leadId:        existingMeasurement.leadId ?? '',
+      product:       existingMeasurement.product ?? '',
+      measureMm:     existingMeasurement.measureMm,
+      heightMm:      existingMeasurement.heightMm,
+      glassColor:    existingMeasurement.glassColor as GlassColor,
+      hardwareColor: existingMeasurement.hardwareColor as HardwareColor,
+      deliveryTjs:   existingMeasurement.deliveryCostTjs ?? 0,
+      depositTjs:    0,
+    }
+
+    const key = loadedPanels.map((p) => `${p.widthMm}x${p.heightMm}`).join('-')
+
+    setFormValues(values)
+    infoForm.reset(values)
+    setPanels(loadedPanels)
+    setHoleTracker({ key, holes: loadedHoles })
+  }, [existingMeasurement]) // eslint-disable-line react-hooks/exhaustive-deps
+
   const leadIneligible =
     !!leadIdFromUrl && !leadsLoading && !leads.some((l) => l.id === leadIdFromUrl)
 
   const saveMutation = useSaveMeasurement()
+  const updateMutation = useUpdateMeasurement()
 
   // ── Panel state ────────────────────────────────────────────────────────────
 
@@ -201,40 +249,60 @@ export function DesignerPage() {
 
   // ── Save ───────────────────────────────────────────────────────────────────
 
-  const canSave = !!formValues.leadId && panels.length > 0 && !leadIneligible
+  const isSaving = saveMutation.isPending || updateMutation.isPending
+  const canSave = isEditMode
+    ? panels.length > 0 && !isSaving
+    : !!formValues.leadId && panels.length > 0 && !leadIneligible
 
   function handleSave() {
     infoForm.handleSubmit((infoValues) => {
       const merged = { ...formValues, deliveryTjs: infoValues.deliveryTjs, depositTjs: infoValues.depositTjs }
-      saveMutation.mutate(
-        {
-          leadId:        merged.leadId,
-          product:       merged.product || null,
-          measureMm:     merged.measureMm,
-          heightMm:      merged.heightMm,
-          glassColor:    merged.glassColor,
-          hardwareColor: merged.hardwareColor,
-          panels: panels.map((p) => ({
-            position: p.position,
-            widthMm:  p.widthMm,
-            heightMm: p.heightMm,
-            isDoor:   p.isDoor,
-          })),
-          holes: flattenHoles(currentHoles),
-        },
-        {
-          onSuccess: (data) => {
-            setSavedId(data.id)
-            if (leadIdFromUrl) {
-              toast.success('Замер сохранён')
-              navigate(-1)
-            } else {
-              toast.success('Замер сохранён')
-            }
+      const panelData = panels.map((p) => ({
+        position: p.position,
+        widthMm:  p.widthMm,
+        heightMm: p.heightMm,
+        isDoor:   p.isDoor,
+      }))
+      const holeData = flattenHoles(currentHoles)
+
+      const onSuccess = (id: string) => {
+        setSavedId(id)
+        toast.success('Замер сохранён')
+        if (leadIdFromUrl || isEditMode) navigate(-1)
+      }
+      const onError = () => toast.error('Ошибка сохранения. Попробуйте ещё раз.')
+
+      if (isEditMode && measurementIdFromUrl) {
+        updateMutation.mutate(
+          {
+            id: measurementIdFromUrl,
+            request: {
+              product:       merged.product || null,
+              measureMm:     merged.measureMm,
+              heightMm:      merged.heightMm,
+              glassColor:    merged.glassColor,
+              hardwareColor: merged.hardwareColor,
+              panels:        panelData,
+              holes:         holeData,
+            },
           },
-          onError: () => toast.error('Ошибка сохранения. Попробуйте ещё раз.'),
-        },
-      )
+          { onSuccess: (data) => onSuccess(data.id), onError },
+        )
+      } else {
+        saveMutation.mutate(
+          {
+            leadId:        merged.leadId,
+            product:       merged.product || null,
+            measureMm:     merged.measureMm,
+            heightMm:      merged.heightMm,
+            glassColor:    merged.glassColor,
+            hardwareColor: merged.hardwareColor,
+            panels:        panelData,
+            holes:         holeData,
+          },
+          { onSuccess: (data) => onSuccess(data.id), onError },
+        )
+      }
     })()
   }
 
@@ -246,7 +314,7 @@ export function DesignerPage() {
       <DesignerTopBar
         leadName={leadName}
         canSave={canSave}
-        isSaving={saveMutation.isPending}
+        isSaving={isSaving}
         onBack={() => navigate(-1)}
         onSave={handleSave}
       />

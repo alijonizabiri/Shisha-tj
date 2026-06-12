@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { Controller, type UseFormReturn } from 'react-hook-form'
 import { Button } from '@/shared/ui/button'
 import { Input } from '@/shared/ui/input'
@@ -38,12 +38,18 @@ export function MeasurementForm({ form, onSubmit, isLoading = false, disableLead
   const { data: leads = [] } = useDesignerLeads()
   const { data: products = [] } = useProducts()
 
+  // Keep leads in a ref so the effect only fires when leadId changes,
+  // not when leads data re-fetches (which would overwrite a manually chosen product).
+  const leadsRef = useRef(leads)
+  leadsRef.current = leads
+
   const leadId = watch('leadId')
   useEffect(() => {
     if (!leadId) return
-    const lead = leads.find((l) => l.id === leadId)
+    const lead = leadsRef.current.find((l) => l.id === leadId)
     if (lead?.product) setValue('product', lead.product)
-  }, [leadId, leads, setValue])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [leadId, setValue])
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5" noValidate>
@@ -72,7 +78,7 @@ export function MeasurementForm({ form, onSubmit, isLoading = false, disableLead
       </section>
 
       {/* Product */}
-      <div className="flex flex-col gap-1.5">
+      <div className="flex flex-col gap-1.5 my-1">
         <Label htmlFor="product">Продукт *</Label>
         {products.length > 0 ? (
           <select id="product" {...register('product')} className={SELECT_CLASS}>
