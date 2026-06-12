@@ -107,6 +107,9 @@ public sealed class MeasurementService(
         if (target == LeadStatus.Closed)
             measurement.WarrantyUntil = DateOnly.FromDateTime(DateTime.UtcNow).AddYears(1);
 
+        if (target == LeadStatus.OrderedAtFactory)
+            await AutoCreateFactoryOrderAsync(id, ct);
+
         await db.SaveChangesAsync(ct);
     }
 
@@ -366,5 +369,35 @@ public sealed class MeasurementService(
     {
         if (value < min || value > max)
             throw new DomainValidationException(field, $"Must be between {min} and {max}.");
+    }
+
+    private async Task AutoCreateFactoryOrderAsync(Guid measurementId, CancellationToken ct)
+    {
+        var glassIds = await db.Glasses
+            .Where(g => g.MeasurementId == measurementId)
+            .Select(g => g.Id)
+            .ToListAsync(ct);
+
+        if (glassIds.Count == 0) return;
+
+        // Exclude glasses already in an active (non-Closed) factory order
+        var busyGlassIds = await db.FactoryOrderItems
+            .Where(i => glassIds.Contains(i.GlassId)
+                     && !i.IsRework
+                     && i.FactoryOrder.Status != FactoryOrderStatus.Closed)
+            .Select(i => i.GlassId)
+            .ToListAsync(ct);
+
+        var availableIds = glassIds.Except(busyGlassIds).ToList();
+        if (availableIds.Count == 0) return;
+
+        db.FactoryOrders.Add(new FactoryOrder
+        {
+            TenantId = currentUser.TenantId,
+            Status = FactoryOrderStatus.Draft,
+            Items = availableIds
+                .Select(gId => new FactoryOrderItem { TenantId = currentUser.TenantId, GlassId = gId })
+                .ToList(),
+        });
     }
 }
