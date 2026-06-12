@@ -82,17 +82,13 @@ export interface DesignerLeadOption {
   name: string
   phone: string
   product: string
-  status: string
 }
-
-const DESIGNER_STATUSES = ['Measurement', 'Buying', 'OrderedAtFactory', 'GlassArrived'] as const
 
 interface LeadListItem {
   id: string
   name: string
   phone: string
   product: string
-  status: string
 }
 
 interface LeadPage {
@@ -103,29 +99,19 @@ interface LeadPage {
 export function useDesignerLeads(search?: string) {
   return useQuery<DesignerLeadOption[]>({
     queryKey: ['designer-leads', search ?? ''],
-    queryFn: async () => {
-      const pages = await Promise.all(
-        DESIGNER_STATUSES.map((status) =>
-          apiClient
-            .get<LeadPage>('/api/v1/leads', {
-              params: {
-                status,
-                pageSize: 100,
-                page: 1,
-                ...(search ? { search } : {}),
-              },
-            })
-            .then((r) => r.data.items),
+    queryFn: () =>
+      apiClient
+        .get<LeadPage>('/api/v1/leads', {
+          params: { pageSize: 200, page: 1, ...(search ? { search } : {}) },
+        })
+        .then((r) =>
+          r.data.items.map((l) => ({
+            id: l.id,
+            name: l.name,
+            phone: l.phone ?? '',
+            product: l.product ?? '',
+          })),
         ),
-      )
-      return pages.flat().map((l) => ({
-        id: l.id,
-        name: l.name,
-        phone: l.phone ?? '',
-        product: l.product ?? '',
-        status: l.status,
-      }))
-    },
     staleTime: 30_000,
   })
 }

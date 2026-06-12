@@ -5,19 +5,6 @@ import { useDebounce } from '@/shared/hooks/useDebounce'
 import { useDesignerLeads } from '../api'
 import type { DesignerLeadOption } from '../api'
 
-const STATUS_LABELS: Record<string, string> = {
-  Measurement:      'Замер',
-  Buying:           'Покупает',
-  OrderedAtFactory: 'Заказ на завод',
-  GlassArrived:     'Стекло пришло',
-}
-
-const STATUS_COLORS: Record<string, string> = {
-  Measurement:      'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
-  Buying:           'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-  OrderedAtFactory: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
-  GlassArrived:     'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
-}
 
 interface LeadComboboxProps {
   id?: string
@@ -194,14 +181,6 @@ export function LeadCombobox({ id, value, onChange, disabled = false }: LeadComb
               >
                 <span className="flex-1 truncate">{lead.name}</span>
                 <span className="shrink-0 text-xs text-muted-foreground">{lead.phone}</span>
-                <span
-                  className={cn(
-                    'shrink-0 rounded px-1.5 py-0.5 text-xs font-medium',
-                    STATUS_COLORS[lead.status] ?? 'bg-muted text-muted-foreground',
-                  )}
-                >
-                  {STATUS_LABELS[lead.status] ?? lead.status}
-                </span>
               </li>
             ))
           )}
