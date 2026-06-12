@@ -18,6 +18,7 @@ import { GlassContextPopover } from './components/GlassContextPopover'
 
 const DEFAULT_FORM_VALUES: MeasurementFormValues = {
   leadId:        '',
+  product:       '',
   measureMm:     '' as unknown as number,
   heightMm:      2000,
   glassColor:    'Transparent',
@@ -208,6 +209,7 @@ export function DesignerPage() {
       saveMutation.mutate(
         {
           leadId:        merged.leadId,
+          product:       merged.product || null,
           measureMm:     merged.measureMm,
           heightMm:      merged.heightMm,
           glassColor:    merged.glassColor,

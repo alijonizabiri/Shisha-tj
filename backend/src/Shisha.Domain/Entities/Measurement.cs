@@ -15,6 +15,7 @@ public sealed class Measurement : BaseEntity, ITenantOwned, ISoftDeletable
     public Guid? RefusalReasonId { get; set; }
     public string? RefusalNote { get; set; }
 
+    public string? Product { get; set; }
     public required string Address { get; set; }
 
     public int MeasureMm { get; set; }

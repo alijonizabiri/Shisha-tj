@@ -25,6 +25,7 @@ export interface CreateMeasurementRequest {
   hardwareColor: string
   handleSide?: string
   leadId?: string | null
+  product?: string | null
   panels?: PanelInput[]
   holes?: HoleRequest[]
 }
@@ -65,6 +66,7 @@ export interface DesignerLeadOption {
   id: string
   name: string
   phone: string
+  product: string
   status: string
 }
 
@@ -74,6 +76,7 @@ interface LeadListItem {
   id: string
   name: string
   phone: string
+  product: string
   status: string
 }
 
@@ -104,6 +107,7 @@ export function useDesignerLeads(search?: string) {
         id: l.id,
         name: l.name,
         phone: l.phone ?? '',
+        product: l.product ?? '',
         status: l.status,
       }))
     },

@@ -2,6 +2,8 @@ import { useDraggable } from '@dnd-kit/core'
 import { CSS } from '@dnd-kit/utilities'
 import { cn } from '@/shared/lib/cn'
 import { formatMoney } from '@/shared/lib/formatMoney'
+import { formatDate } from '@/shared/lib/formatDate'
+import { GLASS_COLOR_LABELS } from '@/features/designer/schemas'
 import type { MeasurementKanbanItem } from '@/features/measurements/api'
 
 interface Props {
@@ -35,6 +37,13 @@ export function MeasurementCard({ item, isDragOverlay = false }: Props) {
       <p className="text-sm font-medium text-foreground truncate">{item.leadName}</p>
       <p className="mt-0.5 text-xs text-muted-foreground">{item.leadPhone}</p>
       <p className="mt-1 text-xs text-muted-foreground truncate">{item.product}</p>
+      {item.measureMm > 0 && (
+        <p className="mt-1 text-xs text-muted-foreground">
+          {item.measureMm} × {item.heightMm} мм
+          {' · '}{GLASS_COLOR_LABELS[item.glassColor as keyof typeof GLASS_COLOR_LABELS] ?? item.glassColor}
+          {' · '}{formatDate(item.measuredAt)}
+        </p>
+      )}
       {item.dealPriceTjs != null && (
         <p className="mt-1 text-xs font-medium tabular-nums">
           {formatMoney(item.dealPriceTjs)}

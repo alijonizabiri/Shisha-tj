@@ -10,6 +10,8 @@ public sealed class MeasurementConfiguration : IEntityTypeConfiguration<Measurem
     {
         builder.HasKey(m => m.Id);
 
+        builder.Property(m => m.Product).HasMaxLength(200);
+
         builder.Property(m => m.Address)
             .IsRequired()
             .HasMaxLength(500)

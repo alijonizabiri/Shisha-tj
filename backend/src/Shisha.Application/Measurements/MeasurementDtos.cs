@@ -13,7 +13,11 @@ public record MeasurementKanbanItemResponse(
     decimal? DealPriceTjs,
     decimal TotalPaidTjs,
     DateOnly? InstallationDate,
-    DateTime CreatedAt);
+    DateTime CreatedAt,
+    int MeasureMm,
+    int HeightMm,
+    string GlassColor,
+    DateTime MeasuredAt);
 
 public record MeasurementKanbanColumn(string Status, IReadOnlyList<MeasurementKanbanItemResponse> Items);
 
@@ -48,6 +52,7 @@ public sealed record CreateMeasurementRequest(
     string HardwareColor,
     string? HandleSide,
     Guid? LeadId,
+    string? Product,
     string? Address,
     decimal? DealPriceTjs,
     decimal? DeliveryCostTjs,

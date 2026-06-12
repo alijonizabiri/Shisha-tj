@@ -48,13 +48,17 @@ public sealed class MeasurementService(
                         m.LeadId,
                         m.Lead?.Name ?? string.Empty,
                         m.Lead?.Phone ?? string.Empty,
-                        m.Lead?.Product ?? string.Empty,
+                        m.Product ?? m.Lead?.Product ?? string.Empty,
                         m.Status.ToString(),
                         m.AssignedMeasurer?.FullName,
                         m.DealPriceTjs,
                         m.Payments.Sum(p => p.AmountTjs),
                         m.InstallationDate,
-                        m.CreatedAt))
+                        m.CreatedAt,
+                        m.MeasureMm,
+                        m.HeightMm,
+                        m.GlassColor.ToString(),
+                        m.MeasuredAt))
                     .ToList()))
             .ToList();
 
@@ -160,6 +164,7 @@ public sealed class MeasurementService(
         {
             MeasurerId = currentUser.IsAuthenticated ? currentUser.UserId : null,
             LeadId = request.LeadId,
+            Product = request.Product,
             Address = string.IsNullOrWhiteSpace(request.Address) ? DefaultAddress : request.Address,
             MeasureMm = request.MeasureMm,
             HeightMm = request.HeightMm,

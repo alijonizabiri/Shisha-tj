@@ -11,6 +11,7 @@ export const HardwareColorValues: readonly HardwareColor[] = ['BlackMatte', 'Gol
 
 export const measurementFormSchema = z.object({
   leadId:        z.string().min(1, 'Выберите лид'),
+  product:       z.string().min(1, 'Выберите продукт'),
   measureMm:     z.number().min(600, 'Мин. 600 мм').max(3000, 'Макс. 3000 мм'),
   heightMm:      z.number().min(1500, 'Мин. 1500 мм').max(2500, 'Макс. 2500 мм'),
   glassColor:    glassColorSchema,

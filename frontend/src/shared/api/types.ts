@@ -159,6 +159,10 @@ export interface components {
       /** DateOnly: "YYYY-MM-DD" */
       installationDate: string | null
       createdAt: string
+      measureMm: number
+      heightMm: number
+      glassColor: string
+      measuredAt: string
     }
     MeasurementKanbanColumn: {
       status: string
