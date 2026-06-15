@@ -7,7 +7,6 @@ import type { MeasurementApiResponse } from '@/features/designer/api'
 export type FactoryOrderSummary = components['schemas']['FactoryOrderSummaryResponse']
 export type FactoryOrderDetail = components['schemas']['FactoryOrderDetailResponse']
 export type PagedFactoryOrders = components['schemas']['PagedFactoryOrdersResponse']
-export type LeadDetail = components['schemas']['LeadDetailResponse']
 
 export interface FactoryOrderFilters {
   status?: string
@@ -41,18 +40,7 @@ export function useFactoryOrder(id: string) {
 export function useCreateBatchOrder() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async (leadIds: string[]): Promise<FactoryOrderDetail> => {
-      // Fetch lead details in parallel to get measurement IDs
-      const leads = await Promise.all(
-        leadIds.map((id) =>
-          apiClient.get<LeadDetail>(`/api/v1/leads/${id}`).then((r) => r.data),
-        ),
-      )
-
-      const measurementIds = leads.flatMap((l) => l.measurements.map((m) => m.id))
-      if (measurementIds.length === 0)
-        throw new Error('У выбранных лидов нет замеров')
-
+    mutationFn: async (measurementIds: string[]): Promise<FactoryOrderDetail> => {
       // Fetch measurements in parallel to get glass IDs
       const measurements = await Promise.all(
         measurementIds.map((id) =>
@@ -70,7 +58,10 @@ export function useCreateBatchOrder() {
         .post<FactoryOrderDetail>('/api/v1/factory-orders', { glassIds })
         .then((r) => r.data)
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.factoryOrders.all }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.factoryOrders.all })
+      qc.invalidateQueries({ queryKey: queryKeys.measurements.kanban() })
+    },
   })
 }
 

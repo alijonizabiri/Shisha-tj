@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import { useLeads } from '@/features/leads/api'
+import { useMeasurementKanban, type MeasurementKanbanItem } from '@/features/measurements/api'
 import { useCreateBatchOrder } from '../api'
 import { Button } from '@/shared/ui/button'
 
@@ -15,7 +15,7 @@ export function CreateBatchDialog({ onClose }: Props) {
   const navigate = useNavigate()
   const [selected, setSelected] = useState<Set<string>>(new Set())
 
-  const { data, isLoading } = useLeads({ page: 1, pageSize: 100 })
+  const { data: kanban, isLoading } = useMeasurementKanban()
   const createBatch = useCreateBatchOrder()
 
   useEffect(() => {
@@ -23,6 +23,9 @@ export function CreateBatchDialog({ onClose }: Props) {
     document.addEventListener('keydown', handler)
     return () => document.removeEventListener('keydown', handler)
   }, [onClose])
+
+  const buyingMeasurements: MeasurementKanbanItem[] =
+    kanban?.columns.find((c) => c.status === 'Buying')?.items ?? []
 
   function toggle(id: string) {
     setSelected((prev) => {
@@ -34,9 +37,8 @@ export function CreateBatchDialog({ onClose }: Props) {
   }
 
   function toggleAll() {
-    if (!data) return
-    if (selected.size === data.items.length) setSelected(new Set())
-    else setSelected(new Set(data.items.map((l) => l.id)))
+    if (selected.size === buyingMeasurements.length) setSelected(new Set())
+    else setSelected(new Set(buyingMeasurements.map((m) => m.id)))
   }
 
   async function handleSubmit() {
@@ -50,8 +52,7 @@ export function CreateBatchDialog({ onClose }: Props) {
     }
   }
 
-  const leads = data?.items ?? []
-  const allSelected = leads.length > 0 && selected.size === leads.length
+  const allSelected = buyingMeasurements.length > 0 && selected.size === buyingMeasurements.length
 
   return createPortal(
     <div
@@ -74,20 +75,20 @@ export function CreateBatchDialog({ onClose }: Props) {
         {/* Body */}
         <div className="flex flex-col overflow-y-auto">
           <p className="px-5 pt-4 text-sm text-muted-foreground">
-            Выберите лидов в статусе «Покупка» — стёкла по их замерам войдут в одну партию.
+            Выберите замеры в статусе «Покупает» — их стёкла войдут в одну партию на завод.
           </p>
 
           {isLoading && (
             <p className="px-5 py-6 text-sm text-muted-foreground">Загрузка…</p>
           )}
 
-          {!isLoading && leads.length === 0 && (
+          {!isLoading && buyingMeasurements.length === 0 && (
             <p className="px-5 py-6 text-sm text-muted-foreground">
-              Нет лидов в статусе «Покупка».
+              Нет замеров в статусе «Покупает».
             </p>
           )}
 
-          {leads.length > 0 && (
+          {buyingMeasurements.length > 0 && (
             <div className="mt-3 border-y border-border divide-y divide-border">
               {/* Select all */}
               <label className="flex items-center gap-3 px-5 py-2.5 hover:bg-muted/30 cursor-pointer">
@@ -97,26 +98,26 @@ export function CreateBatchDialog({ onClose }: Props) {
                   onChange={toggleAll}
                   className="h-4 w-4 rounded border-input"
                 />
-                <span className="text-sm font-medium">Все ({leads.length})</span>
+                <span className="text-sm font-medium">Все ({buyingMeasurements.length})</span>
               </label>
 
-              {leads.map((lead) => (
+              {buyingMeasurements.map((m) => (
                 <label
-                  key={lead.id}
+                  key={m.id}
                   className="flex items-center gap-3 px-5 py-2.5 hover:bg-muted/30 cursor-pointer"
                 >
                   <input
                     type="checkbox"
-                    checked={selected.has(lead.id)}
-                    onChange={() => toggle(lead.id)}
+                    checked={selected.has(m.id)}
+                    onChange={() => toggle(m.id)}
                     className="h-4 w-4 rounded border-input shrink-0"
                   />
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium truncate">{lead.name}</p>
-                    <p className="text-xs text-muted-foreground">{lead.phone}</p>
+                    <p className="text-sm font-medium truncate">{m.leadName}</p>
+                    <p className="text-xs text-muted-foreground">{m.product}</p>
                   </div>
                   <span className="text-xs text-muted-foreground shrink-0">
-                    {lead.product}
+                    {m.measureMm} × {m.heightMm} мм
                   </span>
                 </label>
               ))}
@@ -144,7 +145,7 @@ export function CreateBatchDialog({ onClose }: Props) {
           >
             {createBatch.isPending
               ? 'Создание…'
-              : `Создать (${selected.size} лид${selected.size !== 1 ? 'а' : ''})`}
+              : `Создать (${selected.size} замер${selected.size !== 1 ? 'а' : ''})`}
           </Button>
         </div>
       </div>

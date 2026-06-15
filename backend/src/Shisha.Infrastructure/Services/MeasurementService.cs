@@ -378,19 +378,20 @@ public sealed class MeasurementService(
             .Select(g => g.Id)
             .ToListAsync(ct);
 
-        if (glassIds.Count == 0) return;
-
         // Exclude glasses already in an active (non-Closed) factory order
-        var busyGlassIds = await db.FactoryOrderItems
-            .Where(i => glassIds.Contains(i.GlassId)
-                     && !i.IsRework
-                     && i.FactoryOrder.Status != FactoryOrderStatus.Closed)
-            .Select(i => i.GlassId)
-            .ToListAsync(ct);
+        var busyGlassIds = glassIds.Count > 0
+            ? await db.FactoryOrderItems
+                .Where(i => glassIds.Contains(i.GlassId)
+                         && !i.IsRework
+                         && i.FactoryOrder.Status != FactoryOrderStatus.Closed)
+                .Select(i => i.GlassId)
+                .ToListAsync(ct)
+            : (List<Guid>)[];
 
         var availableIds = glassIds.Except(busyGlassIds).ToList();
-        if (availableIds.Count == 0) return;
 
+        // Always create a FactoryOrder (even with 0 items) so the measurement
+        // appears on the Factory Orders page as a Draft entry
         db.FactoryOrders.Add(new FactoryOrder
         {
             TenantId = currentUser.TenantId,

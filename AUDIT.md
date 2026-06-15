@@ -516,7 +516,7 @@ WEB_IMAGE=ghcr.io/your-org/shisha-web:latest
 **После launch (пост-MVP):**
 - Управление пользователями (GET/POST/PUT/DELETE `/users`)
 - UI для управления пользователями (Admin-страница)
-- Автобэкапы PostgreSQL (pg_dump + S3)
+- Автобэкапы Postgre SQL (pg_dump + S3)
 - E2E тесты (Playwright)
 - APM/мониторинг
 

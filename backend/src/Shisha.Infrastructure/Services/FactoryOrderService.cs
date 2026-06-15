@@ -93,6 +93,24 @@ public sealed class FactoryOrderService(AppDbContext db, ICurrentUser currentUse
         };
 
         db.FactoryOrders.Add(order);
+
+        // Sync: move Buying measurements to OrderedAtFactory
+        var measurementIds = await db.Glasses
+            .Where(g => request.GlassIds.Contains(g.Id))
+            .Select(g => g.MeasurementId)
+            .Distinct()
+            .ToListAsync(ct);
+
+        if (measurementIds.Count > 0)
+        {
+            var toBump = await db.Measurements
+                .Where(m => measurementIds.Contains(m.Id) && m.Status == LeadStatus.Buying)
+                .ToListAsync(ct);
+
+            foreach (var m in toBump)
+                m.Status = LeadStatus.OrderedAtFactory;
+        }
+
         await db.SaveChangesAsync(ct);
 
         return await GetByIdAsync(order.Id, ct);

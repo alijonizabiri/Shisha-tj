@@ -47,10 +47,23 @@ public sealed class LeadService(
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .AsNoTracking()
+            .Select(l => new LeadSummaryResponse(
+                l.Id,
+                l.Name,
+                l.Phone,
+                l.Measurements
+                    .OrderByDescending(m => m.MeasuredAt)
+                    .Select(m => m.Product)
+                    .FirstOrDefault() ?? l.Product,
+                l.Source,
+                l.Note,
+                l.CallDate,
+                l.CreatedAt,
+                l.UpdatedAt))
             .ToListAsync(ct);
 
         return new PagedLeadsResponse(
-            items.Select(ToSummary).ToList(),
+            items,
             total,
             page,
             pageSize);

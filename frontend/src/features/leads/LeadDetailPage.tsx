@@ -145,8 +145,7 @@ export function LeadDetailPage() {
 
           <LeadFinancesPanel
             leadId={lead.id}
-            hasMeasurements={lead.measurements.length > 0}
-            measurementId={lead.measurements[0]?.id}
+            measurements={lead.measurements}
           />
         </div>
 

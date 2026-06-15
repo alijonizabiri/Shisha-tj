@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import type { LeadMeasurement } from '../api'
 import { useLeadFinances } from '../api'
 import { AddPaymentDialog } from './AddPaymentDialog'
 import { Button } from '@/shared/ui/button'
@@ -7,8 +8,7 @@ import { cn } from '@/shared/lib/cn'
 
 interface Props {
   leadId: string
-  hasMeasurements: boolean
-  measurementId?: string
+  measurements: LeadMeasurement[]
 }
 
 interface RowProps {
@@ -19,19 +19,14 @@ interface RowProps {
 }
 
 function Row({ label, value, bold, highlight }: RowProps) {
-  const text =
-    value == null
-      ? '—'
-      : formatMoney(value)
+  const text = value == null ? '—' : formatMoney(value)
 
   const colorClass =
     highlight === 'profit' && value != null
       ? value >= 0
         ? 'text-green-600 dark:text-green-400'
         : 'text-destructive'
-      : highlight === 'balance'
-        ? 'tabular-nums'
-        : 'tabular-nums'
+      : 'tabular-nums'
 
   return (
     <div className="flex items-center justify-between py-1.5">
@@ -49,9 +44,15 @@ function Divider() {
   return <div className="my-1 border-t border-border" />
 }
 
-export function LeadFinancesPanel({ leadId, hasMeasurements, measurementId }: Props) {
+const SELECT_CLASS =
+  'flex h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
+
+export function LeadFinancesPanel({ leadId, measurements }: Props) {
   const { data, isLoading, isError } = useLeadFinances(leadId)
   const [addPaymentOpen, setAddPaymentOpen] = useState(false)
+  const [payMeasurementId, setPayMeasurementId] = useState(measurements[0]?.id ?? '')
+
+  const hasMeasurements = measurements.length > 0
 
   return (
     <div className="rounded-lg border border-border bg-card p-5">
@@ -117,25 +118,42 @@ export function LeadFinancesPanel({ leadId, hasMeasurements, measurementId }: Pr
             highlight="balance"
           />
 
-          <div className="mt-3 pt-3 border-t border-border">
+          <div className="mt-3 pt-3 border-t border-border flex flex-col gap-2">
+            {/* When there are multiple measurements, show a selector so the user
+                can choose which measurement receives the payment */}
+            {measurements.length > 1 && (
+              <select
+                value={payMeasurementId}
+                onChange={(e) => setPayMeasurementId(e.target.value)}
+                className={SELECT_CLASS}
+                aria-label="Замер для платежа"
+              >
+                {measurements.map((m, i) => (
+                  <option key={m.id} value={m.id}>
+                    Замер {i + 1}: {m.measureMm} × {m.heightMm} мм
+                  </option>
+                ))}
+              </select>
+            )}
+
             <Button
               size="sm"
               variant="outline"
-              disabled={!hasMeasurements || !measurementId}
+              disabled={!hasMeasurements || !payMeasurementId}
               onClick={() => setAddPaymentOpen(true)}
             >
               + Добавить платёж
             </Button>
             {!hasMeasurements && (
-              <p className="mt-1.5 text-xs text-muted-foreground">Сначала создайте замер</p>
+              <p className="text-xs text-muted-foreground">Сначала создайте замер</p>
             )}
           </div>
         </div>
       )}
 
-      {addPaymentOpen && measurementId && (
+      {addPaymentOpen && payMeasurementId && (
         <AddPaymentDialog
-          measurementId={measurementId}
+          measurementId={payMeasurementId}
           onClose={() => setAddPaymentOpen(false)}
         />
       )}
