@@ -24,6 +24,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options, ICurren
     public DbSet<Payment> Payments => Set<Payment>();
     public DbSet<Hardware> Hardware => Set<Hardware>();
     public DbSet<Expense> Expenses => Set<Expense>();
+    public DbSet<MeasurerPayout> MeasurerPayouts => Set<MeasurerPayout>();
+    public DbSet<FactoryPayment> FactoryPayments => Set<FactoryPayment>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

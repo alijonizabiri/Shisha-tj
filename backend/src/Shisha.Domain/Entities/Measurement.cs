@@ -43,4 +43,5 @@ public sealed class Measurement : BaseEntity, ITenantOwned, ISoftDeletable
     public Hardware? Hardware { get; set; }
     public ICollection<Payment> Payments { get; set; } = [];
     public ICollection<Expense> Expenses { get; set; } = [];
+    public MeasurerPayout? MeasurerPayout { get; set; }
 }

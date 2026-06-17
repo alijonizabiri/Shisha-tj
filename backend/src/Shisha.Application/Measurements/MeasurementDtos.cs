@@ -29,7 +29,10 @@ public sealed record PanelInputDto(
     int Position,
     int WidthMm,
     int HeightMm,
-    bool IsDoor);
+    bool IsDoor,
+    string? Shape = null,
+    Guid? SetId = null,
+    int? CurvatureRadiusMm = null);
 
 public sealed record HoleRequest(
     int PanelIndex,
@@ -89,6 +92,9 @@ public sealed record GlassResponse(
     bool IsDoor,
     int WidthMm,
     int HeightMm,
+    string Shape,
+    Guid? SetId,
+    int? CurvatureRadiusMm,
     IReadOnlyList<HoleResponse> Holes);
 
 public sealed record MeasurementResponse(

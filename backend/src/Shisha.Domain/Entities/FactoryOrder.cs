@@ -18,4 +18,5 @@ public sealed class FactoryOrder : BaseEntity, ITenantOwned, ISoftDeletable
     public Guid? DeletedByUserId { get; set; }
 
     public ICollection<FactoryOrderItem> Items { get; set; } = [];
+    public ICollection<FactoryPayment> FactoryPayments { get; set; } = [];
 }

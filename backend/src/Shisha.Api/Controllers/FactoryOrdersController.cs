@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Shisha.Application.FactoryOrders;
+using Shisha.Domain.Exceptions;
 
 namespace Shisha.Api.Controllers;
 
@@ -63,6 +64,38 @@ public sealed class FactoryOrdersController(
         Guid id, Guid itemId, ReworkItemRequest request, CancellationToken ct)
     {
         return Ok(await factoryOrderService.AddReworkItemAsync(id, itemId, request, ct));
+    }
+
+    // ── Factory payments ──────────────────────────────────────────────────────
+
+    [HttpPost("{id:guid}/payments")]
+    [Authorize(Roles = "Admin,Operator")]
+    public async Task<ActionResult<AddFactoryPaymentResponse>> AddPayment(
+        Guid id, AddFactoryPaymentRequest request, CancellationToken ct)
+    {
+        try
+        {
+            return Ok(await factoryOrderService.AddPaymentAsync(id, request, ct));
+        }
+        catch (NotFoundException)
+        {
+            return NotFound();
+        }
+    }
+
+    [HttpDelete("{id:guid}/payments/{paymentId:guid}")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> DeletePayment(Guid id, Guid paymentId, CancellationToken ct)
+    {
+        try
+        {
+            await factoryOrderService.DeletePaymentAsync(id, paymentId, ct);
+            return NoContent();
+        }
+        catch (NotFoundException)
+        {
+            return NotFound();
+        }
     }
 
     [HttpGet("{id:guid}/pdf")]

@@ -28,4 +28,6 @@ public record MeasurementFinancesDto(
     decimal? ProfitTjs,
     decimal TotalPaidTjs,
     decimal TotalDepositTjs,
-    decimal? BalanceDueTjs);
+    decimal? BalanceDueTjs,
+    decimal? MeasurerPayoutAmount,
+    bool? MeasurerPayoutIsPaid);

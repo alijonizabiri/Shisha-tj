@@ -24,8 +24,8 @@ export function computeInitialPanels(measureMm: number, heightMm: number): Panel
   }
 
   return [
-    { id: crypto.randomUUID(), widthMm: fixedMm, heightMm, isDoor: false, position: 0 },
-    { id: crypto.randomUUID(), widthMm: doorMm,  heightMm, isDoor: true,  position: 1 },
+    { id: crypto.randomUUID(), widthMm: fixedMm, heightMm, isDoor: false, position: 0, shape: 'Flat' },
+    { id: crypto.randomUUID(), widthMm: doorMm,  heightMm, isDoor: true,  position: 1, shape: 'Flat' },
   ]
 }
 
@@ -38,5 +38,20 @@ export function computeMetrics(measureMm: number, heightMm: number): Metrics {
   const areaSqM = Math.round((totalWidthMm / 1000) * (heightMm / 1000) * 100) / 100
   const masterFeeTjs = Math.round(areaSqM * 120 * 100) / 100
 
+  return { totalWidthMm, areaSqM, masterFeeTjs }
+}
+
+/**
+ * Computes total area from an explicit list of panels (used when custom panels
+ * are present, e.g. L-shape or Curved sets).
+ * Curved area is approximated as widthMm * heightMm (chord × height).
+ */
+export function computeMetricsFromPanels(panels: Panel[]): Metrics {
+  const totalWidthMm = panels.reduce((sum, p) => sum + p.widthMm, 0)
+  const areaSqM =
+    Math.round(
+      panels.reduce((sum, p) => sum + (p.widthMm / 1000) * (p.heightMm / 1000), 0) * 100,
+    ) / 100
+  const masterFeeTjs = Math.round(areaSqM * 120 * 100) / 100
   return { totalWidthMm, areaSqM, masterFeeTjs }
 }

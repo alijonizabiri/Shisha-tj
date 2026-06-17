@@ -64,6 +64,14 @@ public sealed class MeasurementStatusTransitionService : IMeasurementStatusTrans
                         $"DEPOSIT_BELOW_MINIMUM: A deposit of at least {LeadBusinessRules.MinDepositTjs} TJS is required.");
                 break;
 
+            case LeadStatus.OrderedAtFactory:
+                // Defense-in-depth: Buying already requires this deposit, but re-check
+                // here in case that gate is ever bypassed.
+                if (args.DepositSumTjs < LeadBusinessRules.MinDepositTjs)
+                    throw new DomainValidationException("deposit",
+                        $"DEPOSIT_BELOW_MINIMUM: A deposit of at least {LeadBusinessRules.MinDepositTjs} TJS is required.");
+                break;
+
             case LeadStatus.Refused:
                 if (args.RefusalReasonId is null)
                     throw new DomainValidationException("refusalReasonId", "Required for Refused status.");

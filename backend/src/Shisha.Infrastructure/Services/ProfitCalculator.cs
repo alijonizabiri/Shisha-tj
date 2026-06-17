@@ -23,6 +23,8 @@ public sealed class ProfitCalculator(AppDbContext db) : IProfitCalculator
                 .ThenInclude(m => m.Expenses)
             .Include(l => l.Measurements)
                 .ThenInclude(m => m.Payments)
+            .Include(l => l.Measurements)
+                .ThenInclude(m => m.MeasurerPayout)
             .AsNoTracking()
             .FirstOrDefaultAsync(l => l.Id == leadId, ct)
             ?? throw new NotFoundException($"Lead {leadId} not found.");
@@ -56,7 +58,13 @@ public sealed class ProfitCalculator(AppDbContext db) : IProfitCalculator
             .SelectMany(m => m.Glasses)
             .Sum(g => (decimal)g.WidthMm * g.HeightMm / 1_000_000m);
 
-        var masterFee = Math.Round(areaSqM * MasterFeePerSqM, 2);
+        // Use actual payout if exists, else fallback to area-based estimate
+        var masterFee = lead.Measurements
+            .Sum(m => m.MeasurerPayout is not null
+                ? m.MeasurerPayout.ActualAmountTjs
+                : Math.Round(
+                    m.Glasses.Sum(g => (decimal)g.WidthMm * g.HeightMm / 1_000_000m) * MasterFeePerSqM,
+                    2));
 
         var deliveryCost = lead.Measurements
             .SelectMany(m => m.Expenses)
@@ -117,6 +125,7 @@ public sealed class ProfitCalculator(AppDbContext db) : IProfitCalculator
             .Include(m => m.Hardware)
             .Include(m => m.Expenses)
             .Include(m => m.Payments)
+            .Include(m => m.MeasurerPayout)
             .AsNoTracking()
             .FirstOrDefaultAsync(m => m.Id == measurementId, ct)
             ?? throw new NotFoundException($"Measurement {measurementId} not found.");
@@ -143,7 +152,10 @@ public sealed class ProfitCalculator(AppDbContext db) : IProfitCalculator
         var areaSqM = measurement.Glasses
             .Sum(g => (decimal)g.WidthMm * g.HeightMm / 1_000_000m);
 
-        var masterFee = Math.Round(areaSqM * MasterFeePerSqM, 2);
+        // Use actual payout if exists, else fallback to area-based estimate
+        var masterFee = measurement.MeasurerPayout is not null
+            ? measurement.MeasurerPayout.ActualAmountTjs
+            : Math.Round(areaSqM * MasterFeePerSqM, 2);
 
         var deliveryCost = measurement.DeliveryCostTjs
             ?? measurement.Expenses
@@ -182,6 +194,8 @@ public sealed class ProfitCalculator(AppDbContext db) : IProfitCalculator
             profit,
             totalPaid,
             totalDeposit,
-            balanceDue);
+            balanceDue,
+            measurement.MeasurerPayout?.ActualAmountTjs,
+            measurement.MeasurerPayout?.IsPaid);
     }
 }
