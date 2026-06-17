@@ -5,10 +5,11 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { toast, Toaster } from 'sonner'
 import { computeInitialPanels, computeMetrics } from './lib/computePanels'
 import { defaultHoles } from './lib/defaultHoles'
-import type { Hole, Panel, HoleType } from './lib/types'
+import type { Hole, Panel, HoleType, PanelShape } from './lib/types'
 import { measurementFormSchema, type MeasurementFormValues, type GlassColor, type HardwareColor } from './schemas'
 import { downloadMeasurementPdf, useDesignerLeads, useGetMeasurement, useSaveMeasurement, useUpdateMeasurement, type HoleRequest } from './api'
 import { DrawingCanvas, type PanelScreenRect } from './components/DrawingCanvas'
+import { ThreeCanvas } from './components/ThreeCanvas'
 import { DesignerTopBar } from './components/DesignerTopBar'
 import { DesignerInfoCard } from './components/DesignerInfoCard'
 import { DesignerZoomControls } from './components/DesignerZoomControls'
@@ -79,6 +80,9 @@ export function DesignerPage() {
       widthMm: g.widthMm,
       heightMm: g.heightMm,
       isDoor: g.isDoor,
+      shape: (g.shape ?? 'Flat') as PanelShape,
+      setId: g.setId ?? undefined,
+      curvatureRadiusMm: g.curvatureRadiusMm ?? undefined,
     }))
 
     const loadedHoles: Hole[][] = sorted.map((g) =>
@@ -139,6 +143,7 @@ export function DesignerPage() {
 
   // ── UI state ───────────────────────────────────────────────────────────────
 
+  const [viewMode, setViewMode] = useState<'2d' | '3d'>('2d')
   const [zoom, setZoom] = useState(1)
   const [sheetOpen, setSheetOpen] = useState(false)
   const [selectedPanelId, setSelectedPanelId] = useState<string | null>(null)
@@ -176,15 +181,19 @@ export function DesignerPage() {
 
   // ── Apply form values from sheet ───────────────────────────────────────────
 
-  function handleApply(values: MeasurementFormValues) {
+  function handleApply(values: MeasurementFormValues, customPanels?: Panel[]) {
     setFormValues(values)
     infoForm.reset(values)
-    const m = Number(values.measureMm)
-    const h = Number(values.heightMm)
-    if (Number.isFinite(m) && Number.isFinite(h) && m >= 600 && m <= 3000 && h >= 1500 && h <= 2500) {
-      setPanels(computeInitialPanels(m, h))
+    if (customPanels && customPanels.length > 0) {
+      setPanels(customPanels.map((p, i) => ({ ...p, position: i })))
     } else {
-      setPanels([])
+      const m = Number(values.measureMm)
+      const h = Number(values.heightMm)
+      if (Number.isFinite(m) && Number.isFinite(h) && m >= 600 && m <= 3000 && h >= 1500 && h <= 2500) {
+        setPanels(computeInitialPanels(m, h))
+      } else {
+        setPanels([])
+      }
     }
     setSelectedPanelId(null)
     setSavedId(null)
@@ -218,7 +227,7 @@ export function DesignerPage() {
       const next = [
         ...prev.slice(0, idx),
         { ...prev[idx], widthMm: half1 },
-        { id: crypto.randomUUID(), widthMm: half2, heightMm: selectedPanel.heightMm, isDoor: false, position: 0 },
+        { id: crypto.randomUUID(), widthMm: half2, heightMm: selectedPanel.heightMm, isDoor: false, position: 0, shape: 'Flat' as const },
         ...prev.slice(idx + 1),
       ].map((p, i) => ({ ...p, position: i }))
       return next
@@ -261,10 +270,13 @@ export function DesignerPage() {
     const dealPriceTjs = (metrics?.masterFeeTjs ?? 0) + deliveryCostTjs
 
     const panelData = panels.map((p) => ({
-      position: p.position,
-      widthMm:  p.widthMm,
-      heightMm: p.heightMm,
-      isDoor:   p.isDoor,
+      position:          p.position,
+      widthMm:           p.widthMm,
+      heightMm:          p.heightMm,
+      isDoor:            p.isDoor,
+      shape:             p.shape,
+      setId:             p.setId ?? null,
+      curvatureRadiusMm: p.curvatureRadiusMm ?? null,
     }))
     const holeData = flattenHoles(currentHoles)
 
@@ -321,6 +333,8 @@ export function DesignerPage() {
         leadName={leadName}
         canSave={canSave}
         isSaving={isSaving}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
         onBack={() => navigate(-1)}
         onSave={handleSave}
       />
@@ -331,19 +345,23 @@ export function DesignerPage() {
         data-testid="canvas-area"
       >
         {panels.length > 0 ? (
-          <DrawingCanvas
-            key={canvasKey}
-            panels={panels}
-            holesByPanel={currentHoles}
-            cabinHeightMm={cabinHeightMm}
-            zoom={zoom}
-            onZoomChange={setZoom}
-            onHolesChange={(holes) => setHoleTracker({ key: canvasKey, holes })}
-            onPanelsChange={handlePanelsChange}
-            selectedPanelId={selectedPanelId}
-            onSelectPanel={handleSelectPanel}
-            className="h-full w-full"
-          />
+          viewMode === '3d' ? (
+            <ThreeCanvas panels={panels} holesByPanel={currentHoles} />
+          ) : (
+            <DrawingCanvas
+              key={canvasKey}
+              panels={panels}
+              holesByPanel={currentHoles}
+              cabinHeightMm={cabinHeightMm}
+              zoom={zoom}
+              onZoomChange={setZoom}
+              onHolesChange={(holes) => setHoleTracker({ key: canvasKey, holes })}
+              onPanelsChange={handlePanelsChange}
+              selectedPanelId={selectedPanelId}
+              onSelectPanel={handleSelectPanel}
+              className="h-full w-full"
+            />
+          )
         ) : (
           <div className="flex h-full items-center justify-center">
             <div className="text-center text-muted-foreground">
@@ -353,26 +371,30 @@ export function DesignerPage() {
           </div>
         )}
 
-        {/* ── Floating: info card ── */}
-        <DesignerInfoCard
-          areaSqM={metrics?.areaSqM ?? null}
-          masterFeeTjs={metrics?.masterFeeTjs ?? null}
-          form={infoForm}
-          warning={warning}
-        />
+        {/* ── Floating: info card — 2D only ── */}
+        {viewMode === '2d' && (
+          <DesignerInfoCard
+            areaSqM={metrics?.areaSqM ?? null}
+            masterFeeTjs={metrics?.masterFeeTjs ?? null}
+            form={infoForm}
+            warning={warning}
+          />
+        )}
 
-        {/* ── Floating: zoom controls ── */}
-        <DesignerZoomControls
-          zoom={zoom}
-          onChange={setZoom}
-          onFit={() => setZoom(1)}
-        />
+        {/* ── Floating: zoom controls — 2D only ── */}
+        {viewMode === '2d' && (
+          <DesignerZoomControls
+            zoom={zoom}
+            onChange={setZoom}
+            onFit={() => setZoom(1)}
+          />
+        )}
 
-        {/* ── Floating: FAB ── */}
+        {/* ── Floating: FAB — always visible ── */}
         <DesignerFab onClick={() => setSheetOpen(true)} />
 
-        {/* ── Glass context popover ── */}
-        {selectedPanel && selectedPanelRect && (
+        {/* ── Glass context popover — 2D only ── */}
+        {viewMode === '2d' && selectedPanel && selectedPanelRect && (
           <GlassContextPopover
             panel={selectedPanel}
             allPanels={panels}

@@ -11,6 +11,7 @@ public sealed class User : BaseEntity, ITenantOwned, ISoftDeletable
     public required string FullName { get; set; }
     public UserRole Role { get; set; }
     public bool IsActive { get; set; } = true;
+    public decimal? MeasurerFixedFeeTjs { get; set; }
 
     public bool IsDeleted { get; set; }
     public DateTime? DeletedAt { get; set; }

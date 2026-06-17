@@ -110,7 +110,38 @@ public sealed class MeasurementService(
         if (target == LeadStatus.OrderedAtFactory)
             await AutoCreateFactoryOrderAsync(id, ct);
 
+        if (target == LeadStatus.Installed)
+            await CloseFactoryOrdersIfFullyInstalledAsync(id, ct);
+
         await db.SaveChangesAsync(ct);
+    }
+
+    // ── Factory order auto-close ──────────────────────────────────────────────
+
+    private async Task CloseFactoryOrdersIfFullyInstalledAsync(Guid measurementId, CancellationToken ct)
+    {
+        var factoryOrderIds = await db.FactoryOrderItems
+            .Where(i => i.Glass.MeasurementId == measurementId)
+            .Select(i => i.FactoryOrderId)
+            .Distinct()
+            .ToListAsync(ct);
+
+        if (factoryOrderIds.Count == 0)
+            return;
+
+        var receivedOrders = await db.FactoryOrders
+            .Include(o => o.Items)
+                .ThenInclude(i => i.Glass)
+                    .ThenInclude(g => g.Measurement)
+            .Where(o => factoryOrderIds.Contains(o.Id) && o.Status == FactoryOrderStatus.Received)
+            .ToListAsync(ct);
+
+        foreach (var order in receivedOrders)
+        {
+            var allInstalled = order.Items.All(i => i.Glass.Measurement.Status == LeadStatus.Installed);
+            if (allInstalled)
+                order.Status = FactoryOrderStatus.Closed;
+        }
     }
 
     // ── Assign measurer ───────────────────────────────────────────────────────
@@ -270,6 +301,19 @@ public sealed class MeasurementService(
                 throw new DomainValidationException(
                     "panels",
                     $"Panel {p.Position}: heightMm={p.HeightMm} must be between 200 and cabin height ({cabinHeightMm}).");
+
+            if (p.Shape is "Curved")
+            {
+                if (p.CurvatureRadiusMm is null)
+                    throw new DomainValidationException(
+                        "panels",
+                        $"Panel {p.Position}: Для радиусной панели необходимо указать радиус кривизны.");
+
+                if (p.CurvatureRadiusMm <= 0)
+                    throw new DomainValidationException(
+                        "panels",
+                        $"Panel {p.Position}: Радиус кривизны должен быть положительным.");
+            }
         }
     }
 
@@ -278,6 +322,10 @@ public sealed class MeasurementService(
         var glasses = new List<Glass>(panels.Count);
         foreach (var panel in panels)
         {
+            var shape = panel.Shape is not null
+                ? ParseEnum<PanelShape>(panel.Shape, "panels.shape")
+                : PanelShape.Flat;
+
             var glass = new Glass
             {
                 MeasurementId = measurementId,
@@ -285,6 +333,9 @@ public sealed class MeasurementService(
                 IsDoor = panel.IsDoor,
                 WidthMm = panel.WidthMm,
                 HeightMm = panel.HeightMm,
+                Shape = shape,
+                SetId = panel.SetId,
+                CurvatureRadiusMm = panel.CurvatureRadiusMm,
             };
             db.Glasses.Add(glass);
             glasses.Add(glass);
@@ -352,6 +403,9 @@ public sealed class MeasurementService(
                     g.IsDoor,
                     g.WidthMm,
                     g.HeightMm,
+                    g.Shape.ToString(),
+                    g.SetId,
+                    g.CurvatureRadiusMm,
                     g.Holes
                         .Select(h => new HoleResponse(h.Id, h.XMm, h.YMm, h.RadiusMm, h.HoleType.ToString()))
                         .ToList()))

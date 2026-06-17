@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight, Download } from 'lucide-react'
 import { useFactoryOrders, downloadOrderPdf } from './api'
 import { FactoryOrderStatusBadge } from './components/FactoryOrderStatusBadge'
 import { CreateBatchDialog } from './components/CreateBatchDialog'
+import { FactoryOrderDetailDrawer } from './components/FactoryOrderDetailDrawer'
 import { Button } from '@/shared/ui/button'
 import { formatDate } from '@/shared/lib/formatDate'
 import { formatMoney } from '@/shared/lib/formatMoney'
@@ -22,6 +23,7 @@ export function FactoryOrdersPage() {
   const [page, setPage] = useState(1)
   const [createOpen, setCreateOpen] = useState(false)
   const [downloadingId, setDownloadingId] = useState<string | null>(null)
+  const [detailOrderId, setDetailOrderId] = useState<string | null>(null)
 
   const { data, isLoading, isError } = useFactoryOrders({ status, page, pageSize: PAGE_SIZE })
 
@@ -104,7 +106,11 @@ export function FactoryOrdersPage() {
               </tr>
             )}
             {data?.items.map((order) => (
-              <tr key={order.id} className="hover:bg-muted/30 transition-colors">
+              <tr
+                key={order.id}
+                className="hover:bg-muted/30 transition-colors cursor-pointer"
+                onClick={() => setDetailOrderId(order.id)}
+              >
                 <td className="px-4 py-3">
                   <span className="font-mono text-xs">{order.id.slice(0, 8).toUpperCase()}</span>
                 </td>
@@ -121,7 +127,7 @@ export function FactoryOrdersPage() {
                 </td>
                 <td className="px-4 py-3 text-center">
                   <button
-                    onClick={() => handleDownload(order.id)}
+                    onClick={(e) => { e.stopPropagation(); handleDownload(order.id) }}
                     disabled={downloadingId === order.id}
                     className="inline-flex items-center justify-center rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors disabled:opacity-50"
                     title="Скачать PDF"
@@ -165,6 +171,12 @@ export function FactoryOrdersPage() {
       )}
 
       {createOpen && <CreateBatchDialog onClose={() => setCreateOpen(false)} />}
+      {detailOrderId && (
+        <FactoryOrderDetailDrawer
+          orderId={detailOrderId}
+          onClose={() => setDetailOrderId(null)}
+        />
+      )}
     </div>
   )
 }

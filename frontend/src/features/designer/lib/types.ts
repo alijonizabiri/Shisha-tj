@@ -1,5 +1,6 @@
 export type HandleSide = 'Left' | 'Right'
 export type HoleType = 'Roller' | 'Handle' | 'Mount' | 'Custom'
+export type PanelShape = 'Flat' | 'LShapeLeft' | 'LShapeRight' | 'Curved'
 
 export interface Panel {
   /** Client-side stable identifier — not sent to the backend */
@@ -9,6 +10,9 @@ export interface Panel {
   isDoor: boolean
   /** 0-based index left → right */
   position: number
+  shape: PanelShape
+  setId?: string
+  curvatureRadiusMm?: number
 }
 
 export interface Hole {

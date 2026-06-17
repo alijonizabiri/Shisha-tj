@@ -8,6 +8,9 @@ export interface PanelInput {
   widthMm: number
   heightMm: number
   isDoor: boolean
+  shape?: string
+  setId?: string | null
+  curvatureRadiusMm?: number | null
 }
 
 export interface HoleRequest {
@@ -46,6 +49,9 @@ export interface GlassResponse {
   isDoor: boolean
   widthMm: number
   heightMm: number
+  shape?: string
+  setId?: string | null
+  curvatureRadiusMm?: number | null
   holes: HoleResponse[]
 }
 

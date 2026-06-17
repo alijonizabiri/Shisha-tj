@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Shisha.Application.Users;
+using Shisha.Domain.Exceptions;
 
 namespace Shisha.Api.Controllers;
 
@@ -14,5 +15,20 @@ public sealed class UsersController(IUserService userService) : ControllerBase
     public async Task<ActionResult<IReadOnlyList<MeasurerDto>>> GetMeasurers(CancellationToken ct)
     {
         return Ok(await userService.GetMeasurersAsync(ct));
+    }
+
+    [HttpPatch("{id:guid}/measurer-fee")]
+    [Authorize(Roles = "Admin,Operator")]
+    public async Task<ActionResult<MeasurerDto>> UpdateMeasurerFee(
+        Guid id, UpdateUserMeasurerFeeRequest request, CancellationToken ct)
+    {
+        try
+        {
+            return Ok(await userService.UpdateMeasurerFeeAsync(id, request, ct));
+        }
+        catch (NotFoundException)
+        {
+            return NotFound();
+        }
     }
 }

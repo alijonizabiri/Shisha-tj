@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { LeadMeasurement } from '../api'
 import { useLeadFinances } from '../api'
 import { AddPaymentDialog } from './AddPaymentDialog'
+import { MeasurerPayoutSection } from '@/features/measurements/MeasurerPayoutSection'
 import { Button } from '@/shared/ui/button'
 import { formatMoney } from '@/shared/lib/formatMoney'
 import { cn } from '@/shared/lib/cn'
@@ -148,6 +149,15 @@ export function LeadFinancesPanel({ leadId, measurements }: Props) {
               <p className="text-xs text-muted-foreground">Сначала создайте замер</p>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Measurer payouts — one per measurement */}
+      {data && measurements.length > 0 && (
+        <div className="mt-2">
+          {measurements.map((m) => (
+            <MeasurerPayoutSection key={m.id} measurementId={m.id} />
+          ))}
         </div>
       )}
 

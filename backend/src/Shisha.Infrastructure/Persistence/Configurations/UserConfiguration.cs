@@ -28,6 +28,9 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(u => u.IsActive)
             .HasDefaultValue(true);
 
+        builder.Property(u => u.MeasurerFixedFeeTjs)
+            .HasPrecision(18, 2);
+
         builder.HasIndex(u => u.TenantId);
 
         // Partial unique index enforced via raw SQL in migration (EF Core doesn't generate it natively).

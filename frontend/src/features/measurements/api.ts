@@ -8,6 +8,19 @@ export type MeasurementKanban = components['schemas']['MeasurementKanbanResponse
 export type PatchMeasurementStatusRequest = components['schemas']['PatchMeasurementStatusRequest']
 export type MeasurementFinances = components['schemas']['MeasurementFinancesDto']
 
+export interface MeasurerPayoutDto {
+  id: string
+  measurementId: string
+  measurerId: string
+  measurerName: string
+  calculatedAmountTjs: number
+  actualAmountTjs: number
+  isPaid: boolean
+  paidAt: string | null
+  note: string | null
+  createdAt: string
+}
+
 export function useMeasurementKanban() {
   return useQuery({
     queryKey: queryKeys.measurements.kanban(),
@@ -65,5 +78,63 @@ export function useCreateMeasurementPayment(measurementId: string) {
     mutationFn: (body: CreatePaymentBody) => apiClient.post('/api/v1/payments', body),
     onSuccess: () =>
       qc.invalidateQueries({ queryKey: queryKeys.measurements.finances(measurementId) }),
+  })
+}
+
+// ── Users / Measurers ────────────────────────────────────────────────────────
+
+export interface MeasurerListItem {
+  id: string
+  fullName: string
+  email: string
+  measurerFixedFeeTjs: number | null
+}
+
+export function useMeasurers() {
+  return useQuery({
+    queryKey: ['users', 'measurers'],
+    queryFn: () =>
+      apiClient.get<MeasurerListItem[]>('/api/v1/users/measurers').then((r) => r.data),
+  })
+}
+
+// ── Measurer Payout ───────────────────────────────────────────────────────────
+
+export function useMeasurerPayout(measurementId: string) {
+  return useQuery({
+    queryKey: queryKeys.measurerPayouts.byMeasurement(measurementId),
+    queryFn: async () => {
+      const r = await apiClient.get<MeasurerPayoutDto>(
+        `/api/v1/measurements/${measurementId}/measurer-payout`,
+      )
+      return r.status === 204 ? null : r.data
+    },
+    enabled: !!measurementId,
+  })
+}
+
+export function useCreateMeasurerPayout(measurementId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (body: { measurementId: string; measurerId: string; actualAmountTjs?: number }) =>
+      apiClient.post<MeasurerPayoutDto>('/api/v1/measurer-payouts', body).then((r) => r.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.measurerPayouts.byMeasurement(measurementId) })
+      qc.invalidateQueries({ queryKey: queryKeys.measurements.finances(measurementId) })
+    },
+  })
+}
+
+export function useMarkPayoutPaid(measurementId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ payoutId, paidAt }: { payoutId: string; paidAt?: string }) =>
+      apiClient
+        .patch<MeasurerPayoutDto>(`/api/v1/measurer-payouts/${payoutId}/mark-paid`, { paidAt })
+        .then((r) => r.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.measurerPayouts.byMeasurement(measurementId) })
+      qc.invalidateQueries({ queryKey: queryKeys.measurements.finances(measurementId) })
+    },
   })
 }

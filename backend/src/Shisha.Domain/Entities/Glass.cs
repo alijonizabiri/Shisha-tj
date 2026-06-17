@@ -1,4 +1,5 @@
 using Shisha.Domain.Common;
+using Shisha.Domain.Enums;
 
 namespace Shisha.Domain.Entities;
 
@@ -12,6 +13,10 @@ public sealed class Glass : BaseEntity, ITenantOwned, ISoftDeletable
     public bool IsDoor { get; set; }
     public int WidthMm { get; set; }
     public int HeightMm { get; set; }
+
+    public PanelShape Shape { get; set; } = PanelShape.Flat;
+    public Guid? SetId { get; set; }
+    public int? CurvatureRadiusMm { get; set; }
 
     public bool IsDeleted { get; set; }
     public DateTime? DeletedAt { get; set; }

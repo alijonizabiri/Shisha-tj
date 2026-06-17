@@ -39,6 +39,8 @@ public sealed class FactoryOrderService(AppDbContext db, ICurrentUser currentUse
                 o.OrderedAt,
                 o.ReceivedAt,
                 o.FactoryTotalTjs,
+                o.FactoryPayments.Sum(p => p.AmountTjs),
+                o.FactoryPayments.Any() ? o.FactoryPayments.Max(p => (DateOnly?)p.PaidAt) : null,
                 o.Note,
                 o.Items.Count(),
                 o.CreatedAt))
@@ -183,6 +185,53 @@ public sealed class FactoryOrderService(AppDbContext db, ICurrentUser currentUse
         return await GetByIdAsync(id, ct);
     }
 
+    public async Task<AddFactoryPaymentResponse> AddPaymentAsync(
+        Guid orderId,
+        AddFactoryPaymentRequest request,
+        CancellationToken ct = default)
+    {
+        var order = await db.FactoryOrders
+            .Include(o => o.FactoryPayments)
+            .FirstOrDefaultAsync(o => o.Id == orderId, ct)
+            ?? throw new NotFoundException($"Factory order {orderId} not found.");
+
+        var payment = new FactoryPayment
+        {
+            TenantId = currentUser.TenantId,
+            FactoryOrderId = orderId,
+            AmountTjs = request.AmountTjs,
+            PaidAt = request.PaidAt,
+            Note = request.Note,
+        };
+
+        db.FactoryPayments.Add(payment);
+        await db.SaveChangesAsync(ct);
+
+        var detail = await GetByIdAsync(orderId, ct);
+
+        string? warning = null;
+        if (order.FactoryTotalTjs.HasValue && detail.FactoryPaidTjs > order.FactoryTotalTjs.Value)
+            warning = "Сумма оплаты превышает сумму заказа";
+
+        return new AddFactoryPaymentResponse(detail, warning);
+    }
+
+    public async Task DeletePaymentAsync(Guid orderId, Guid paymentId, CancellationToken ct = default)
+    {
+        _ = await db.FactoryOrders.FindAsync([orderId], ct)
+            ?? throw new NotFoundException($"Factory order {orderId} not found.");
+
+        var payment = await db.FactoryPayments
+            .FirstOrDefaultAsync(p => p.Id == paymentId && p.FactoryOrderId == orderId, ct)
+            ?? throw new NotFoundException($"Factory payment {paymentId} not found.");
+
+        payment.IsDeleted = true;
+        payment.DeletedAt = DateTime.UtcNow;
+        payment.DeletedByUserId = currentUser.UserId;
+
+        await db.SaveChangesAsync(ct);
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     private Task<FactoryOrder?> LoadOrderAsync(Guid id, CancellationToken ct) =>
@@ -191,21 +240,38 @@ public sealed class FactoryOrderService(AppDbContext db, ICurrentUser currentUse
                 .ThenInclude(i => i.Glass)
                     .ThenInclude(g => g.Measurement)
                         .ThenInclude(m => m!.Lead)
+            .Include(o => o.FactoryPayments)
             .AsNoTracking()
             .FirstOrDefaultAsync(o => o.Id == id, ct);
 
-    private static FactoryOrderDetailResponse ToDetail(FactoryOrder o) => new(
-        o.Id,
-        o.Status.ToString(),
-        o.OrderedAt,
-        o.ReceivedAt,
-        o.FactoryTotalTjs,
-        o.Note,
-        o.CreatedAt,
-        o.Items
-            .OrderBy(i => i.CreatedAt)
-            .Select(ToItemDto)
-            .ToList());
+    private static FactoryOrderDetailResponse ToDetail(FactoryOrder o)
+    {
+        var paidTjs = o.FactoryPayments.Sum(p => p.AmountTjs);
+        var paidAt = o.FactoryPayments.Any()
+            ? o.FactoryPayments.Max(p => p.PaidAt)
+            : (DateOnly?)null;
+
+        return new FactoryOrderDetailResponse(
+            o.Id,
+            o.Status.ToString(),
+            o.OrderedAt,
+            o.ReceivedAt,
+            o.FactoryTotalTjs,
+            paidTjs,
+            o.FactoryTotalTjs.HasValue ? o.FactoryTotalTjs.Value - paidTjs : null,
+            paidAt,
+            o.Note,
+            o.CreatedAt,
+            o.Items
+                .OrderBy(i => i.CreatedAt)
+                .Select(ToItemDto)
+                .ToList(),
+            o.FactoryPayments
+                .OrderBy(p => p.PaidAt)
+                .ThenBy(p => p.CreatedAt)
+                .Select(ToPaymentDto)
+                .ToList());
+    }
 
     private static FactoryOrderItemDto ToItemDto(FactoryOrderItem i) => new(
         i.Id,
@@ -219,4 +285,11 @@ public sealed class FactoryOrderService(AppDbContext db, ICurrentUser currentUse
         i.ReworkReason?.ToString(),
         i.Glass?.Measurement?.Lead?.Id,
         i.Glass?.Measurement?.Lead?.Name);
+
+    private static FactoryPaymentDto ToPaymentDto(FactoryPayment p) => new(
+        p.Id,
+        p.AmountTjs,
+        p.PaidAt,
+        p.Note,
+        p.CreatedAt);
 }

@@ -16,9 +16,11 @@ using Shisha.Application.Leads;
 using Shisha.Application.Measurements;
 using Shisha.Application.Analytics;
 using Shisha.Application.Finances;
+using Shisha.Application.MeasurerPayouts;
 using Shisha.Application.Payments;
 using Shisha.Application.Users;
 using Shisha.Infrastructure.Configuration;
+using Shisha.Infrastructure.Excel;
 using Shisha.Infrastructure.Persistence;
 using Shisha.Infrastructure.Persistence.Interceptors;
 using Shisha.Infrastructure.Pdf;
@@ -79,9 +81,13 @@ builder.Services.AddScoped<ILeadService, LeadService>();
 builder.Services.AddScoped<IFactoryOrderService, FactoryOrderService>();
 builder.Services.AddScoped<IFactoryOrderPdfService, FactoryOrderPdfService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
+builder.Services.AddScoped<IMeasurerPayoutService, MeasurerPayoutService>();
 builder.Services.AddScoped<IProfitCalculator, ProfitCalculator>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IAnalyticsService, AnalyticsService>();
+builder.Services.AddScoped<IAnalyticsFinancesService, AnalyticsFinancesService>();
+builder.Services.AddSingleton<IFinancesReportPdfService, FinancesReportPdfService>();
+builder.Services.AddSingleton<IFinancesReportExcelService, FinancesReportExcelService>();
 
 // CORS — origins come from config so production can override via env var
 var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>()

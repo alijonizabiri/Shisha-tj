@@ -1,4 +1,4 @@
-import type { HandleSide, Hole } from './types'
+import type { HandleSide, Hole, PanelShape } from './types'
 
 const MOUNT_RADIUS = 27
 const HANDLE_RADIUS = 23
@@ -15,9 +15,10 @@ const HANDLE_X_OFFSET = 80  // door panel: handle 80mm from handle-side edge
  *
  * Fixed panel → 2 clamp holes (y=150, symmetric).
  * Door panel  → 4 clamp holes (2 rows, y=150 and y=320) + 2 handle holes (side).
+ * LShape and Curved use the same rules as Flat (holes on the rectangular projection).
  */
 export function defaultHoles(
-  panel: { widthMm: number; isDoor: boolean },
+  panel: { widthMm: number; isDoor: boolean; shape?: PanelShape },
   heightMm: number,
   handleSide: HandleSide = 'Right',
 ): Hole[] {

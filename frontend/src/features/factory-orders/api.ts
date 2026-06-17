@@ -6,6 +6,7 @@ import type { MeasurementApiResponse } from '@/features/designer/api'
 
 export type FactoryOrderSummary = components['schemas']['FactoryOrderSummaryResponse']
 export type FactoryOrderDetail = components['schemas']['FactoryOrderDetailResponse']
+export type FactoryPaymentDto = components['schemas']['FactoryPaymentDto']
 export type PagedFactoryOrders = components['schemas']['PagedFactoryOrdersResponse']
 
 export interface FactoryOrderFilters {
@@ -41,7 +42,6 @@ export function useCreateBatchOrder() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: async (measurementIds: string[]): Promise<FactoryOrderDetail> => {
-      // Fetch measurements in parallel to get glass IDs
       const measurements = await Promise.all(
         measurementIds.map((id) =>
           apiClient
@@ -61,6 +61,45 @@ export function useCreateBatchOrder() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.factoryOrders.all })
       qc.invalidateQueries({ queryKey: queryKeys.measurements.kanban() })
+    },
+  })
+}
+
+// ── Factory payments ──────────────────────────────────────────────────────────
+
+export interface AddFactoryPaymentRequest {
+  amountTjs: number
+  paidAt: string
+  note?: string | null
+}
+
+export interface AddFactoryPaymentResponse {
+  data: FactoryOrderDetail
+  warning: string | null
+}
+
+export function useAddFactoryPayment(orderId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (body: AddFactoryPaymentRequest) =>
+      apiClient
+        .post<AddFactoryPaymentResponse>(`/api/v1/factory-orders/${orderId}/payments`, body)
+        .then((r) => r.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.factoryOrders.detail(orderId) })
+      qc.invalidateQueries({ queryKey: queryKeys.factoryOrders.all })
+    },
+  })
+}
+
+export function useDeleteFactoryPayment(orderId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (paymentId: string) =>
+      apiClient.delete(`/api/v1/factory-orders/${orderId}/payments/${paymentId}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.factoryOrders.detail(orderId) })
+      qc.invalidateQueries({ queryKey: queryKeys.factoryOrders.all })
     },
   })
 }

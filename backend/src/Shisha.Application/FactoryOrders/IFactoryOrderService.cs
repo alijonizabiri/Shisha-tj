@@ -8,4 +8,6 @@ public interface IFactoryOrderService
     Task<FactoryOrderDetailResponse> SendAsync(Guid id, SendFactoryOrderRequest request, CancellationToken ct = default);
     Task<FactoryOrderDetailResponse> ReceiveAsync(Guid id, ReceiveFactoryOrderRequest request, CancellationToken ct = default);
     Task<FactoryOrderDetailResponse> AddReworkItemAsync(Guid id, Guid itemId, ReworkItemRequest request, CancellationToken ct = default);
+    Task<AddFactoryPaymentResponse> AddPaymentAsync(Guid orderId, AddFactoryPaymentRequest request, CancellationToken ct = default);
+    Task DeletePaymentAsync(Guid orderId, Guid paymentId, CancellationToken ct = default);
 }

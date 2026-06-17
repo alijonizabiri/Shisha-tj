@@ -1,3 +1,5 @@
 namespace Shisha.Application.Users;
 
-public sealed record MeasurerDto(Guid Id, string FullName, string Email);
+public sealed record MeasurerDto(Guid Id, string FullName, string Email, decimal? MeasurerFixedFeeTjs);
+
+public sealed record UpdateUserMeasurerFeeRequest(decimal? MeasurerFixedFeeTjs);

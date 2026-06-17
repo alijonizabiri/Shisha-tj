@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using Shisha.Application.Abstractions;
 using Shisha.Application.Payments;
 using Shisha.Domain.Entities;
@@ -11,7 +12,7 @@ public sealed class PaymentService(AppDbContext db, ICurrentUser currentUser) : 
 {
     public async Task<PaymentDto> CreateAsync(CreatePaymentRequest request, CancellationToken ct = default)
     {
-        _ = await db.Measurements.FindAsync([request.MeasurementId], ct)
+        var measurement = await db.Measurements.FindAsync([request.MeasurementId], ct)
             ?? throw new BusinessRuleException(
                 "MEASUREMENT_NOT_FOUND",
                 $"Measurement {request.MeasurementId} not found.");
@@ -21,6 +22,20 @@ public sealed class PaymentService(AppDbContext db, ICurrentUser currentUser) : 
 
         if (request.AmountTjs == 0)
             throw new DomainValidationException("amountTjs", "Amount must not be zero.");
+
+        if (measurement.DealPriceTjs is { } dealPrice && kind != PaymentKind.Refund)
+        {
+            var currentTotal = await db.Payments
+                .Where(p => p.MeasurementId == request.MeasurementId && p.Kind != PaymentKind.Refund)
+                .SumAsync(p => p.AmountTjs, ct);
+
+            if (currentTotal + request.AmountTjs > dealPrice)
+            {
+                var remaining = dealPrice - currentTotal;
+                throw new DomainValidationException("amountTjs",
+                    $"Сумма платежей превысит согласованную цену сделки ({dealPrice} TJS). Текущий остаток: {remaining} TJS");
+            }
+        }
 
         var payment = new Payment
         {

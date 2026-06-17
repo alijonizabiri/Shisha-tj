@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { apiClient } from '@/shared/api/client'
 import { queryKeys } from '@/shared/api/queryKeys'
@@ -142,4 +143,81 @@ export function useAnalyticsByMeasurer(range: DateRange = {}) {
         .then((r) => r.data),
     staleTime: 10 * 60 * 1000,
   })
+}
+
+// ── P&L finances ──────────────────────────────────────────────────────────────
+
+export interface MonthlyBreakdownDto {
+  year: number
+  month: number
+  revenueTjs: number
+  costTjs: number
+  profitTjs: number
+  closedCount: number
+}
+
+export interface PeriodFinancesDto {
+  from: string
+  to: string
+  closedMeasurementsCount: number
+  revenueTjs: number
+  factoryCostTjs: number
+  measurerCostTjs: number
+  otherExpensesTjs: number
+  totalCostTjs: number
+  profitTjs: number
+  marginPct: number
+  monthlyBreakdown: MonthlyBreakdownDto[]
+}
+
+export function usePeriodFinances(from: string, to: string) {
+  return useQuery({
+    queryKey: queryKeys.analytics.finances(from, to),
+    queryFn: () =>
+      apiClient
+        .get<PeriodFinancesDto>('/api/v1/analytics/finances', { params: { from, to } })
+        .then((r) => r.data),
+    staleTime: 5 * 60 * 1000,
+    enabled: !!from && !!to,
+  })
+}
+
+// ── Export hooks ──────────────────────────────────────────────────────────────
+
+export function useExportReport() {
+  const [isExporting, setIsExporting] = useState<'pdf' | 'excel' | null>(null)
+
+  async function triggerExport(format: 'pdf' | 'excel', from: string, to: string) {
+    if (isExporting) return
+    setIsExporting(format)
+    try {
+      const path = format === 'pdf' ? 'export/pdf' : 'export/excel'
+      const token = localStorage.getItem('access_token')
+      const res = await fetch(
+        `/api/v1/analytics/${path}?from=${from}&to=${to}`,
+        { headers: { Authorization: `Bearer ${token ?? ''}` } },
+      )
+      if (!res.ok) throw new Error('Export failed')
+
+      const blob = await res.blob()
+      const disposition = res.headers.get('Content-Disposition') ?? ''
+      const match = disposition.match(/filename="?([^";\n]+)"?/)
+      const filename = match?.[1] ?? `SHISHA_TJ_Report.${format === 'pdf' ? 'pdf' : 'xlsx'}`
+
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = filename
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+    } catch {
+      alert('Не удалось сгенерировать отчёт. Попробуйте ещё раз.')
+    } finally {
+      setIsExporting(null)
+    }
+  }
+
+  return { isExporting, triggerExport }
 }

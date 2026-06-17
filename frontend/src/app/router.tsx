@@ -28,6 +28,16 @@ const AnalyticsDashboardPage = lazy(() =>
     default: m.AnalyticsDashboardPage,
   })),
 )
+const AnalyticsFinancesPage = lazy(() =>
+  import('@/features/analytics/AnalyticsFinancesPage').then((m) => ({
+    default: m.AnalyticsFinancesPage,
+  })),
+)
+const AnalyticsLayout = lazy(() =>
+  import('@/features/analytics/AnalyticsLayout').then((m) => ({
+    default: m.AnalyticsLayout,
+  })),
+)
 
 function PageLoader() {
   return (
@@ -63,7 +73,17 @@ export const router = createBrowserRouter([
           },
           {
             path: '/analytics',
-            element: <Lazy><AnalyticsDashboardPage /></Lazy>,
+            element: <Lazy><AnalyticsLayout /></Lazy>,
+            children: [
+              {
+                index: true,
+                element: <Lazy><AnalyticsDashboardPage /></Lazy>,
+              },
+              {
+                path: 'finances',
+                element: <Lazy><AnalyticsFinancesPage /></Lazy>,
+              },
+            ],
           },
           {
             path: '/leads',

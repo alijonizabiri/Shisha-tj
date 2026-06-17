@@ -89,9 +89,9 @@ describe('DrawingCanvas', () => {
 
   it('renders N glass rects for N panels', () => {
     const threePanels = [
-      { id: 'p1', widthMm: 500, heightMm: 2000, isDoor: false, position: 0 },
-      { id: 'p2', widthMm: 700, heightMm: 2000, isDoor: false, position: 1 },
-      { id: 'p3', widthMm: 800, heightMm: 2000, isDoor: true,  position: 2 },
+      { id: 'p1', widthMm: 500, heightMm: 2000, isDoor: false, position: 0, shape: 'Flat' as const },
+      { id: 'p2', widthMm: 700, heightMm: 2000, isDoor: false, position: 1, shape: 'Flat' as const },
+      { id: 'p3', widthMm: 800, heightMm: 2000, isDoor: true,  position: 2, shape: 'Flat' as const },
     ]
     const h3 = threePanels.map((p) => defaultHoles(p, p.heightMm))
     const { container } = render(

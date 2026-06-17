@@ -204,6 +204,14 @@ export interface components {
       leadId: string | null
       leadName: string | null
     }
+    FactoryPaymentDto: {
+      id: string
+      amountTjs: number
+      /** DateOnly "YYYY-MM-DD" */
+      paidAt: string
+      note: string | null
+      createdAt: string
+    }
     FactoryOrderSummaryResponse: {
       id: string
       /** Draft | Sent | Received | Closed */
@@ -212,6 +220,8 @@ export interface components {
       orderedAt: string | null
       receivedAt: string | null
       factoryTotalTjs: number | null
+      factoryPaidTjs: number
+      factoryPaidAt: string | null
       note: string | null
       itemCount: number
       createdAt: string
@@ -228,9 +238,13 @@ export interface components {
       orderedAt: string | null
       receivedAt: string | null
       factoryTotalTjs: number | null
+      factoryPaidTjs: number
+      factoryDebtTjs: number | null
+      factoryPaidAt: string | null
       note: string | null
       createdAt: string
       items: components['schemas']['FactoryOrderItemDto'][]
+      factoryPayments: components['schemas']['FactoryPaymentDto'][]
     }
     CreateHardwareRequest: {
       measurementId: string

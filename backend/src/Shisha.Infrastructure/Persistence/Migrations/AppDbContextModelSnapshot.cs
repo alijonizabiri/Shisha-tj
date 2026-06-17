@@ -245,6 +245,75 @@ namespace Shisha.Infrastructure.Persistence.Migrations
                     b.ToTable("factory_order_items", (string)null);
                 });
 
+            modelBuilder.Entity("Shisha.Domain.Entities.FactoryPayment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<decimal>("AmountTjs")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("amount_tjs");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid?>("CreatedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by_user_id");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<Guid?>("DeletedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("deleted_by_user_id");
+
+                    b.Property<Guid>("FactoryOrderId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("factory_order_id");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_deleted");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("note");
+
+                    b.Property<DateOnly>("PaidAt")
+                        .HasColumnType("date")
+                        .HasColumnName("paid_at");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by_user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_factory_payments");
+
+                    b.HasIndex("FactoryOrderId")
+                        .HasDatabaseName("ix_factory_payments_factory_order_id");
+
+                    b.HasIndex("TenantId")
+                        .HasDatabaseName("ix_factory_payments_tenant_id");
+
+                    b.ToTable("factory_payments", (string)null);
+                });
+
             modelBuilder.Entity("Shisha.Domain.Entities.Glass", b =>
                 {
                     b.Property<Guid>("Id")
@@ -259,6 +328,10 @@ namespace Shisha.Infrastructure.Persistence.Migrations
                     b.Property<Guid?>("CreatedByUserId")
                         .HasColumnType("uuid")
                         .HasColumnName("created_by_user_id");
+
+                    b.Property<int?>("CurvatureRadiusMm")
+                        .HasColumnType("integer")
+                        .HasColumnName("curvature_radius_mm");
 
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp with time zone")
@@ -287,6 +360,18 @@ namespace Shisha.Infrastructure.Persistence.Migrations
                     b.Property<int>("Position")
                         .HasColumnType("integer")
                         .HasColumnName("position");
+
+                    b.Property<Guid?>("SetId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("set_id");
+
+                    b.Property<string>("Shape")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasDefaultValue("Flat")
+                        .HasColumnName("shape");
 
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uuid")
@@ -699,6 +784,92 @@ namespace Shisha.Infrastructure.Persistence.Migrations
                     b.ToTable("measurements", (string)null);
                 });
 
+            modelBuilder.Entity("Shisha.Domain.Entities.MeasurerPayout", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<decimal>("ActualAmountTjs")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("actual_amount_tjs");
+
+                    b.Property<decimal>("CalculatedAmountTjs")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("calculated_amount_tjs");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid?>("CreatedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by_user_id");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<Guid?>("DeletedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("deleted_by_user_id");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_deleted");
+
+                    b.Property<bool>("IsPaid")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_paid");
+
+                    b.Property<Guid>("MeasurementId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("measurement_id");
+
+                    b.Property<Guid>("MeasurerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("measurer_id");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("note");
+
+                    b.Property<DateOnly?>("PaidAt")
+                        .HasColumnType("date")
+                        .HasColumnName("paid_at");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by_user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_measurer_payouts");
+
+                    b.HasIndex("MeasurementId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_measurer_payouts_measurement_id");
+
+                    b.HasIndex("MeasurerId")
+                        .HasDatabaseName("ix_measurer_payouts_measurer_id");
+
+                    b.HasIndex("TenantId")
+                        .HasDatabaseName("ix_measurer_payouts_tenant_id");
+
+                    b.ToTable("measurer_payouts", (string)null);
+                });
+
             modelBuilder.Entity("Shisha.Domain.Entities.Payment", b =>
                 {
                     b.Property<Guid>("Id")
@@ -973,6 +1144,11 @@ namespace Shisha.Infrastructure.Persistence.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("is_deleted");
 
+                    b.Property<decimal?>("MeasurerFixedFeeTjs")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("measurer_fixed_fee_tjs");
+
                     b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasColumnType("text")
@@ -1034,6 +1210,18 @@ namespace Shisha.Infrastructure.Persistence.Migrations
                     b.Navigation("FactoryOrder");
 
                     b.Navigation("Glass");
+                });
+
+            modelBuilder.Entity("Shisha.Domain.Entities.FactoryPayment", b =>
+                {
+                    b.HasOne("Shisha.Domain.Entities.FactoryOrder", "FactoryOrder")
+                        .WithMany("FactoryPayments")
+                        .HasForeignKey("FactoryOrderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_factory_payments_factory_orders_factory_order_id");
+
+                    b.Navigation("FactoryOrder");
                 });
 
             modelBuilder.Entity("Shisha.Domain.Entities.Glass", b =>
@@ -1105,6 +1293,27 @@ namespace Shisha.Infrastructure.Persistence.Migrations
                     b.Navigation("Measurer");
                 });
 
+            modelBuilder.Entity("Shisha.Domain.Entities.MeasurerPayout", b =>
+                {
+                    b.HasOne("Shisha.Domain.Entities.Measurement", "Measurement")
+                        .WithOne("MeasurerPayout")
+                        .HasForeignKey("Shisha.Domain.Entities.MeasurerPayout", "MeasurementId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_measurer_payouts_measurements_measurement_id");
+
+                    b.HasOne("Shisha.Domain.Entities.User", "Measurer")
+                        .WithMany()
+                        .HasForeignKey("MeasurerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_measurer_payouts_users_measurer_id");
+
+                    b.Navigation("Measurement");
+
+                    b.Navigation("Measurer");
+                });
+
             modelBuilder.Entity("Shisha.Domain.Entities.Payment", b =>
                 {
                     b.HasOne("Shisha.Domain.Entities.Measurement", "Measurement")
@@ -1143,6 +1352,8 @@ namespace Shisha.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("Shisha.Domain.Entities.FactoryOrder", b =>
                 {
+                    b.Navigation("FactoryPayments");
+
                     b.Navigation("Items");
                 });
 
@@ -1163,6 +1374,8 @@ namespace Shisha.Infrastructure.Persistence.Migrations
                     b.Navigation("Glasses");
 
                     b.Navigation("Hardware");
+
+                    b.Navigation("MeasurerPayout");
 
                     b.Navigation("Payments");
                 });

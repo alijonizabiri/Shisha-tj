@@ -15,8 +15,8 @@ All FK columns are `uuid` (Guid v7). Money is `numeric(18,2)`. Dimensions are `i
 
 - Every `tenant_id` column → index
 - `leads.phone` → index (operator searches by phone constantly)
-- `leads.status` → index (Kanban filtering)
 - `leads.created_at desc` → for sorting in list
+- `measurements.status` → index (Kanban filtering, moved from `leads.status` in `MoveStatusToMeasurement`)
 - `measurements.lead_id` → FK index
 - `glasses.measurement_id` → FK index
 - `holes.glass_id` → FK index
@@ -58,8 +58,12 @@ Unique: `(tenant_id, email)` where not deleted.
 Unique: `token_hash`.
 
 ### leads
-The single source of truth for a person who interacted with us.
-Moves through Kanban statuses; financial state lives on each Measurement.
+**Updated (Phase 3.5 Step 14):** `Lead` no longer carries Kanban status or financial
+data — it is now only a contact container. The Kanban state machine and all
+financial fields (`status`, `assigned_measurer_id`, `refusal_reason_id`,
+`refusal_note`, `deal_price_tjs`, etc.) live on `Measurement` (see below).
+A `Lead` can have multiple `Measurement`s, each progressing through the Kanban
+independently.
 
 | Column | Type | Notes |
 |--------|------|-------|
@@ -68,25 +72,31 @@ Moves through Kanban statuses; financial state lives on each Measurement.
 | name | text not null | |
 | phone | text not null | |
 | product | text not null | from `Product` enum/lookup |
-| status | text not null | enum: `New`, `Measurement`, `Thinking`, `Refused`, `Buying`, `OrderedAtFactory`, `GlassArrived`, `Installed`, `Closed` |
 | source | text null | how they found us |
 | note | text null | |
-| refusal_reason_id | uuid null FK | only if status=Refused |
-| refusal_note | text null | |
 | call_date | date not null | |
-| assigned_measurer_id | uuid null FK → users | |
 | (tenant/audit/soft-delete) | | |
 | xmin | xid concurrency | |
 
+~~status~~, ~~refusal_reason_id~~, ~~refusal_note~~, ~~assigned_measurer_id~~ —
+**moved to `measurements`** in Phase 3.5 Step 14 ("move state machine from Lead
+to Measurement"). Do not re-add these columns to `leads`.
+
 ### measurements
-A measurer's site visit → drawing. Each measurement owns its own financial data.
+A measurer's site visit → drawing. Owns both the Kanban state machine AND its
+own financial data — this is the actual unit of a deal, not the Lead.
 
 | Column | Type | Notes |
 |--------|------|-------|
 | id | uuid PK | |
 | tenant_id | uuid FK | |
-| lead_id | uuid FK → leads | |
-| measurer_id | uuid FK → users | |
+| lead_id | uuid null FK → leads | |
+| measurer_id | uuid null FK → users | who performed the on-site measurement |
+| status | text not null | enum: `New`, `Measurement`, `Thinking`, `Refused`, `Buying`, `OrderedAtFactory`, `GlassArrived`, `Installed`, `Closed` — Kanban status (moved from `leads.status`) |
+| assigned_measurer_id | uuid null FK → users | measurer assigned to do the visit (moved from `leads.assigned_measurer_id`) |
+| refusal_reason_id | uuid null FK | only if status=Refused (moved from `leads.refusal_reason_id`) |
+| refusal_note | text null | (moved from `leads.refusal_note`) |
+| product | text null | overrides `lead.product` if set |
 | address | varchar(500) not null default 'Не указан' | installation address |
 | measure_mm | int not null | width of opening |
 | height_mm | int not null | default 2000 |
@@ -98,7 +108,7 @@ A measurer's site visit → drawing. Each measurement owns its own financial dat
 | delivery_cost_tjs | numeric(18,2) null | delivery cost (overrides Delivery expenses if set) |
 | installation_date | date null | planned install date |
 | installed_at | timestamptz null | actual installation timestamp |
-| warranty_until | date null | set by LeadService when lead transitions to Closed |
+| warranty_until | date null | set by `MeasurementService` when measurement transitions to Closed |
 | measured_at | timestamptz | |
 | (audit/soft-delete) | | |
 | xmin | concurrency | |
@@ -240,3 +250,5 @@ Reworks caused by factory error don't count against profit (factory absorbs).
 6. `AddFinances` — hardware, payments, expenses
 7. `RemoveCabinConfiguration` — drops `configuration` column from `measurements`
 8. `MoveFinancesToMeasurement` — adds address/finances to measurements; moves payment FK from leads→measurements (NOT NULL); moves expense FK from leads→measurements (nullable); drops finance columns from leads
+9. `MoveStatusToMeasurement` — moves `status`, `assigned_measurer_id`, `refusal_reason_id`, `refusal_note` from `leads` to `measurements`; the Kanban state machine now operates on `Measurement`, not `Lead`
+10. `AddProductToMeasurement` — adds nullable `product` column to `measurements` (overrides `lead.product` when set)

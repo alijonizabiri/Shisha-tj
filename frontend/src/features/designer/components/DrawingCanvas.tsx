@@ -1,12 +1,20 @@
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import { cn } from '@/shared/lib/cn'
-import type { Hole as HoleData, Panel } from '../lib/types'
+import type { Hole as HoleData, Panel, PanelShape } from '../lib/types'
 import { Hole } from './Hole'
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
 const PAD = 60
 const TICK = 6
+
+// Stroke colour by panel shape (Flat split by isDoor vs fixed)
+const SHAPE_STROKE: Record<PanelShape, string> = {
+  Flat:        '#334155', // overridden per panel if isDoor
+  LShapeLeft:  '#818cf8', // indigo
+  LShapeRight: '#a78bfa', // violet
+  Curved:      '#34d399', // emerald
+}
 
 const MIN_DOOR_W  = 500
 const MAX_DOOR_W  = 800
@@ -162,6 +170,18 @@ export function DrawingCanvas({
   const renderPanels = localPanels ?? panels
   const totalWidthMm = renderPanels.reduce((acc, p) => acc + p.widthMm, 0)
   const xs = xPositions(renderPanels)
+
+  // Group panels by setId for bounding-box dashed outline
+  const setGroups = useMemo(() => {
+    const map = new Map<string, number[]>()
+    renderPanels.forEach((p, i) => {
+      if (!p.setId) return
+      const arr = map.get(p.setId) ?? []
+      arr.push(i)
+      map.set(p.setId, arr)
+    })
+    return map
+  }, [renderPanels])
 
   // Keep refs in sync every render
   holesRef.current = holes
@@ -353,22 +373,49 @@ export function DrawingCanvas({
         aria-label="Чертёж кабины"
         onClick={handleSvgClick}
       >
+        {/* ── 0. Set group outlines (below panels) ── */}
+        {Array.from(setGroups.entries()).map(([setId, idxs]) => {
+          const minX = Math.min(...idxs.map((i) => xs[i]))
+          const maxX = Math.max(...idxs.map((i) => xs[i] + renderPanels[i].widthMm))
+          const minY = Math.min(...idxs.map((i) => cabinHeightMm - renderPanels[i].heightMm))
+          const maxY = cabinHeightMm
+          const PAD_SET = 8
+          return (
+            <rect
+              key={`set-${setId}`}
+              x={minX - PAD_SET} y={minY - PAD_SET}
+              width={maxX - minX + PAD_SET * 2} height={maxY - minY + PAD_SET * 2}
+              fill="none"
+              stroke="#94a3b8" strokeWidth={1.5} strokeDasharray="8 4"
+              opacity={0.3}
+              rx={4}
+              pointerEvents="none"
+            />
+          )
+        })}
+
         {/* ── 1. Glass panel rects ── */}
         {renderPanels.map((panel, i) => {
+          const shape = panel.shape ?? 'Flat'
           const yOffset = cabinHeightMm - panel.heightMm
           const isSelected = panel.id === selectedPanelId
+          const baseStroke = shape === 'Flat' ? '#334155' : SHAPE_STROKE[shape]
+          const fillColor = panel.isDoor ? '#dbeafe' : (shape !== 'Flat' ? `${SHAPE_STROKE[shape]}18` : '#f8fafc')
+
           return (
             <g key={`panel-${panel.id}`}>
               <rect
                 data-testid="glass-rect"
                 x={xs[i]} y={yOffset}
                 width={panel.widthMm} height={panel.heightMm}
-                fill={panel.isDoor ? '#dbeafe' : '#f8fafc'}
-                stroke={isSelected ? '#6366f1' : '#334155'}
+                fill={fillColor}
+                stroke={isSelected ? '#6366f1' : baseStroke}
                 strokeWidth={isSelected ? 3 : 2}
                 style={{ cursor: 'pointer' }}
                 onClick={(e) => handleGlassClick(e, panel.id, i)}
               />
+
+              {/* Door rail indicator */}
               {panel.isDoor && (
                 <line
                   x1={xs[i] + 2} y1={yOffset + 6}
@@ -377,6 +424,8 @@ export function DrawingCanvas({
                   pointerEvents="none"
                 />
               )}
+
+              {/* Height annotation */}
               {panel.heightMm !== cabinHeightMm && (
                 <text
                   x={xs[i] + panel.widthMm / 2} y={yOffset + 28}
@@ -384,6 +433,43 @@ export function DrawingCanvas({
                   pointerEvents="none"
                 >
                   {panel.heightMm} мм ↕
+                </text>
+              )}
+
+              {/* Curved label */}
+              {shape === 'Curved' && (
+                <text
+                  x={xs[i] + panel.widthMm / 2}
+                  y={yOffset + panel.heightMm / 2}
+                  textAnchor="middle" dominantBaseline="middle"
+                  fontSize={18} fill="#34d399"
+                  pointerEvents="none"
+                >
+                  {`⌒ R: ${panel.curvatureRadiusMm ?? '?'}мм`}
+                </text>
+              )}
+
+              {/* LShapeLeft corner icon — bottom-right */}
+              {shape === 'LShapeLeft' && (
+                <text
+                  x={xs[i] + panel.widthMm - 10}
+                  y={yOffset + panel.heightMm - 8}
+                  textAnchor="end" fontSize={20} fill="#818cf8"
+                  pointerEvents="none"
+                >
+                  ⌐
+                </text>
+              )}
+
+              {/* LShapeRight corner icon — bottom-left */}
+              {shape === 'LShapeRight' && (
+                <text
+                  x={xs[i] + 10}
+                  y={yOffset + panel.heightMm - 8}
+                  textAnchor="start" fontSize={20} fill="#a78bfa"
+                  pointerEvents="none"
+                >
+                  ¬
                 </text>
               )}
             </g>

@@ -24,7 +24,16 @@ public record ReceiveFactoryOrderRequest(
 
 public record ReworkItemRequest(string Reason);
 
+public record AddFactoryPaymentRequest(decimal AmountTjs, DateOnly PaidAt, string? Note = null);
+
 // ── Responses ─────────────────────────────────────────────────────────────────
+
+public record FactoryPaymentDto(
+    Guid Id,
+    decimal AmountTjs,
+    DateOnly PaidAt,
+    string? Note,
+    DateTime CreatedAt);
 
 public record FactoryOrderItemDto(
     Guid Id,
@@ -45,6 +54,8 @@ public record FactoryOrderSummaryResponse(
     DateOnly? OrderedAt,
     DateOnly? ReceivedAt,
     decimal? FactoryTotalTjs,
+    decimal FactoryPaidTjs,
+    DateOnly? FactoryPaidAt,
     string? Note,
     int ItemCount,
     DateTime CreatedAt);
@@ -55,12 +66,18 @@ public record FactoryOrderDetailResponse(
     DateOnly? OrderedAt,
     DateOnly? ReceivedAt,
     decimal? FactoryTotalTjs,
+    decimal FactoryPaidTjs,
+    decimal? FactoryDebtTjs,
+    DateOnly? FactoryPaidAt,
     string? Note,
     DateTime CreatedAt,
-    IReadOnlyList<FactoryOrderItemDto> Items);
+    IReadOnlyList<FactoryOrderItemDto> Items,
+    IReadOnlyList<FactoryPaymentDto> FactoryPayments);
 
 public record PagedFactoryOrdersResponse(
     IReadOnlyList<FactoryOrderSummaryResponse> Items,
     int TotalCount,
     int Page,
     int PageSize);
+
+public record AddFactoryPaymentResponse(FactoryOrderDetailResponse Data, string? Warning);
