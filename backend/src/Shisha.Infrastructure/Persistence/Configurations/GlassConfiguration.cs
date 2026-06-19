@@ -28,6 +28,16 @@ public sealed class GlassConfiguration : IEntityTypeConfiguration<Glass>
         builder.Property(g => g.CurvatureRadiusMm)
             .IsRequired(false);
 
+        builder.Property(g => g.Mechanism)
+            .HasConversion<string>()
+            .HasMaxLength(10)
+            .IsRequired(false);
+
+        builder.Property(g => g.HingeSide)
+            .HasConversion<string>()
+            .HasMaxLength(5)
+            .IsRequired(false);
+
         builder.HasIndex(g => g.TenantId);
         builder.HasIndex(g => g.MeasurementId);
 

@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Shisha.Infrastructure.Persistence;
@@ -11,9 +12,11 @@ using Shisha.Infrastructure.Persistence;
 namespace Shisha.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260618141539_AddGlassDoorMechanism")]
+    partial class AddGlassDoorMechanism
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -344,11 +347,6 @@ namespace Shisha.Infrastructure.Persistence.Migrations
                     b.Property<int>("HeightMm")
                         .HasColumnType("integer")
                         .HasColumnName("height_mm");
-
-                    b.Property<string>("HingeSide")
-                        .HasMaxLength(5)
-                        .HasColumnType("character varying(5)")
-                        .HasColumnName("hinge_side");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean")

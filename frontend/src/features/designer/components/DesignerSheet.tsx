@@ -9,6 +9,7 @@ import {
 } from '@/shared/ui/sheet'
 import { measurementFormSchema, type MeasurementFormValues } from '../schemas'
 import type { Panel } from '../lib/types'
+import type { LShapeInitValues } from '../lib/glassesToFormValues'
 import { MeasurementForm } from './MeasurementForm'
 import { CabinTypeCards, CabinSetForm } from './CabinSetForm'
 
@@ -19,6 +20,8 @@ interface Props {
   onOpenChange: (open: boolean) => void
   values: MeasurementFormValues
   disableLeadSelector?: boolean
+  storageKey?: string
+  lshapeInit?: LShapeInitValues
   onApply: (values: MeasurementFormValues, customPanels?: Panel[]) => void
 }
 
@@ -28,9 +31,17 @@ function useSheetSide(): 'bottom' | 'right' {
   return window.innerWidth >= 1024 ? 'right' : 'bottom'
 }
 
-export function DesignerSheet({ open, onOpenChange, values, disableLeadSelector, onApply }: Props) {
+export function DesignerSheet({ open, onOpenChange, values, disableLeadSelector, storageKey, lshapeInit, onApply }: Props) {
   const side = useSheetSide()
-  const [cabinType, setCabinType] = useState<CabinType>('flat')
+
+  const cabinTypeKey = storageKey ? `${storageKey}_cabintype` : null
+  const savedCabinType = cabinTypeKey
+    ? (localStorage.getItem(cabinTypeKey) as CabinType | null)
+    : null
+
+  // lshapeInit means we loaded an L-shape from backend — start on lshape tab
+  const defaultCabinType: CabinType = lshapeInit ? 'lshape' : (savedCabinType ?? 'flat')
+  const [cabinType, setCabinType] = useState<CabinType>(defaultCabinType)
 
   const form = useForm<MeasurementFormValues>({
     resolver: zodResolver(measurementFormSchema),
@@ -43,6 +54,16 @@ export function DesignerSheet({ open, onOpenChange, values, disableLeadSelector,
     if (open) form.reset(values)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
+
+  // When lshapeInit arrives (async load), switch to lshape tab
+  useEffect(() => {
+    if (lshapeInit) setCabinType('lshape')
+  }, [lshapeInit])
+
+  function handleCabinTypeChange(t: CabinType) {
+    setCabinType(t)
+    if (cabinTypeKey) localStorage.setItem(cabinTypeKey, t)
+  }
 
   function handleFlatApply(v: MeasurementFormValues) {
     onApply(v)
@@ -67,7 +88,7 @@ export function DesignerSheet({ open, onOpenChange, values, disableLeadSelector,
         </SheetHeader>
 
         <div className="flex flex-col gap-5">
-          <CabinTypeCards selected={cabinType} onChange={setCabinType} />
+          <CabinTypeCards selected={cabinType} onChange={handleCabinTypeChange} />
 
           {cabinType === 'flat' && (
             <MeasurementForm
@@ -83,6 +104,8 @@ export function DesignerSheet({ open, onOpenChange, values, disableLeadSelector,
               cabinType={cabinType}
               initialValues={form.getValues()}
               disableLeadSelector={disableLeadSelector}
+              storageKey={storageKey}
+              lshapeInit={lshapeInit}
               onApply={handleSetApply}
             />
           )}

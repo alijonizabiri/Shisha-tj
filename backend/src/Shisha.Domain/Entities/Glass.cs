@@ -17,6 +17,8 @@ public sealed class Glass : BaseEntity, ITenantOwned, ISoftDeletable
     public PanelShape Shape { get; set; } = PanelShape.Flat;
     public Guid? SetId { get; set; }
     public int? CurvatureRadiusMm { get; set; }
+    public DoorMechanism? Mechanism { get; set; }
+    public HandleSide? HingeSide { get; set; }
 
     public bool IsDeleted { get; set; }
     public DateTime? DeletedAt { get; set; }

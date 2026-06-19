@@ -21,6 +21,11 @@ export const queryKeys = {
   measurerPayouts: {
     byMeasurement: (measurementId: string) => ['measurer-payouts', measurementId] as const,
   },
+  users: {
+    all: ['users'] as const,
+    list: () => ['users', 'list'] as const,
+    detail: (id: string) => ['users', id] as const,
+  },
   analytics: {
     dashboard: (from?: string, to?: string) => ['analytics', 'dashboard', from, to] as const,
     funnel: (from?: string, to?: string) => ['analytics', 'funnel', from, to] as const,

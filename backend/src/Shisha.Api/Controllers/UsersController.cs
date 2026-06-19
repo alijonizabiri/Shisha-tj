@@ -10,6 +10,27 @@ namespace Shisha.Api.Controllers;
 [Authorize]
 public sealed class UsersController(IUserService userService) : ControllerBase
 {
+    [HttpGet]
+    [Authorize(Roles = "Admin")]
+    public async Task<ActionResult<IReadOnlyList<UserDto>>> GetAll(CancellationToken ct)
+    {
+        return Ok(await userService.GetAllUsersAsync(ct));
+    }
+
+    [HttpGet("{id:guid}")]
+    [Authorize(Roles = "Admin")]
+    public async Task<ActionResult<UserDto>> GetById(Guid id, CancellationToken ct)
+    {
+        try
+        {
+            return Ok(await userService.GetUserByIdAsync(id, ct));
+        }
+        catch (NotFoundException)
+        {
+            return NotFound();
+        }
+    }
+
     [HttpGet("measurers")]
     [Authorize(Roles = "Admin,Operator")]
     public async Task<ActionResult<IReadOnlyList<MeasurerDto>>> GetMeasurers(CancellationToken ct)

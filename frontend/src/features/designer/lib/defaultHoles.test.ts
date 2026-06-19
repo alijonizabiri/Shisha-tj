@@ -59,20 +59,20 @@ describe('defaultHoles — door panel', () => {
     expect(clamps.every((h) => h.xMm === 150 || h.xMm === 850)).toBe(true) // 1000 - 150
   })
 
-  it('handle holes are at 52.5% and 62.5% from top, gap = 10% of height', () => {
+  it('handle holes are at 40% and 60% from top, gap = 20% of height', () => {
     const handles = defaultHoles(DOOR_800, 2000).filter((h) => h.holeType === 'Handle')
-    expect(handles[0].yMm).toBe(1050) // round(2000 * 0.525)
-    expect(handles[1].yMm).toBe(1250) // round(2000 * 0.625)
-    expect(handles[1].yMm - handles[0].yMm).toBe(200) // gap = 10% of 2000
+    expect(handles[0].yMm).toBe(800)  // round(2000 * 0.40)
+    expect(handles[1].yMm).toBe(1200) // round(2000 * 0.60)
+    expect(handles[1].yMm - handles[0].yMm).toBe(400) // gap = 20% of 2000
   })
 
-  it('handle X is at right edge by default (Right side)', () => {
+  it('handle X is at right edge by default (hingeSide Left = hinges on left)', () => {
     const handles = defaultHoles(DOOR_800, 2000).filter((h) => h.holeType === 'Handle')
-    expect(handles.every((h) => h.xMm === 720)).toBe(true) // 800 - 80
+    expect(handles.every((h) => h.xMm === 730)).toBe(true) // 800 - 70
   })
 
-  it('handle X is at left edge when handleSide is Left', () => {
-    const handles = defaultHoles(DOOR_800, 2000, 'Left').filter((h) => h.holeType === 'Handle')
-    expect(handles.every((h) => h.xMm === 80)).toBe(true)
+  it('handle X is at left edge when hingeSide is Right (hinges on right)', () => {
+    const handles = defaultHoles(DOOR_800, 2000, 'Right').filter((h) => h.holeType === 'Handle')
+    expect(handles.every((h) => h.xMm === 70)).toBe(true)
   })
 })

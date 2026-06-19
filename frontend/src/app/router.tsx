@@ -38,6 +38,9 @@ const AnalyticsLayout = lazy(() =>
     default: m.AnalyticsLayout,
   })),
 )
+const UsersPage = lazy(() =>
+  import('@/features/users/UsersPage').then((m) => ({ default: m.UsersPage })),
+)
 
 function PageLoader() {
   return (
@@ -100,6 +103,10 @@ export const router = createBrowserRouter([
           {
             path: '/factory-orders',
             element: <Lazy><FactoryOrdersPage /></Lazy>,
+          },
+          {
+            path: '/users',
+            element: <Lazy><UsersPage /></Lazy>,
           },
         ],
       },
