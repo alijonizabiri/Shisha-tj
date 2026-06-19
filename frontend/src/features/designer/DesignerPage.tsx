@@ -8,6 +8,8 @@ import { defaultHoles } from './lib/defaultHoles'
 import type { Hole, Panel, HoleType, PanelShape } from './lib/types'
 import { measurementFormSchema, type MeasurementFormValues, type GlassColor, type HardwareColor } from './schemas'
 import { downloadMeasurementPdf, useDesignerLeads, useGetMeasurement, useSaveMeasurement, useUpdateMeasurement, type HoleRequest } from './api'
+import { glassesToFormValues } from './lib/glassesToFormValues'
+import type { LShapeInitValues } from './lib/glassesToFormValues'
 import { DrawingCanvas, type PanelScreenRect } from './components/DrawingCanvas'
 import { ThreeCanvas } from './components/ThreeCanvas'
 import { DesignerTopBar } from './components/DesignerTopBar'
@@ -48,8 +50,16 @@ export function DesignerPage() {
 
   const isEditMode = !!measurementIdFromUrl
 
+  const storageKey = `designer_form_${measurementIdFromUrl ?? 'new'}`
+
   const { data: leads = [], isLoading: leadsLoading } = useDesignerLeads()
   const { data: existingMeasurement } = useGetMeasurement(measurementIdFromUrl)
+
+  const lshapeInit: LShapeInitValues | undefined = useMemo(() => {
+    if (!existingMeasurement) return undefined
+    const state = glassesToFormValues(existingMeasurement.glasses)
+    return state?.cabinType === 'lshape' ? state.lshape : undefined
+  }, [existingMeasurement])
 
   const initialLeadId = leadIdFromUrl ?? ''
 
@@ -83,6 +93,8 @@ export function DesignerPage() {
       shape: (g.shape ?? 'Flat') as PanelShape,
       setId: g.setId ?? undefined,
       curvatureRadiusMm: g.curvatureRadiusMm ?? undefined,
+      mechanism: (g.mechanism as import('./lib/types').DoorMechanism | null) ?? undefined,
+      hingeSide: (g.hingeSide as import('./lib/types').HandleSide | null) ?? undefined,
     }))
 
     const loadedHoles: Hole[][] = sorted.map((g) =>
@@ -105,7 +117,9 @@ export function DesignerPage() {
       depositTjs:    0,
     }
 
-    const key = loadedPanels.map((p) => `${p.widthMm}x${p.heightMm}`).join('-')
+    const key = loadedPanels
+      .map((p) => (p.isDoor && p.hingeSide ? `${p.widthMm}x${p.heightMm}h${p.hingeSide}` : `${p.widthMm}x${p.heightMm}`))
+      .join('-')
 
     setFormValues(values)
     infoForm.reset(values)
@@ -131,10 +145,12 @@ export function DesignerPage() {
   // ── Holes ──────────────────────────────────────────────────────────────────
 
   const defaultHolesByPanel = useMemo(
-    () => panels.map((p) => defaultHoles(p, p.heightMm)),
+    () => panels.map((p) => defaultHoles(p, p.heightMm, p.hingeSide)),
     [panels],
   )
-  const canvasKey = panels.map((p) => `${p.widthMm}x${p.heightMm}`).join('-')
+  const canvasKey = panels
+    .map((p) => (p.isDoor && p.hingeSide ? `${p.widthMm}x${p.heightMm}h${p.hingeSide}` : `${p.widthMm}x${p.heightMm}`))
+    .join('-')
   const [holeTracker, setHoleTracker] = useState<{ key: string; holes: Hole[][] }>({
     key: canvasKey,
     holes: defaultHolesByPanel,
@@ -277,11 +293,16 @@ export function DesignerPage() {
       shape:             p.shape,
       setId:             p.setId ?? null,
       curvatureRadiusMm: p.curvatureRadiusMm ?? null,
+      mechanism:         p.mechanism ?? null,
+      hingeSide:         p.hingeSide ?? null,
     }))
     const holeData = flattenHoles(currentHoles)
 
     const onSuccess = (id: string) => {
       setSavedId(id)
+      localStorage.removeItem(storageKey)
+      localStorage.removeItem(`${storageKey}_lshape`)
+      localStorage.removeItem(`${storageKey}_cabintype`)
       toast.success('Замер сохранён')
       if (leadIdFromUrl || isEditMode) navigate(-1)
     }
@@ -444,6 +465,8 @@ export function DesignerPage() {
         onOpenChange={setSheetOpen}
         values={formValues}
         disableLeadSelector={!!leadIdFromUrl}
+        storageKey={storageKey}
+        lshapeInit={lshapeInit}
         onApply={handleApply}
       />
     </div>

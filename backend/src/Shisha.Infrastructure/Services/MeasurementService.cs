@@ -284,8 +284,8 @@ public sealed class MeasurementService(
     private static void ValidatePanels(IReadOnlyList<PanelInputDto> panels, int cabinHeightMm)
     {
         int doorCount = panels.Count(p => p.IsDoor);
-        if (doorCount > 1)
-            throw new DomainValidationException("panels", "At most one door panel is allowed.");
+        if (doorCount > 2)
+            throw new DomainValidationException("panels", "At most two door panels are allowed.");
 
         foreach (var p in panels)
         {
@@ -326,6 +326,14 @@ public sealed class MeasurementService(
                 ? ParseEnum<PanelShape>(panel.Shape, "panels.shape")
                 : PanelShape.Flat;
 
+            DoorMechanism? mechanism = null;
+            if (panel.Mechanism is not null)
+                mechanism = ParseEnum<DoorMechanism>(panel.Mechanism, "panels.mechanism");
+
+            HandleSide? hingeSide = null;
+            if (panel.HingeSide is not null)
+                hingeSide = ParseEnum<HandleSide>(panel.HingeSide, "panels.hingeSide");
+
             var glass = new Glass
             {
                 MeasurementId = measurementId,
@@ -336,6 +344,8 @@ public sealed class MeasurementService(
                 Shape = shape,
                 SetId = panel.SetId,
                 CurvatureRadiusMm = panel.CurvatureRadiusMm,
+                Mechanism = mechanism,
+                HingeSide = hingeSide,
             };
             db.Glasses.Add(glass);
             glasses.Add(glass);
@@ -406,6 +416,8 @@ public sealed class MeasurementService(
                     g.Shape.ToString(),
                     g.SetId,
                     g.CurvatureRadiusMm,
+                    g.Mechanism.HasValue ? g.Mechanism.Value.ToString() : null,
+                    g.HingeSide.HasValue ? g.HingeSide.Value.ToString() : null,
                     g.Holes
                         .Select(h => new HoleResponse(h.Id, h.XMm, h.YMm, h.RadiusMm, h.HoleType.ToString()))
                         .ToList()))

@@ -8,6 +8,24 @@ namespace Shisha.Infrastructure.Services;
 
 public sealed class UserService(AppDbContext db) : IUserService
 {
+    public async Task<IReadOnlyList<UserDto>> GetAllUsersAsync(CancellationToken ct = default)
+    {
+        return await db.Users
+            .AsNoTracking()
+            .OrderBy(u => u.FullName)
+            .Select(u => new UserDto(u.Id, u.FullName, u.Email, u.Role.ToString(), u.MeasurerFixedFeeTjs))
+            .ToListAsync(ct);
+    }
+
+    public async Task<UserDto> GetUserByIdAsync(Guid userId, CancellationToken ct = default)
+    {
+        var user = await db.Users
+            .AsNoTracking()
+            .FirstOrDefaultAsync(u => u.Id == userId, ct)
+            ?? throw new NotFoundException($"User {userId} not found.");
+        return new UserDto(user.Id, user.FullName, user.Email, user.Role.ToString(), user.MeasurerFixedFeeTjs);
+    }
+
     public async Task<IReadOnlyList<MeasurerDto>> GetMeasurersAsync(CancellationToken ct = default)
     {
         return await db.Users

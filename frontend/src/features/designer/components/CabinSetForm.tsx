@@ -6,30 +6,141 @@ import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { glassColorSchema, hardwareColorSchema, GLASS_COLOR_LABELS, HARDWARE_COLOR_LABELS, GlassColorValues, HardwareColorValues } from '../schemas'
 import type { MeasurementFormValues } from '../schemas'
-import type { Panel } from '../lib/types'
+import { useEffect } from 'react'
+import type { LShapeConfig, DoorMechanism, Panel } from '../lib/types'
+import { buildLShapePanels } from '../lib/buildLShapePanels'
+import type { LShapeInitValues } from '../lib/glassesToFormValues'
 import { LeadCombobox } from './LeadCombobox'
 import { useProducts } from '@/features/leads/api'
+import { toast } from 'sonner'
 
 const SELECT_CLASS =
   'flex h-10 w-full cursor-pointer rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50'
 
 // ── L-shape schema ────────────────────────────────────────────────────────────
 
+const L_SHAPE_CONFIGS: LShapeConfig[] = [
+  'DoorOnA_NearWall',
+  'DoorOnA_NearCorner',
+  'DoorOnB_NearWall',
+  'DoorOnB_NearCorner',
+  'DoorsAtCorner',
+]
+
 const lShapeSchema = z.object({
   leadId:        z.string().min(1, 'Выберите лид'),
   product:       z.string().min(1, 'Выберите продукт'),
+  wallAMm:       z.number().min(200, 'Мин. 200').max(3000, 'Макс. 3000'),
+  wallBMm:       z.number().min(200, 'Мин. 200').max(3000, 'Макс. 3000'),
   heightMm:      z.number().min(1500, 'Мин. 1500').max(2500, 'Макс. 2500'),
-  leftWidthMm:   z.number().min(200, 'Мин. 200').max(3000, 'Макс. 3000'),
-  rightWidthMm:  z.number().min(200, 'Мин. 200').max(3000, 'Макс. 3000'),
-  doorWidthMm:   z.number().min(500, 'Мин. 500').max(800, 'Макс. 800'),
-  doorSide:      z.enum(['Left', 'Right']),
+  config:        z.enum(['DoorOnA_NearWall', 'DoorOnA_NearCorner', 'DoorOnB_NearWall', 'DoorOnB_NearCorner', 'DoorsAtCorner']),
+  mechanism:     z.enum(['Hinge', 'Roller']),
+  doorWidthAMm:  z.number().min(500, 'Мин. 500').max(800, 'Макс. 800'),
+  doorWidthBMm:  z.number().min(500, 'Мин. 500').max(800, 'Макс. 800').optional(),
+  doorHinge:     z.enum(['Left', 'Right']),
   glassColor:    glassColorSchema,
   hardwareColor: hardwareColorSchema,
   deliveryTjs:   z.number().min(0),
   depositTjs:    z.number().min(0),
+}).superRefine((data, ctx) => {
+  // DoorsAtCorner forces Roller; Hinge is physically impossible
+  if (data.config === 'DoorsAtCorner' && data.mechanism === 'Hinge') {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['mechanism'],
+      message: 'Петли невозможны при двух дверях в углу. Используйте ролик.',
+    })
+  }
+
+  // Door-fits-in-wall check
+  if (data.config === 'DoorOnA_NearWall' || data.config === 'DoorOnA_NearCorner') {
+    if (data.doorWidthAMm >= data.wallAMm) {
+      ctx.addIssue({ code: 'custom', path: ['doorWidthAMm'], message: 'Дверь шире или равна стене A' })
+    }
+    if (data.mechanism === 'Roller' && data.doorWidthAMm > data.wallAMm / 2) {
+      ctx.addIssue({
+        code: 'custom', path: ['doorWidthAMm'],
+        message: `При роликовом механизме ширина двери не должна превышать ${Math.floor(data.wallAMm / 2)} мм (половину стены A)`,
+      })
+    }
+  } else if (data.config === 'DoorOnB_NearWall' || data.config === 'DoorOnB_NearCorner') {
+    if (data.doorWidthAMm >= data.wallBMm) {
+      ctx.addIssue({ code: 'custom', path: ['doorWidthAMm'], message: 'Дверь шире или равна стене B' })
+    }
+    if (data.mechanism === 'Roller' && data.doorWidthAMm > data.wallBMm / 2) {
+      ctx.addIssue({
+        code: 'custom', path: ['doorWidthAMm'],
+        message: `При роликовом механизме ширина двери не должна превышать ${Math.floor(data.wallBMm / 2)} мм (половину стены B)`,
+      })
+    }
+  } else if (data.config === 'DoorsAtCorner') {
+    if (data.doorWidthAMm >= data.wallAMm) {
+      ctx.addIssue({ code: 'custom', path: ['doorWidthAMm'], message: 'Дверь A шире или равна стене A' })
+    }
+    if (data.mechanism === 'Roller' && data.doorWidthAMm > data.wallAMm / 2) {
+      ctx.addIssue({
+        code: 'custom', path: ['doorWidthAMm'],
+        message: `При роликовом механизме ширина двери A не должна превышать ${Math.floor(data.wallAMm / 2)} мм`,
+      })
+    }
+    const doorB = data.doorWidthBMm ?? data.doorWidthAMm
+    if (doorB >= data.wallBMm) {
+      ctx.addIssue({ code: 'custom', path: ['doorWidthBMm'], message: 'Дверь B шире или равна стене B' })
+    }
+    if (data.mechanism === 'Roller' && doorB > data.wallBMm / 2) {
+      ctx.addIssue({
+        code: 'custom', path: ['doorWidthBMm'],
+        message: `При роликовом механизме ширина двери B не должна превышать ${Math.floor(data.wallBMm / 2)} мм`,
+      })
+    }
+  }
 })
 
 type LShapeValues = z.infer<typeof lShapeSchema>
+
+// SVG top-view diagrams for each config (wall A = horizontal, wall B = vertical on right)
+function ConfigIcon({ config, active }: { config: LShapeConfig; active: boolean }) {
+  // Walls: always grey contour. Door: always solid gold. Active door gets pulse.
+  const w = '#9ca3af'        // wall stroke (grey-400)
+  const d = '#c9a84c'        // door fill + stroke (gold)
+  const dp = active ? 'animate-pulse' : ''   // pulse only on selected card
+
+  const ay = 4; const ah = 6
+  const bx = 34; const bw = 6
+  const by = 10; const bh = 22
+
+  // Full walls (no door)
+  const aFull   = <rect x="4"  y={ay} width="36" height={ah} fill="none" stroke={w} strokeWidth="1.5" />
+  const bFull   = <rect x={bx} y={by} width={bw} height={bh} fill="none" stroke={w} strokeWidth="1.5" />
+
+  // Wall A split: door on left (NearWall) / door on right (NearCorner)
+  const aDoorL  = <rect x="4"  y={ay} width="20" height={ah} fill={d} stroke={d} strokeWidth="1.5" className={dp} />
+  const aRemR   = <rect x="24" y={ay} width="16" height={ah} fill="none" stroke={w} strokeWidth="1.5" />
+  const aRemL   = <rect x="4"  y={ay} width="16" height={ah} fill="none" stroke={w} strokeWidth="1.5" />
+  const aDoorR  = <rect x="20" y={ay} width="20" height={ah} fill={d} stroke={d} strokeWidth="1.5" className={dp} />
+
+  // Wall B split: door on top (NearCorner) / door on bottom (NearWall)
+  const bDoorT  = <rect x={bx} y={by}    width={bw} height="12" fill={d} stroke={d} strokeWidth="1.5" className={dp} />
+  const bRemBo  = <rect x={bx} y={by+12} width={bw} height="10" fill="none" stroke={w} strokeWidth="1.5" />
+  const bRemTo  = <rect x={bx} y={by}    width={bw} height="10" fill="none" stroke={w} strokeWidth="1.5" />
+  const bDoorBo = <rect x={bx} y={by+10} width={bw} height="12" fill={d} stroke={d} strokeWidth="1.5" className={dp} />
+
+  switch (config) {
+    case 'DoorOnA_NearWall':   return <svg viewBox="0 0 44 36" className="h-8 w-12" fill="none">{aDoorL}{aRemR}{bFull}</svg>
+    case 'DoorOnA_NearCorner': return <svg viewBox="0 0 44 36" className="h-8 w-12" fill="none">{aRemL}{aDoorR}{bFull}</svg>
+    case 'DoorOnB_NearWall':   return <svg viewBox="0 0 44 36" className="h-8 w-12" fill="none">{aFull}{bRemTo}{bDoorBo}</svg>
+    case 'DoorOnB_NearCorner': return <svg viewBox="0 0 44 36" className="h-8 w-12" fill="none">{aFull}{bDoorT}{bRemBo}</svg>
+    case 'DoorsAtCorner':      return <svg viewBox="0 0 44 36" className="h-8 w-12" fill="none">{aRemL}{aDoorR}{bDoorT}{bRemBo}</svg>
+  }
+}
+
+const CONFIG_LABELS: Record<LShapeConfig, string> = {
+  DoorOnA_NearWall:   'Дверь A у стены',
+  DoorOnA_NearCorner: 'Дверь A у угла',
+  DoorOnB_NearWall:   'Дверь B у стены',
+  DoorOnB_NearCorner: 'Дверь B у угла',
+  DoorsAtCorner:      'Две двери в углу',
+}
 
 // ── Curved schema ─────────────────────────────────────────────────────────────
 
@@ -55,15 +166,23 @@ interface Props {
   cabinType: 'lshape' | 'curved'
   initialValues: MeasurementFormValues
   disableLeadSelector?: boolean
+  storageKey?: string
+  lshapeInit?: LShapeInitValues
   onApply: (values: MeasurementFormValues, panels: Panel[]) => void
 }
 
-// ── LShapeForm ────────────────────────────────────────────────────────────────
+// ── CabinSetForm ──────────────────────────────────────────────────────────────
 
-export function CabinSetForm({ cabinType, initialValues, disableLeadSelector, onApply }: Props) {
+export function CabinSetForm({ cabinType, initialValues, disableLeadSelector, storageKey, lshapeInit, onApply }: Props) {
   if (cabinType === 'lshape') {
     return (
-      <LShapeForm initialValues={initialValues} disableLeadSelector={disableLeadSelector} onApply={onApply} />
+      <LShapeForm
+        initialValues={initialValues}
+        disableLeadSelector={disableLeadSelector}
+        storageKey={storageKey}
+        lshapeInit={lshapeInit}
+        onApply={onApply}
+      />
     )
   }
   return (
@@ -71,8 +190,19 @@ export function CabinSetForm({ cabinType, initialValues, disableLeadSelector, on
   )
 }
 
-function LShapeForm({ initialValues, disableLeadSelector, onApply }: Omit<Props, 'cabinType'>) {
+function LShapeForm({ initialValues, disableLeadSelector, storageKey, lshapeInit, onApply }: Omit<Props, 'cabinType'>) {
   const { data: products = [] } = useProducts()
+
+  // Priority: lshapeInit (from backend) > localStorage > blank defaults
+  const savedJson = storageKey ? localStorage.getItem(`${storageKey}_lshape`) : null
+  const saved = savedJson ? (() => { try { return JSON.parse(savedJson) as Partial<LShapeValues> } catch { return null } })() : null
+  const src = lshapeInit
+    ? { wallAMm: lshapeInit.wallAMm, wallBMm: lshapeInit.wallBMm, heightMm: lshapeInit.heightMm,
+        config: lshapeInit.config, mechanism: lshapeInit.mechanism,
+        doorWidthAMm: lshapeInit.doorWidthAMm, doorWidthBMm: lshapeInit.doorWidthBMm,
+        doorHinge: lshapeInit.doorHinge }
+    : saved ?? {}
+  const wasRestored = !lshapeInit && !!saved
 
   const form = useForm<LShapeValues>({
     resolver: zodResolver(lShapeSchema),
@@ -80,11 +210,14 @@ function LShapeForm({ initialValues, disableLeadSelector, onApply }: Omit<Props,
     defaultValues: {
       leadId:        initialValues.leadId,
       product:       initialValues.product,
-      heightMm:      initialValues.heightMm,
-      leftWidthMm:   undefined,
-      rightWidthMm:  undefined,
-      doorWidthMm:   undefined,
-      doorSide:      'Left',
+      wallAMm:       (src.wallAMm as number | undefined) ?? undefined,
+      wallBMm:       (src.wallBMm as number | undefined) ?? undefined,
+      heightMm:      (src.heightMm as number | undefined) ?? initialValues.heightMm,
+      config:        (src.config as LShapeConfig | undefined) ?? 'DoorOnA_NearWall',
+      mechanism:     (src.mechanism as DoorMechanism | undefined) ?? 'Hinge',
+      doorWidthAMm:  (src.doorWidthAMm as number | undefined) ?? undefined,
+      doorWidthBMm:  (src.doorWidthBMm as number | undefined) ?? undefined,
+      doorHinge:     (src.doorHinge as 'Left' | 'Right' | undefined) ?? 'Left',
       glassColor:    initialValues.glassColor,
       hardwareColor: initialValues.hardwareColor,
       deliveryTjs:   initialValues.deliveryTjs,
@@ -92,16 +225,65 @@ function LShapeForm({ initialValues, disableLeadSelector, onApply }: Omit<Props,
     },
   })
 
-  const { register, handleSubmit, control, formState: { errors } } = form
+  const { register, handleSubmit, control, watch, setValue, formState: { errors } } = form
+  const config = watch('config')
+  const mechanism = watch('mechanism') as DoorMechanism
+  const isDoorsAtCorner = config === 'DoorsAtCorner'
+  const mechanismLocked = isDoorsAtCorner
+
+  // Show toast once when data is restored from localStorage
+  useEffect(() => {
+    if (wasRestored) {
+      toast.info('Восстановлены данные прошлой сессии', {
+        action: {
+          label: 'Очистить',
+          onClick: () => {
+            if (storageKey) localStorage.removeItem(`${storageKey}_lshape`)
+            form.reset({
+              leadId: initialValues.leadId, product: initialValues.product,
+              heightMm: initialValues.heightMm, config: 'DoorOnA_NearWall',
+              mechanism: 'Hinge', doorHinge: 'Left',
+              glassColor: initialValues.glassColor, hardwareColor: initialValues.hardwareColor,
+              deliveryTjs: initialValues.deliveryTjs, depositTjs: initialValues.depositTjs,
+              wallAMm: undefined as unknown as number, wallBMm: undefined as unknown as number,
+              doorWidthAMm: undefined as unknown as number,
+            })
+          },
+        },
+        duration: 6000,
+      })
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Persist to localStorage on every change
+  useEffect(() => {
+    if (!storageKey) return
+    const sub = form.watch((values) => {
+      localStorage.setItem(`${storageKey}_lshape`, JSON.stringify(values))
+    })
+    return () => sub.unsubscribe()
+  }, [form, storageKey])
+
+  function handleConfigChange(cfg: LShapeConfig) {
+    setValue('config', cfg, { shouldValidate: true })
+    if (cfg === 'DoorsAtCorner') {
+      setValue('mechanism', 'Roller', { shouldValidate: true })
+    }
+  }
 
   function onSubmit(v: LShapeValues) {
-    const setId = crypto.randomUUID()
-    const panels: Panel[] = [
-      { id: crypto.randomUUID(), widthMm: v.leftWidthMm,  heightMm: v.heightMm, isDoor: false, position: 0, shape: 'LShapeLeft',  setId },
-      { id: crypto.randomUUID(), widthMm: v.rightWidthMm, heightMm: v.heightMm, isDoor: false, position: 1, shape: 'LShapeRight', setId },
-      { id: crypto.randomUUID(), widthMm: v.doorWidthMm,  heightMm: v.heightMm, isDoor: true,  position: 2, shape: 'Flat',       setId },
-    ]
-    const totalWidth = panels.reduce((s, p) => s + p.widthMm, 0)
+    const panels = buildLShapePanels({
+      config: v.config,
+      wallAMm: v.wallAMm,
+      wallBMm: v.wallBMm,
+      heightMm: v.heightMm,
+      doorWidthAMm: v.doorWidthAMm,
+      doorWidthBMm: v.doorWidthBMm,
+      mechanism: v.mechanism as DoorMechanism,
+      hingeSide: v.doorHinge,
+    })
+    const totalWidth = v.wallAMm + v.wallBMm
     const measureMm = Math.max(600, Math.min(3000, totalWidth - 40))
     const measurementValues: MeasurementFormValues = {
       leadId:        v.leadId,
@@ -127,13 +309,16 @@ function LShapeForm({ initialValues, disableLeadSelector, onApply }: Omit<Props,
       />
 
       <section className="flex flex-col gap-4">
-        <div>
-          <h3 className="text-sm font-medium mb-3">Левая стенка</h3>
+        <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Размеры</h2>
+
+        {/* Wall A */}
+        <div className="flex flex-col gap-2">
+          <h3 className="text-sm font-medium">Стена A (горизонтальная)</h3>
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
-              <Label>Ширина (мм)</Label>
-              <Input type="number" inputMode="numeric" placeholder="800" {...register('leftWidthMm', { valueAsNumber: true })} />
-              {errors.leftWidthMm && <p className="text-xs text-destructive">{errors.leftWidthMm.message}</p>}
+              <Label>Общая ширина (мм)</Label>
+              <Input type="number" inputMode="numeric" placeholder="1300" {...register('wallAMm', { valueAsNumber: true })} />
+              {errors.wallAMm && <p className="text-xs text-destructive">{errors.wallAMm.message}</p>}
             </div>
             <div className="flex flex-col gap-1.5">
               <Label>Высота (мм)</Label>
@@ -143,36 +328,102 @@ function LShapeForm({ initialValues, disableLeadSelector, onApply }: Omit<Props,
           </div>
         </div>
 
-        <div>
-          <h3 className="text-sm font-medium mb-3">Правая стенка</h3>
+        {/* Wall B */}
+        <div className="flex flex-col gap-2">
+          <h3 className="text-sm font-medium">Стена B (вертикальная)</h3>
           <div className="flex flex-col gap-1.5">
-            <Label>Ширина (мм)</Label>
-            <Input type="number" inputMode="numeric" placeholder="800" {...register('rightWidthMm', { valueAsNumber: true })} />
-            {errors.rightWidthMm && <p className="text-xs text-destructive">{errors.rightWidthMm.message}</p>}
-            <p className="text-xs text-muted-foreground">Высота берётся из левой стенки — одинаковая</p>
+            <Label>Общая ширина (мм)</Label>
+            <Input type="number" inputMode="numeric" placeholder="1300" {...register('wallBMm', { valueAsNumber: true })} />
+            {errors.wallBMm && <p className="text-xs text-destructive">{errors.wallBMm.message}</p>}
+            <p className="text-xs text-muted-foreground">Высота та же, что у стены A</p>
           </div>
         </div>
 
-        <div>
-          <h3 className="text-sm font-medium mb-3">Дверь</h3>
-          <div className="grid grid-cols-2 gap-3">
+        {/* Door width(s) */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="flex flex-col gap-1.5">
+            <Label>{isDoorsAtCorner ? 'Ширина двери A (мм)' : 'Ширина двери (мм)'}</Label>
+            <Input type="number" inputMode="numeric" placeholder="700" {...register('doorWidthAMm', { valueAsNumber: true })} />
+            {errors.doorWidthAMm && <p className="text-xs text-destructive">{errors.doorWidthAMm.message}</p>}
+          </div>
+          {isDoorsAtCorner && (
             <div className="flex flex-col gap-1.5">
-              <Label>Ширина (мм)</Label>
-              <Input type="number" inputMode="numeric" placeholder="700" {...register('doorWidthMm', { valueAsNumber: true })} />
-              {errors.doorWidthMm && <p className="text-xs text-destructive">{errors.doorWidthMm.message}</p>}
+              <Label>Ширина двери B (мм)</Label>
+              <Input type="number" inputMode="numeric" placeholder="700" {...register('doorWidthBMm', { valueAsNumber: true })} />
+              {errors.doorWidthBMm && <p className="text-xs text-destructive">{errors.doorWidthBMm.message}</p>}
             </div>
+          )}
+          {mechanism === 'Hinge' && (
             <div className="flex flex-col gap-1.5">
-              <Label>Петли</Label>
-              <select {...register('doorSide')} className={SELECT_CLASS}>
+              <Label>Сторона петель</Label>
+              <select {...register('doorHinge')} className={SELECT_CLASS}>
                 <option value="Left">Слева</option>
                 <option value="Right">Справа</option>
               </select>
-              {errors.doorSide && <p className="text-xs text-destructive">{errors.doorSide.message}</p>}
             </div>
-          </div>
+          )}
         </div>
 
-        <p className="text-xs text-muted-foreground">Высота всех панелей одинакова. Дверь входит в состав кабины.</p>
+        {/* Mechanism picker */}
+        <div className="flex flex-col gap-2">
+          <Label>Тип крепления двери</Label>
+          <div className="grid grid-cols-2 gap-2">
+            {(['Hinge', 'Roller'] as const).map((m) => {
+              const isActive = mechanism === m
+              const disabled = mechanismLocked && m === 'Hinge'
+              return (
+                <button
+                  key={m}
+                  type="button"
+                  disabled={disabled}
+                  onClick={() => !disabled && setValue('mechanism', m, { shouldValidate: true })}
+                  className={[
+                    'flex flex-col items-center gap-1 rounded-lg border p-3 transition-colors',
+                    disabled
+                      ? 'cursor-not-allowed border-border opacity-40'
+                      : isActive
+                        ? 'border-[#c9a84c] bg-[#c9a84c]/10 text-[#c9a84c]'
+                        : 'border-border text-muted-foreground hover:border-muted-foreground',
+                  ].join(' ')}
+                >
+                  <span className="text-xl">{m === 'Hinge' ? '🔩' : '🎿'}</span>
+                  <span className="text-xs font-medium">{m === 'Hinge' ? 'Петли' : 'Ролик'}</span>
+                </button>
+              )
+            })}
+          </div>
+          {mechanismLocked && (
+            <p className="text-xs text-muted-foreground">
+              Для двух дверей в углу возможен только роликовый механизм
+            </p>
+          )}
+          {errors.mechanism && <p className="text-xs text-destructive">{errors.mechanism.message}</p>}
+        </div>
+
+        {/* Config selector */}
+        <div className="flex flex-col gap-2">
+          <Label>Расположение двери</Label>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {L_SHAPE_CONFIGS.map((cfg) => (
+              <button
+                key={cfg}
+                type="button"
+                onClick={() => handleConfigChange(cfg)}
+                className={[
+                  'flex flex-col items-center gap-1 rounded-lg border p-2 transition-colors text-center',
+                  config === cfg
+                    ? 'border-[#c9a84c] bg-[#c9a84c]/10 text-[#c9a84c]'
+                    : 'border-border text-muted-foreground hover:border-muted-foreground',
+                ].join(' ')}
+              >
+                <ConfigIcon config={cfg} active={config === cfg} />
+                <span className="text-[10px] leading-tight font-medium">{CONFIG_LABELS[cfg]}</span>
+              </button>
+            ))}
+          </div>
+          <p className="text-xs text-muted-foreground">Остаток стены крепится к бетонной стене или углу</p>
+          {errors.config && <p className="text-xs text-destructive">{errors.config.message}</p>}
+        </div>
       </section>
 
       <SharedColors

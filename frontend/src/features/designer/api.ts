@@ -11,6 +11,8 @@ export interface PanelInput {
   shape?: string
   setId?: string | null
   curvatureRadiusMm?: number | null
+  mechanism?: string | null
+  hingeSide?: string | null
 }
 
 export interface HoleRequest {
@@ -52,6 +54,8 @@ export interface GlassResponse {
   shape?: string
   setId?: string | null
   curvatureRadiusMm?: number | null
+  mechanism?: string | null
+  hingeSide?: string | null
   holes: HoleResponse[]
 }
 
