@@ -8,12 +8,11 @@ import { Hole } from './Hole'
 const PAD = 60
 const TICK = 6
 
-// Stroke colour by panel shape (Flat split by isDoor vs fixed)
 const SHAPE_STROKE: Record<PanelShape, string> = {
-  Flat:        '#334155', // overridden per panel if isDoor
-  LShapeLeft:  '#818cf8', // indigo
-  LShapeRight: '#a78bfa', // violet
-  Curved:      '#34d399', // emerald
+  Flat:        '#334155',
+  LShapeLeft:  '#818cf8',
+  LShapeRight: '#a78bfa',
+  Curved:      '#34d399',
 }
 
 const MIN_DOOR_W  = 500
@@ -22,8 +21,11 @@ const MIN_FIXED_W = 200
 const MAX_FIXED_W = 3000
 const MIN_HEIGHT  = 200
 
-const SNAP_THRESHOLD  = 5  // mm
-const HOLE_EDGE_MARGIN = 20 // mirrors Hole.tsx EDGE_MARGIN
+const SNAP_THRESHOLD  = 5
+const HOLE_EDGE_MARGIN = 20
+
+const LONG_PRESS_MS = 500
+const SHORT_TAP_MS  = 200
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -45,13 +47,8 @@ export interface PanelScreenRect {
   h: number
 }
 
-// ── Snap computation ──────────────────────────────────────────────────────────
+// ── Snap ──────────────────────────────────────────────────────────────────────
 
-/**
- * Finds the nearest aligned neighbour within `threshold` mm on each axis.
- * Snaps only the closer axis (X or Y, not both). Returns final position and
- * the guide coordinates to draw (both X and Y guides shown when within threshold).
- */
 export function computeSnap(
   currentX: number,
   currentY: number,
@@ -130,13 +127,13 @@ interface DrawingCanvasProps {
   panels: Panel[]
   holesByPanel: HoleData[][]
   cabinHeightMm: number
-  /** Controlled zoom — 1 = full drawing fits container */
   zoom: number
   onZoomChange: (z: number) => void
   onHolesChange?: (holesByPanel: HoleData[][]) => void
   onPanelsChange?: (panels: Panel[]) => void
   selectedPanelId?: string | null
   onSelectPanel?: (id: string | null, rect?: PanelScreenRect) => void
+  onRequestContextMenu?: (panelId: string, rect: PanelScreenRect) => void
   className?: string
 }
 
@@ -152,6 +149,7 @@ export function DrawingCanvas({
   onPanelsChange,
   selectedPanelId,
   onSelectPanel,
+  onRequestContextMenu,
   className,
 }: DrawingCanvasProps) {
   const [holes, setHoles] = useState<HoleData[][]>(initialHoles)
@@ -159,10 +157,21 @@ export function DrawingCanvas({
   const [isDragging, setIsDragging] = useState(false)
   const [activeGuides, setActiveGuides] = useState<{ x: number | null; y: number | null }>({ x: null, y: null })
 
+  // Inline width editing state
+  const [editingPanelId, setEditingPanelId] = useState<string | null>(null)
+  const [editingWidth, setEditingWidth] = useState('')
+
   const svgRef = useRef<SVGSVGElement>(null)
   const activeDragRef = useRef<DragState | null>(null)
 
-  // Refs for stable access inside useCallback without stale closures
+  // Long-press / click tracking (per panel)
+  const pointerDownTimeRef = useRef<number>(0)
+  const pointerDownPosRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 })
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const longPressTargetRef = useRef<{ panelId: string; panelIdx: number } | null>(null)
+  const hasMoved = useRef(false)
+  const MOVE_THRESHOLD = 6 // px — ignore micro-jitter from trackpad/mouse
+
   const holesRef = useRef<HoleData[][]>(holes)
   const xsRef = useRef<number[]>([])
   const renderPanelsRef = useRef<Panel[]>([])
@@ -171,7 +180,6 @@ export function DrawingCanvas({
   const totalWidthMm = renderPanels.reduce((acc, p) => acc + p.widthMm, 0)
   const xs = xPositions(renderPanels)
 
-  // Group panels by setId for bounding-box dashed outline
   const setGroups = useMemo(() => {
     const map = new Map<string, number[]>()
     renderPanels.forEach((p, i) => {
@@ -183,7 +191,6 @@ export function DrawingCanvas({
     return map
   }, [renderPanels])
 
-  // Keep refs in sync every render
   holesRef.current = holes
   xsRef.current = xs
   renderPanelsRef.current = renderPanels
@@ -256,7 +263,7 @@ export function DrawingCanvas({
     onZoomChange(Math.min(3, Math.max(0.25, Math.round((zoom + delta) * 10) / 10)))
   }
 
-  // ── Glass selection ───────────────────────────────────────────────────────
+  // ── Screen rect helper ─────────────────────────────────────────────────────
 
   function getGlassScreenRect(panelIdx: number): PanelScreenRect {
     const svg = svgRef.current!
@@ -271,18 +278,100 @@ export function DrawingCanvas({
     }
   }
 
-  function handleGlassClick(e: React.MouseEvent, panelId: string, panelIdx: number) {
+  // ── Panel pointer events (select + long press + inline edit) ──────────────
+
+  function startPanelPointer(
+    e: React.PointerEvent<SVGRectElement>,
+    panelId: string,
+    panelIdx: number,
+  ) {
+    if (e.button !== 0 && e.pointerType === 'mouse') return
     e.stopPropagation()
-    if (isDragging) return
-    if (!svgRef.current?.getScreenCTM?.()) {
-      onSelectPanel?.(panelId)
-      return
+    hasMoved.current = false
+    pointerDownTimeRef.current = Date.now()
+    pointerDownPosRef.current = { x: e.clientX, y: e.clientY }
+    longPressTargetRef.current = { panelId, panelIdx }
+
+    // Long press only fires on touch devices; mouse uses click in endPanelPointer
+    if (e.pointerType !== 'mouse') {
+      longPressTimerRef.current = setTimeout(() => {
+        if (hasMoved.current) return
+        const rect = svgRef.current?.getScreenCTM?.()
+          ? getGlassScreenRect(panelIdx)
+          : { x: 0, y: 0, w: 0, h: 0 }
+        onRequestContextMenu?.(panelId, rect)
+      }, LONG_PRESS_MS)
     }
-    onSelectPanel?.(panelId, getGlassScreenRect(panelIdx))
+  }
+
+  function endPanelPointer(
+    _e: React.PointerEvent<SVGRectElement>,
+    panelId: string,
+    panelIdx: number,
+  ) {
+    clearTimeout(longPressTimerRef.current ?? undefined)
+    longPressTimerRef.current = null
+
+    if (hasMoved.current || isDragging) return
+    const elapsed = Date.now() - pointerDownTimeRef.current
+    if (elapsed >= SHORT_TAP_MS) return // long press was already handled by the timer
+
+    const rect = svgRef.current?.getScreenCTM?.()
+      ? getGlassScreenRect(panelIdx)
+      : { x: 0, y: 0, w: 0, h: 0 }
+
+    const isTouch = window.matchMedia('(pointer: coarse)').matches
+    if (isTouch) {
+      // Touch: short tap = visual select only; context menu comes from long press
+      onSelectPanel?.(panelId, rect)
+    } else {
+      // Mouse / trackpad: click = open context menu immediately
+      onRequestContextMenu?.(panelId, rect)
+    }
+  }
+
+  function cancelLongPress() {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current)
+      longPressTimerRef.current = null
+    }
+    hasMoved.current = true
+  }
+
+  // ── Double-click → inline edit ────────────────────────────────────────────
+
+  function handlePanelDoubleClick(
+    e: React.MouseEvent,
+    panelId: string,
+    panelIdx: number,
+  ) {
+    e.stopPropagation()
+    const panel = renderPanels[panelIdx]
+    if (!panel) return
+    setEditingPanelId(panelId)
+    setEditingWidth(String(panel.widthMm))
+  }
+
+  function applyInlineWidth() {
+    if (!editingPanelId) return
+    const panel = renderPanels.find((p) => p.id === editingPanelId)
+    if (!panel) { setEditingPanelId(null); return }
+    const v = parseInt(editingWidth, 10)
+    if (!Number.isNaN(v) && v > 0) {
+      const clamped = panel.isDoor
+        ? Math.max(400, Math.min(800, v))
+        : Math.max(200, Math.min(3000, v))
+      const updated = renderPanels.map((p) =>
+        p.id === editingPanelId ? { ...p, widthMm: clamped } : p,
+      )
+      onPanelsChange?.(updated)
+    }
+    setEditingPanelId(null)
   }
 
   function handleSvgClick() {
     onSelectPanel?.(null)
+    setEditingPanelId(null)
   }
 
   // ── Panel boundary drag ───────────────────────────────────────────────────
@@ -373,7 +462,7 @@ export function DrawingCanvas({
         aria-label="Чертёж кабины"
         onClick={handleSvgClick}
       >
-        {/* ── 0. Set group outlines (below panels) ── */}
+        {/* ── 0. Set group outlines ── */}
         {Array.from(setGroups.entries()).map(([setId, idxs]) => {
           const minX = Math.min(...idxs.map((i) => xs[i]))
           const maxX = Math.max(...idxs.map((i) => xs[i] + renderPanels[i].widthMm))
@@ -387,35 +476,59 @@ export function DrawingCanvas({
               width={maxX - minX + PAD_SET * 2} height={maxY - minY + PAD_SET * 2}
               fill="none"
               stroke="#94a3b8" strokeWidth={1.5} strokeDasharray="8 4"
-              opacity={0.3}
-              rx={4}
-              pointerEvents="none"
+              opacity={0.3} rx={4} pointerEvents="none"
             />
           )
         })}
 
-        {/* ── 1. Glass panel rects ── */}
+        {/* ── 1. Panel rects ── */}
         {renderPanels.map((panel, i) => {
           const shape = panel.shape ?? 'Flat'
           const yOffset = cabinHeightMm - panel.heightMm
           const isSelected = panel.id === selectedPanelId
           const baseStroke = shape === 'Flat' ? '#334155' : SHAPE_STROKE[shape]
-          const fillColor = panel.isDoor ? '#dbeafe' : (shape !== 'Flat' ? `${SHAPE_STROKE[shape]}18` : '#f8fafc')
+          const selectedStroke = '#c9a84c'
+          const baseFill = panel.isDoor ? '#dbeafe' : (shape !== 'Flat' ? `${SHAPE_STROKE[shape]}18` : '#f8fafc')
+          const selectedFill = 'rgba(201, 168, 76, 0.08)'
+          const isEditing = panel.id === editingPanelId
 
           return (
             <g key={`panel-${panel.id}`}>
+              {/* Golden selection glow ring */}
+              {isSelected && (
+                <rect
+                  x={xs[i] - 3} y={yOffset - 3}
+                  width={panel.widthMm + 6} height={panel.heightMm + 6}
+                  fill="none"
+                  stroke="#c9a84c" strokeWidth={1} opacity={0.3}
+                  rx={4} pointerEvents="none"
+                />
+              )}
+
               <rect
                 data-testid="glass-rect"
                 x={xs[i]} y={yOffset}
                 width={panel.widthMm} height={panel.heightMm}
-                fill={fillColor}
-                stroke={isSelected ? '#6366f1' : baseStroke}
-                strokeWidth={isSelected ? 3 : 2}
-                style={{ cursor: 'pointer' }}
-                onClick={(e) => handleGlassClick(e, panel.id, i)}
+                fill={isSelected ? selectedFill : baseFill}
+                stroke={isSelected ? selectedStroke : baseStroke}
+                strokeWidth={isSelected ? 2.5 : 2}
+                style={{ cursor: 'pointer', touchAction: 'none' }}
+                onPointerDown={(e) => startPanelPointer(e, panel.id, i)}
+                onPointerUp={(e) => endPanelPointer(e, panel.id, i)}
+                onPointerMove={(e) => {
+                  const dx = Math.abs(e.clientX - pointerDownPosRef.current.x)
+                  const dy = Math.abs(e.clientY - pointerDownPosRef.current.y)
+                  if (dx > MOVE_THRESHOLD || dy > MOVE_THRESHOLD) {
+                    hasMoved.current = true
+                    cancelLongPress()
+                  }
+                }}
+                onPointerCancel={cancelLongPress}
+                onClick={(e) => e.stopPropagation()}
+                onDoubleClick={(e) => handlePanelDoubleClick(e, panel.id, i)}
               />
 
-              {/* Door rail indicator */}
+              {/* Door rail */}
               {panel.isDoor && (
                 <line
                   x1={xs[i] + 2} y1={yOffset + 6}
@@ -442,14 +555,12 @@ export function DrawingCanvas({
                   x={xs[i] + panel.widthMm / 2}
                   y={yOffset + panel.heightMm / 2}
                   textAnchor="middle" dominantBaseline="middle"
-                  fontSize={18} fill="#34d399"
-                  pointerEvents="none"
+                  fontSize={18} fill="#34d399" pointerEvents="none"
                 >
                   {`⌒ R: ${panel.curvatureRadiusMm ?? '?'}мм`}
                 </text>
               )}
 
-              {/* LShapeLeft corner icon — bottom-right */}
               {shape === 'LShapeLeft' && (
                 <text
                   x={xs[i] + panel.widthMm - 10}
@@ -461,7 +572,6 @@ export function DrawingCanvas({
                 </text>
               )}
 
-              {/* LShapeRight corner icon — bottom-left */}
               {shape === 'LShapeRight' && (
                 <text
                   x={xs[i] + 10}
@@ -472,6 +582,66 @@ export function DrawingCanvas({
                   ¬
                 </text>
               )}
+
+              {/* Inline width editor (double-click) */}
+              {isEditing && (
+                <foreignObject
+                  x={xs[i] + panel.widthMm / 2 - 70}
+                  y={yOffset - 52}
+                  width={140}
+                  height={44}
+                >
+                  <div>
+                    <input
+                      type="number"
+                      value={editingWidth}
+                      onChange={(e) => setEditingWidth(e.target.value)}
+                      onBlur={applyInlineWidth}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') applyInlineWidth()
+                        if (e.key === 'Escape') setEditingPanelId(null)
+                        e.stopPropagation()
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                      // eslint-disable-next-line jsx-a11y/no-autofocus
+                      autoFocus
+                      className="w-full rounded-lg border border-[#c9a84c] bg-[#0d1117]
+                                 px-3 py-2 text-center font-mono text-sm text-white
+                                 outline-none [appearance:textfield]
+                                 [&::-webkit-inner-spin-button]:appearance-none
+                                 [&::-webkit-outer-spin-button]:appearance-none"
+                    />
+                  </div>
+                </foreignObject>
+              )}
+
+              {/* Per-panel dimension label */}
+              <g pointerEvents="none">
+                <line
+                  x1={xs[i]} x2={xs[i] + panel.widthMm}
+                  y1={cabinHeightMm + 22} y2={cabinHeightMm + 22}
+                  stroke="rgba(255,255,255,0.2)" strokeWidth={1}
+                />
+                <line
+                  x1={xs[i]} x2={xs[i]}
+                  y1={cabinHeightMm + 17} y2={cabinHeightMm + 27}
+                  stroke="rgba(255,255,255,0.2)" strokeWidth={1}
+                />
+                <line
+                  x1={xs[i] + panel.widthMm} x2={xs[i] + panel.widthMm}
+                  y1={cabinHeightMm + 17} y2={cabinHeightMm + 27}
+                  stroke="rgba(255,255,255,0.2)" strokeWidth={1}
+                />
+                <text
+                  x={xs[i] + panel.widthMm / 2}
+                  y={cabinHeightMm + 40}
+                  textAnchor="middle" fontSize={14}
+                  fill={isSelected ? 'rgba(201,168,76,0.8)' : 'rgba(255,255,255,0.35)'}
+                  fontFamily="monospace"
+                >
+                  {panel.widthMm}мм
+                </text>
+              </g>
             </g>
           )
         })}
@@ -489,7 +659,7 @@ export function DrawingCanvas({
               <rect
                 x={bx - 10} y={0} width={20} height={cabinHeightMm}
                 fill="transparent"
-                style={{ cursor: 'ew-resize' }}
+                style={{ cursor: 'ew-resize', touchAction: 'none' }}
                 onPointerDown={(e) => startDrag(e, 'boundary', i)}
                 onPointerMove={handleDragMove}
                 onPointerUp={handleDragUp}
@@ -513,7 +683,7 @@ export function DrawingCanvas({
               <rect
                 x={xs[i]} y={topY - 10} width={panel.widthMm} height={20}
                 fill="transparent"
-                style={{ cursor: 'ns-resize' }}
+                style={{ cursor: 'ns-resize', touchAction: 'none' }}
                 onPointerDown={(e) => startDrag(e, 'height', i)}
                 onPointerMove={handleDragMove}
                 onPointerUp={handleDragUp}
@@ -523,7 +693,7 @@ export function DrawingCanvas({
           )
         })}
 
-        {/* ── 4. Holes ── */}
+        {/* ── 4. Holes (with larger touch hit area) ── */}
         {renderPanels.map((panel, i) => {
           const yOffset = cabinHeightMm - panel.heightMm
           return (holes[i] ?? []).map((hole, j) => (
@@ -542,18 +712,11 @@ export function DrawingCanvas({
           ))
         })}
 
-        {/* ── 5. Dimension lines ── */}
-        {renderPanels.map((panel, i) => (
-          <HorizDim
-            key={`dim-w-${i}`}
-            x1={xs[i]} x2={xs[i] + panel.widthMm}
-            y={cabinHeightMm + 22} label={`${panel.widthMm}`}
-          />
-        ))}
-        <HorizDim x1={0} x2={totalWidthMm} y={cabinHeightMm + 50} label={`${totalWidthMm}`} bold />
+        {/* ── 5. Overall dimension lines ── */}
+        <HorizDim x1={0} x2={totalWidthMm} y={cabinHeightMm + 58} label={`${totalWidthMm}`} bold />
         <VertDim x={totalWidthMm + 22} y1={0} y2={cabinHeightMm} label={`${cabinHeightMm}`} />
 
-        {/* ── 6. Snap guides (always on top) ── */}
+        {/* ── 6. Snap guides ── */}
         {activeGuides.y !== null && (
           <line
             data-testid="snap-guide-h"

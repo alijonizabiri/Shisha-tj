@@ -1,11 +1,22 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { toast, Toaster } from 'sonner'
 import { computeInitialPanels, computeMetrics } from './lib/computePanels'
 import { defaultHoles } from './lib/defaultHoles'
-import type { Hole, Panel, HoleType, PanelShape } from './lib/types'
+import {
+  resizeDoor,
+  resizePanel,
+  resizeHeight,
+  toggleHingeSide,
+  toggleMechanism,
+  moveDoorSide,
+  moveDoorToOtherWall,
+  convertToDoor,
+  syncHolesAfterPanelChange,
+} from './lib/panelActions'
+import type { Hole, Panel, HoleType, PanelShape, LShapeConfig, DoorMechanism } from './lib/types'
 import { measurementFormSchema, type MeasurementFormValues, type GlassColor, type HardwareColor } from './schemas'
 import { downloadMeasurementPdf, useDesignerLeads, useGetMeasurement, useSaveMeasurement, useUpdateMeasurement, type HoleRequest } from './api'
 import { glassesToFormValues } from './lib/glassesToFormValues'
@@ -17,7 +28,7 @@ import { DesignerInfoCard } from './components/DesignerInfoCard'
 import { DesignerZoomControls } from './components/DesignerZoomControls'
 import { DesignerFab } from './components/DesignerFab'
 import { DesignerSheet } from './components/DesignerSheet'
-import { GlassContextPopover } from './components/GlassContextPopover'
+import { PanelContextMenu } from './components/PanelContextMenu'
 
 const DEFAULT_FORM_VALUES: MeasurementFormValues = {
   leadId:        '',
@@ -42,6 +53,28 @@ function flattenHoles(holesByPanel: Hole[][]): HoleRequest[] {
   )
 }
 
+// Infer LShapeConfig from the current panel arrangement
+function inferLShapeConfig(panels: Panel[]): LShapeConfig | undefined {
+  const setId = panels.find((p) => p.setId)?.setId
+  if (!setId) return undefined
+
+  const door = panels.find((p) => p.isDoor && p.setId === setId)
+  if (!door) return undefined
+
+  const shape = door.shape
+  const wallPanels = panels.filter((p) => p.setId === setId && p.shape === shape)
+  const isDoorOnA = shape === 'LShapeLeft'
+
+  const doorIdx = wallPanels.findIndex((p) => p.id === door.id)
+  const isNearWall = doorIdx === 0 // door is first (leftmost) → near concrete wall
+
+  if (isDoorOnA) {
+    return isNearWall ? 'DoorOnA_NearWall' : 'DoorOnA_NearCorner'
+  } else {
+    return isNearWall ? 'DoorOnB_NearCorner' : 'DoorOnB_NearWall'
+  }
+}
+
 export function DesignerPage() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
@@ -49,7 +82,6 @@ export function DesignerPage() {
   const measurementIdFromUrl = searchParams.get('measurementId')
 
   const isEditMode = !!measurementIdFromUrl
-
   const storageKey = `designer_form_${measurementIdFromUrl ?? 'new'}`
 
   const { data: leads = [], isLoading: leadsLoading } = useDesignerLeads()
@@ -63,20 +95,19 @@ export function DesignerPage() {
 
   const initialLeadId = leadIdFromUrl ?? ''
 
-  // ── Form state for the info card (delivery/deposit inputs) ─────────────────
+  // ── Form state ─────────────────────────────────────────────────────────────
   const infoForm = useForm<MeasurementFormValues>({
     resolver: zodResolver(measurementFormSchema),
     mode: 'onBlur',
     defaultValues: { ...DEFAULT_FORM_VALUES, leadId: initialLeadId },
   })
 
-  // ── Applied measurement values (only update on sheet "Применить") ──────────
   const [formValues, setFormValues] = useState<MeasurementFormValues>(() => ({
     ...DEFAULT_FORM_VALUES,
     leadId: initialLeadId,
   }))
 
-  // ── Load existing measurement into form + canvas (edit mode) ───────────────
+  // ── Load existing measurement ──────────────────────────────────────────────
   const initializedRef = useRef(false)
   useEffect(() => {
     if (!existingMeasurement || initializedRef.current) return
@@ -134,7 +165,6 @@ export function DesignerPage() {
   const updateMutation = useUpdateMeasurement()
 
   // ── Panel state ────────────────────────────────────────────────────────────
-
   const [panels, setPanels] = useState<Panel[]>([])
 
   const cabinHeightMm = useMemo(() => {
@@ -143,7 +173,6 @@ export function DesignerPage() {
   }, [formValues.heightMm])
 
   // ── Holes ──────────────────────────────────────────────────────────────────
-
   const defaultHolesByPanel = useMemo(
     () => panels.map((p) => defaultHoles(p, p.heightMm, p.hingeSide)),
     [panels],
@@ -158,26 +187,42 @@ export function DesignerPage() {
   const currentHoles = holeTracker.key === canvasKey ? holeTracker.holes : defaultHolesByPanel
 
   // ── UI state ───────────────────────────────────────────────────────────────
-
   const [viewMode, setViewMode] = useState<'2d' | '3d'>('2d')
   const [zoom, setZoom] = useState(1)
   const [sheetOpen, setSheetOpen] = useState(false)
   const [selectedPanelId, setSelectedPanelId] = useState<string | null>(null)
-  const [selectedPanelRect, setSelectedPanelRect] = useState<PanelScreenRect | null>(null)
 
-  const selectedPanel = panels.find((p) => p.id === selectedPanelId) ?? null
+  // Context menu state (separate from visual selection)
+  const [menuPanelId, setMenuPanelId] = useState<string | null>(null)
+  const [menuPanelRect, setMenuPanelRect] = useState<PanelScreenRect | null>(null)
 
-  function handleSelectPanel(id: string | null, rect?: PanelScreenRect) {
+  const menuPanel = panels.find((p) => p.id === menuPanelId) ?? null
+  const lShapeConfig = useMemo(() => inferLShapeConfig(panels), [panels])
+
+  function handleSelectPanel(id: string | null, _rect?: PanelScreenRect) {
     setSelectedPanelId(id)
-    setSelectedPanelRect(rect ?? null)
+    // Close context menu when selecting different panel
+    if (id !== menuPanelId) {
+      setMenuPanelId(null)
+      setMenuPanelRect(null)
+    }
+  }
+
+  function handleRequestContextMenu(panelId: string, rect: PanelScreenRect) {
+    setMenuPanelId(panelId)
+    setMenuPanelRect(rect)
+    setSelectedPanelId(panelId)
+  }
+
+  function handleCloseContextMenu() {
+    setMenuPanelId(null)
+    setMenuPanelRect(null)
   }
 
   // ── Saved snapshot ─────────────────────────────────────────────────────────
-
   const [savedId, setSavedId] = useState<string | null>(null)
 
   // ── Metrics & warnings ─────────────────────────────────────────────────────
-
   const metrics = useMemo(() => {
     const m = Number(formValues.measureMm)
     const h = Number(formValues.heightMm)
@@ -196,7 +241,6 @@ export function DesignerPage() {
   }, [panels])
 
   // ── Apply form values from sheet ───────────────────────────────────────────
-
   function handleApply(values: MeasurementFormValues, customPanels?: Panel[]) {
     setFormValues(values)
     infoForm.reset(values)
@@ -212,60 +256,75 @@ export function DesignerPage() {
       }
     }
     setSelectedPanelId(null)
+    setMenuPanelId(null)
     setSavedId(null)
   }
 
-  // ── Panel actions (from popover) ───────────────────────────────────────────
-
-  function handleToggleDoor() {
-    if (!selectedPanel) return
-    const willBeDoor = !selectedPanel.isDoor
-    setPanels((prev) =>
-      prev.map((p) => {
-        if (p.id === selectedPanel.id) {
-          const widthMm = willBeDoor ? Math.min(800, Math.max(500, p.widthMm)) : p.widthMm
-          return { ...p, isDoor: willBeDoor, widthMm }
-        }
-        if (willBeDoor && p.isDoor) return { ...p, isDoor: false }
-        return p
-      }),
-    )
-    setSavedId(null)
-  }
-
-  function handleSplitPanel() {
-    if (!selectedPanel || selectedPanel.isDoor || selectedPanel.widthMm < 400) return
-    const half1 = Math.round(selectedPanel.widthMm / 2)
-    const half2 = selectedPanel.widthMm - half1
+  // ── Panel actions dispatcher ───────────────────────────────────────────────
+  const handlePanelAction = useCallback((
+    action:
+      | 'resizeDoor'
+      | 'resizePanel'
+      | 'resizeHeight'
+      | 'toggleHingeSide'
+      | 'toggleMechanism'
+      | 'moveDoorSide'
+      | 'moveDoorToOtherWall'
+      | 'convertToDoor',
+    panelId: string,
+    payload?: Record<string, unknown>,
+  ) => {
     setPanels((prev) => {
-      const idx = prev.findIndex((p) => p.id === selectedPanel.id)
-      if (idx === -1) return prev
-      const next = [
-        ...prev.slice(0, idx),
-        { ...prev[idx], widthMm: half1 },
-        { id: crypto.randomUUID(), widthMm: half2, heightMm: selectedPanel.heightMm, isDoor: false, position: 0, shape: 'Flat' as const },
-        ...prev.slice(idx + 1),
-      ].map((p, i) => ({ ...p, position: i }))
+      let next: Panel[]
+      switch (action) {
+        case 'resizeDoor':
+          next = resizeDoor(prev, panelId, payload?.widthMm as number)
+          break
+        case 'resizePanel':
+          next = resizePanel(prev, panelId, payload?.widthMm as number)
+          break
+        case 'resizeHeight':
+          next = resizeHeight(prev, payload?.heightMm as number)
+          break
+        case 'toggleHingeSide':
+          next = toggleHingeSide(prev, panelId)
+          break
+        case 'toggleMechanism':
+          next = toggleMechanism(prev, panelId, payload?.mechanism as DoorMechanism)
+          break
+        case 'moveDoorSide':
+          next = moveDoorSide(prev, panelId)
+          break
+        case 'moveDoorToOtherWall':
+          next = lShapeConfig
+            ? moveDoorToOtherWall(prev, panelId, lShapeConfig)
+            : prev
+          break
+        case 'convertToDoor':
+          next = convertToDoor(prev, panelId)
+          break
+        default:
+          next = prev
+      }
+      // Sync holes for any panels whose properties changed
+      const newHoles = syncHolesAfterPanelChange(next, prev, currentHoles)
+      const newKey = next
+        .map((p) => (p.isDoor && p.hingeSide ? `${p.widthMm}x${p.heightMm}h${p.hingeSide}` : `${p.widthMm}x${p.heightMm}`))
+        .join('-')
+      setHoleTracker({ key: newKey, holes: newHoles })
       return next
     })
     setSavedId(null)
-  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lShapeConfig, currentHoles])
 
-  function handleDeletePanel() {
-    if (!selectedPanel || panels.length <= 1) return
-    setPanels((prev) =>
-      prev.filter((p) => p.id !== selectedPanel.id).map((p, i) => ({ ...p, position: i })),
-    )
-    setSavedId(null)
-  }
-
+  // ── Legacy panel actions (from canvas drag) ────────────────────────────────
   function handlePanelsChange(newPanels: Panel[]) {
     setPanels(newPanels)
     setSavedId(null)
   }
 
   // ── Lead name lookup ───────────────────────────────────────────────────────
-
   const leadName = useMemo(() => {
     const id = formValues.leadId || leadIdFromUrl
     if (!id) return undefined
@@ -273,7 +332,6 @@ export function DesignerPage() {
   }, [formValues.leadId, leadIdFromUrl, leads])
 
   // ── Save ───────────────────────────────────────────────────────────────────
-
   const isSaving = saveMutation.isPending || updateMutation.isPending
   const canSave = isEditMode
     ? panels.length > 0 && !isSaving
@@ -349,7 +407,6 @@ export function DesignerPage() {
     <div className="relative flex h-screen w-full flex-col overflow-hidden bg-background">
       <Toaster richColors position="top-right" />
 
-      {/* ── Top bar ── */}
       <DesignerTopBar
         leadName={leadName}
         canSave={canSave}
@@ -360,11 +417,7 @@ export function DesignerPage() {
         onSave={handleSave}
       />
 
-      {/* ── Canvas area (fills remaining height) ── */}
-      <div
-        className="relative flex-1 overflow-hidden"
-        data-testid="canvas-area"
-      >
+      <div className="relative flex-1 overflow-hidden" data-testid="canvas-area">
         {panels.length > 0 ? (
           viewMode === '3d' ? (
             <ThreeCanvas panels={panels} holesByPanel={currentHoles} />
@@ -380,6 +433,7 @@ export function DesignerPage() {
               onPanelsChange={handlePanelsChange}
               selectedPanelId={selectedPanelId}
               onSelectPanel={handleSelectPanel}
+              onRequestContextMenu={handleRequestContextMenu}
               className="h-full w-full"
             />
           )
@@ -392,7 +446,7 @@ export function DesignerPage() {
           </div>
         )}
 
-        {/* ── Floating: info card — 2D only ── */}
+        {/* Info card — 2D only */}
         {viewMode === '2d' && (
           <DesignerInfoCard
             areaSqM={metrics?.areaSqM ?? null}
@@ -402,7 +456,7 @@ export function DesignerPage() {
           />
         )}
 
-        {/* ── Floating: zoom controls — 2D only ── */}
+        {/* Zoom controls — 2D only */}
         {viewMode === '2d' && (
           <DesignerZoomControls
             zoom={zoom}
@@ -411,23 +465,22 @@ export function DesignerPage() {
           />
         )}
 
-        {/* ── Floating: FAB — always visible ── */}
+        {/* FAB */}
         <DesignerFab onClick={() => setSheetOpen(true)} />
 
-        {/* ── Glass context popover — 2D only ── */}
-        {viewMode === '2d' && selectedPanel && selectedPanelRect && (
-          <GlassContextPopover
-            panel={selectedPanel}
+        {/* Panel context menu — 2D only */}
+        {viewMode === '2d' && menuPanel && menuPanelRect && (
+          <PanelContextMenu
+            panel={menuPanel}
             allPanels={panels}
-            rect={selectedPanelRect}
-            onToggleDoor={handleToggleDoor}
-            onSplit={handleSplitPanel}
-            onDelete={handleDeletePanel}
-            onClose={() => setSelectedPanelId(null)}
+            rect={menuPanelRect}
+            lShapeConfig={lShapeConfig}
+            onAction={handlePanelAction}
+            onClose={handleCloseContextMenu}
           />
         )}
 
-        {/* ── PDF download buttons (after save, no leadId in URL) ── */}
+        {/* PDF download buttons */}
         {savedId && !leadIdFromUrl && (
           <div className="absolute right-4 top-4 z-10 flex flex-col gap-2 rounded-xl border border-border bg-white/90 p-3 shadow-md backdrop-blur dark:bg-neutral-900/90">
             <p className="text-xs font-medium text-green-600 dark:text-green-400">Замер сохранён ✓</p>
@@ -459,7 +512,6 @@ export function DesignerPage() {
         )}
       </div>
 
-      {/* ── Bottom sheet / side drawer with form ── */}
       <DesignerSheet
         open={sheetOpen}
         onOpenChange={setSheetOpen}
