@@ -30,14 +30,14 @@ export function DesignerTopBar({ leadName, canSave, isSaving, viewMode, onViewMo
       <span className="flex-1 truncate text-sm font-medium">{title}</span>
 
       {/* 2D / 3D toggle */}
-      <div className="flex overflow-hidden rounded-md border border-white/10">
+      <div className="flex overflow-hidden rounded-md border border-black/10 dark:border-white/10">
         <button
           type="button"
           onClick={() => onViewModeChange('2d')}
           className={
             viewMode === '2d'
               ? 'px-4 py-1.5 text-sm font-medium bg-[#c9a84c] text-black'
-              : 'px-4 py-1.5 text-sm font-medium bg-white/5 text-white/60 hover:bg-white/10'
+              : 'px-4 py-1.5 text-sm font-medium bg-black/10 text-black/50 hover:bg-black/15 dark:bg-white/5 dark:text-white/60 dark:hover:bg-white/10'
           }
         >
           2D
@@ -48,7 +48,7 @@ export function DesignerTopBar({ leadName, canSave, isSaving, viewMode, onViewMo
           className={
             viewMode === '3d'
               ? 'px-4 py-1.5 text-sm font-medium bg-[#c9a84c] text-black'
-              : 'px-4 py-1.5 text-sm font-medium bg-white/5 text-white/60 hover:bg-white/10'
+              : 'px-4 py-1.5 text-sm font-medium bg-black/10 text-black/50 hover:bg-black/15 dark:bg-white/5 dark:text-white/60 dark:hover:bg-white/10'
           }
         >
           3D

@@ -1,6 +1,6 @@
 import { useRef, useMemo, useEffect, useState, type MutableRefObject } from 'react'
-import { Canvas, useThree } from '@react-three/fiber'
-import { OrbitControls, Grid, Bounds, Center, useBounds } from '@react-three/drei'
+import { Canvas, useThree, useFrame } from '@react-three/fiber'
+import { OrbitControls, Bounds, Center, useBounds } from '@react-three/drei'
 import { useSpring, animated } from '@react-spring/three'
 import * as THREE from 'three'
 import type { Hole, Panel } from '../lib/types'
@@ -95,7 +95,11 @@ export function ThreeCanvas({ panels, holesByPanel }: ThreeCanvasProps) {
   return (
     <div className="relative h-full w-full">
       <div className="absolute inset-0">
-        <Canvas style={{ width: '100%', height: '100%', background: '#0d1117' }}>
+        <Canvas
+          gl={{ antialias: true, powerPreference: 'high-performance' }}
+          dpr={[1, 2]}
+          style={{ width: '100%', height: '100%', background: '#0d1117' }}
+        >
           <ambientLight intensity={0.8} />
           <directionalLight position={[10, 20, 10]} intensity={1.2} />
           <directionalLight position={[-10, 5, -5]} intensity={0.4} />
@@ -129,16 +133,7 @@ export function ThreeCanvas({ panels, holesByPanel }: ThreeCanvasProps) {
           />
           <ControlsInit controlsRef={controlsRef} lShapeInfo={lShapeInfo} />
 
-          <Grid
-            args={[20000, 20000]}
-            cellSize={500}
-            position={[0, 0, 0]}
-            cellColor="#1e3a5f"
-            sectionColor="#1e3a5f"
-            sectionSize={2000}
-            fadeDistance={15000}
-            infiniteGrid
-          />
+          <StableGrid />
         </Canvas>
       </div>
 
@@ -196,6 +191,85 @@ export function ThreeCanvas({ panels, holesByPanel }: ThreeCanvasProps) {
         )}
       </div>
     </div>
+  )
+}
+
+// ── StableGrid ────────────────────────────────────────────────────────────────
+// Custom shader grid: uses fwidth() derivatives for GPU-side anti-aliasing.
+// Static geometry (no per-frame movement) eliminates the sub-pixel jitter that
+// drei's Grid produces when followCamera moves the plane every frame.
+
+const GRID_VERT = `
+  varying vec3 vWorldPos;
+  void main() {
+    vec4 wp = modelMatrix * vec4(position, 1.0);
+    vWorldPos = wp.xyz;
+    gl_Position = projectionMatrix * viewMatrix * wp;
+  }
+`
+
+const GRID_FRAG = `
+  uniform vec3 uCamPos;
+  varying vec3 vWorldPos;
+
+  // Returns 1.0 on the grid line, 0.0 away from it.
+  // px controls line width in screen pixels.
+  float gridLine(float coord, float size, float px) {
+    float v = coord / size;
+    float fw = max(fwidth(v), 1e-6);
+    float dist = abs(fract(v - 0.5) - 0.5);
+    return 1.0 - smoothstep((px - 1.0) * fw, px * fw, dist);
+  }
+
+  void main() {
+    float cell = max(
+      gridLine(vWorldPos.x, 500.0, 0.5),
+      gridLine(vWorldPos.z, 500.0, 0.5)
+    );
+    float section = max(
+      gridLine(vWorldPos.x, 2500.0, 1.5),
+      gridLine(vWorldPos.z, 2500.0, 1.5)
+    );
+
+    float d = length(vWorldPos.xz - uCamPos.xz);
+    float fade = 1.0 - smoothstep(5000.0, 8000.0, d);
+
+    vec3 cCell = vec3(0.118, 0.227, 0.373);
+    vec3 cSect = vec3(0.165, 0.314, 0.502);
+
+    float a = max(cell * 0.6, section) * fade;
+    if (a < 0.001) discard;
+    gl_FragColor = vec4(mix(cCell, cSect, min(section * 1.5, 1.0)), a);
+  }
+`
+
+function StableGrid() {
+  const material = useMemo(
+    () =>
+      new THREE.ShaderMaterial({
+        vertexShader: GRID_VERT,
+        fragmentShader: GRID_FRAG,
+        uniforms: { uCamPos: { value: new THREE.Vector3() } },
+        transparent: true,
+        depthWrite: false,
+        side: THREE.DoubleSide,
+      }),
+    [],
+  )
+
+  const { camera } = useThree()
+
+  useFrame(() => {
+    material.uniforms.uCamPos.value.copy(camera.position)
+  })
+
+  useEffect(() => () => material.dispose(), [material])
+
+  return (
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1, 0]}>
+      <planeGeometry args={[40000, 40000]} />
+      <primitive object={material} attach="material" />
+    </mesh>
   )
 }
 

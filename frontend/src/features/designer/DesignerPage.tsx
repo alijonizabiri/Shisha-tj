@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { toast, Toaster } from 'sonner'
-import { computeInitialPanels, computeMetrics } from './lib/computePanels'
+import { computeInitialPanels, computeMetricsFromPanels } from './lib/computePanels'
 import { defaultHoles } from './lib/defaultHoles'
 import {
   resizeDoor,
@@ -224,12 +224,9 @@ export function DesignerPage() {
 
   // ── Metrics & warnings ─────────────────────────────────────────────────────
   const metrics = useMemo(() => {
-    const m = Number(formValues.measureMm)
-    const h = Number(formValues.heightMm)
-    if (!Number.isFinite(m) || !Number.isFinite(h) || m < 600 || m > 3000 || h < 1500 || h > 2500)
-      return null
-    return computeMetrics(m, h)
-  }, [formValues.measureMm, formValues.heightMm])
+    if (panels.length === 0) return null
+    return computeMetricsFromPanels(panels)
+  }, [panels])
 
   const warning = useMemo(() => {
     if (panels.length === 0) return null

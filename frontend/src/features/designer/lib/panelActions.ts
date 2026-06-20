@@ -2,6 +2,10 @@ import type { Panel, DoorMechanism, HandleSide, LShapeConfig } from './types'
 import { defaultHoles } from './defaultHoles'
 import { buildLShapePanels } from './buildLShapePanels'
 
+export const MIN_WALL_WIDTH = 900
+export const MIN_DOOR_WIDTH = 600
+export const MIN_REMAINDER  = 200
+
 export function resizeDoor(
   panels: Panel[],
   doorId: string,
@@ -19,8 +23,11 @@ export function resizeDoor(
     ? door.widthMm + remainder.widthMm
     : door.widthMm
 
-  const minDoor = 400
-  const maxDoor = remainder ? wallTotal - 200 : door.widthMm
+  if (newWidthMm < MIN_DOOR_WIDTH) return panels
+  if (remainder && wallTotal - newWidthMm < MIN_REMAINDER) return panels
+
+  const minDoor = MIN_DOOR_WIDTH
+  const maxDoor = remainder ? wallTotal - MIN_REMAINDER : door.widthMm
 
   const clamped = Math.max(minDoor, Math.min(maxDoor, newWidthMm))
   const remainderWidth = remainder ? wallTotal - clamped : undefined
@@ -38,8 +45,9 @@ export function resizePanel(
   panelId: string,
   newWidthMm: number,
 ): Panel[] {
+  if (newWidthMm < MIN_WALL_WIDTH) return panels
   return panels.map((p) =>
-    p.id === panelId ? { ...p, widthMm: Math.max(200, newWidthMm) } : p,
+    p.id === panelId ? { ...p, widthMm: Math.max(MIN_WALL_WIDTH, newWidthMm) } : p,
   )
 }
 
