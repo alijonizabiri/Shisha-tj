@@ -38,6 +38,25 @@ public sealed class UsersController(IUserService userService) : ControllerBase
         return Ok(await userService.GetMeasurersAsync(ct));
     }
 
+    [HttpPost]
+    [Authorize(Roles = "Admin")]
+    public async Task<ActionResult<UserDto>> Create([FromBody] CreateUserRequest request, CancellationToken ct)
+    {
+        try
+        {
+            var user = await userService.CreateUserAsync(request, ct);
+            return CreatedAtAction(nameof(GetById), new { id = user.Id }, user);
+        }
+        catch (ConflictException ex)
+        {
+            return Conflict(new { detail = ex.Message });
+        }
+        catch (DomainValidationException ex)
+        {
+            return BadRequest(new { title = ex.Message, errors = ex.Errors });
+        }
+    }
+
     [HttpPatch("{id:guid}/measurer-fee")]
     [Authorize(Roles = "Admin,Operator")]
     public async Task<ActionResult<MeasurerDto>> UpdateMeasurerFee(
@@ -50,6 +69,25 @@ public sealed class UsersController(IUserService userService) : ControllerBase
         catch (NotFoundException)
         {
             return NotFound();
+        }
+    }
+
+    [HttpDelete("{id:guid}")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
+    {
+        try
+        {
+            await userService.DeleteUserAsync(id, ct);
+            return NoContent();
+        }
+        catch (NotFoundException)
+        {
+            return NotFound();
+        }
+        catch (DomainValidationException ex)
+        {
+            return BadRequest(new { title = ex.Message });
         }
     }
 }

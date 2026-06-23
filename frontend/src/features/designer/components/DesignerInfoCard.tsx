@@ -19,11 +19,15 @@ export function DesignerInfoCard({ areaSqM, masterFeeTjs, form, warning }: Props
   const [expanded, setExpanded] = useState(false)
 
   const { register, watch } = form
-  const deliveryRaw = watch('deliveryTjs')
-  const depositRaw  = watch('depositTjs')
-  const delivery = Number.isFinite(Number(deliveryRaw)) ? Number(deliveryRaw) : 0
-  const deposit  = Number.isFinite(Number(depositRaw))  ? Number(depositRaw)  : 0
-  const balance  = masterFeeTjs !== null ? masterFeeTjs + delivery - deposit : null
+  const deliveryRaw  = watch('deliveryTjs')
+  const depositRaw   = watch('depositTjs')
+  const dealRaw      = watch('dealPriceTjs')
+  const delivery  = Number.isFinite(Number(deliveryRaw)) ? Number(deliveryRaw) : 0
+  const deposit   = Number.isFinite(Number(depositRaw))  ? Number(depositRaw)  : 0
+  const autoDeal  = masterFeeTjs !== null ? masterFeeTjs + delivery : null
+  const customDeal = dealRaw != null && Number(dealRaw) > 0 ? Number(dealRaw) : null
+  const effectiveDeal = customDeal ?? autoDeal
+  const balance   = effectiveDeal !== null ? effectiveDeal - deposit : null
 
   return (
     <div
@@ -85,7 +89,25 @@ export function DesignerInfoCard({ areaSqM, masterFeeTjs, form, warning }: Props
             </div>
 
             <div className="flex flex-col gap-1">
-              <Label htmlFor="info-deposit" className="text-xs">Депозит</Label>
+              <Label htmlFor="info-deal" className="text-xs">
+                Договорная цена
+                {autoDeal !== null && (
+                  <span className="ml-1 text-muted-foreground">(авто: {formatMoney(autoDeal)})</span>
+                )}
+              </Label>
+              <Input
+                id="info-deal"
+                type="number"
+                inputMode="numeric"
+                min={0}
+                className="h-8 text-sm"
+                placeholder={autoDeal !== null ? String(autoDeal) : ''}
+                {...register('dealPriceTjs', { valueAsNumber: true, setValueAs: (v) => (v === '' || v === 0 || Number.isNaN(v) ? null : Number(v)) })}
+              />
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <Label htmlFor="info-deposit" className="text-xs">Депозит (получен)</Label>
               <Input
                 id="info-deposit"
                 type="number"

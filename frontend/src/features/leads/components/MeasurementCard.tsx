@@ -9,9 +9,10 @@ import type { MeasurementKanbanItem } from '@/features/measurements/api'
 interface Props {
   item: MeasurementKanbanItem
   isDragOverlay?: boolean
+  onSelect?: (leadId: string) => void
 }
 
-export function MeasurementCard({ item, isDragOverlay = false }: Props) {
+export function MeasurementCard({ item, isDragOverlay = false, onSelect }: Props) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: item.id,
     data: { item },
@@ -34,7 +35,18 @@ export function MeasurementCard({ item, isDragOverlay = false }: Props) {
         isDragOverlay && 'shadow-lg rotate-1 cursor-grabbing',
       )}
     >
-      <p className="text-sm font-medium text-foreground truncate">{item.leadName}</p>
+      {item.leadId ? (
+        <button
+          type="button"
+          className="block text-left text-sm font-medium text-foreground hover:underline w-full truncate"
+          onClick={(e) => { e.stopPropagation(); onSelect?.(item.leadId!) }}
+          onPointerDown={(e) => e.stopPropagation()}
+        >
+          {item.leadName}
+        </button>
+      ) : (
+        <p className="text-sm font-medium text-foreground truncate">{item.leadName}</p>
+      )}
       <p className="mt-0.5 text-xs text-muted-foreground">{item.leadPhone}</p>
       <p className="mt-1 text-xs text-muted-foreground truncate">{item.product}</p>
       {item.measureMm > 0 && (

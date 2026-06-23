@@ -18,6 +18,8 @@ export const measurementFormSchema = z.object({
   hardwareColor: hardwareColorSchema,
   deliveryTjs:   z.number().min(0, 'Мин. 0 сом'),
   depositTjs:    z.number().min(0, 'Мин. 0 сом'),
+  // If set, overrides the auto-computed (masterFee + delivery) as the negotiated deal price
+  dealPriceTjs:  z.number().min(0, 'Мин. 0 сом').nullable().optional(),
 })
 
 export type MeasurementFormValues = z.infer<typeof measurementFormSchema>

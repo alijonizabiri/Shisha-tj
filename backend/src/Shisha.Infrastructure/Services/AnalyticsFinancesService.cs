@@ -89,8 +89,14 @@ public sealed class AnalyticsFinancesService(AppDbContext db) : IAnalyticsFinanc
     private async Task<(List<ClosedEntry> Closed, List<FactoryOrderItem> OrderItems)>
         LoadClosedAsync(DateOnly from, DateOnly to, CancellationToken ct)
     {
+        // Pre-filter at SQL level: only measurements with at least one non-refund payment
+        // in [from, to]. The precise max-payment-date check happens in memory below.
         var allInstalled = await db.Measurements
-            .Where(m => m.Status == LeadStatus.Installed && m.DealPriceTjs.HasValue)
+            .Where(m => m.Status == LeadStatus.Installed
+                     && m.DealPriceTjs.HasValue
+                     && m.Payments.Any(p => p.Kind != PaymentKind.Refund
+                                         && p.PaidAt >= from
+                                         && p.PaidAt <= to))
             .Include(m => m.Payments)
             .Include(m => m.Glasses)
             .Include(m => m.Expenses)

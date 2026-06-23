@@ -33,6 +33,7 @@ export interface CreateMeasurementRequest {
   product?: string | null
   dealPriceTjs?: number | null
   deliveryCostTjs?: number | null
+  depositTjs?: number | null
   panels?: PanelInput[]
   holes?: HoleRequest[]
 }

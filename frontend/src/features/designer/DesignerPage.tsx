@@ -39,6 +39,7 @@ const DEFAULT_FORM_VALUES: MeasurementFormValues = {
   hardwareColor: 'BlackMatte',
   deliveryTjs:   100,
   depositTjs:    0,
+  dealPriceTjs:  null,
 }
 
 function flattenHoles(holesByPanel: Hole[][]): HoleRequest[] {
@@ -146,6 +147,7 @@ export function DesignerPage() {
       hardwareColor: existingMeasurement.hardwareColor as HardwareColor,
       deliveryTjs:   existingMeasurement.deliveryCostTjs ?? 0,
       depositTjs:    0,
+      dealPriceTjs:  existingMeasurement.dealPriceTjs ?? null,
     }
 
     const key = loadedPanels
@@ -336,9 +338,19 @@ export function DesignerPage() {
 
   function handleSave() {
     const infoValues = infoForm.getValues()
-    const merged = { ...formValues, deliveryTjs: infoValues.deliveryTjs, depositTjs: infoValues.depositTjs }
+    const merged = {
+      ...formValues,
+      deliveryTjs:  infoValues.deliveryTjs,
+      depositTjs:   infoValues.depositTjs,
+      dealPriceTjs: infoValues.dealPriceTjs,
+    }
     const deliveryCostTjs = Number(merged.deliveryTjs) || 0
-    const dealPriceTjs = (metrics?.masterFeeTjs ?? 0) + deliveryCostTjs
+    const autoDealPrice = (metrics?.masterFeeTjs ?? 0) + deliveryCostTjs
+    const customDeal = merged.dealPriceTjs != null && Number(merged.dealPriceTjs) > 0
+      ? Number(merged.dealPriceTjs)
+      : null
+    const dealPriceTjs = customDeal ?? (autoDealPrice > 0 ? autoDealPrice : null)
+    const depositTjs = Number(merged.depositTjs) > 0 ? Number(merged.depositTjs) : null
 
     const panelData = panels.map((p) => ({
       position:          p.position,
@@ -373,7 +385,7 @@ export function DesignerPage() {
             heightMm:        merged.heightMm,
             glassColor:      merged.glassColor,
             hardwareColor:   merged.hardwareColor,
-            dealPriceTjs:    dealPriceTjs > 0 ? dealPriceTjs : null,
+            dealPriceTjs,
             deliveryCostTjs: deliveryCostTjs > 0 ? deliveryCostTjs : null,
             panels:          panelData,
             holes:           holeData,
@@ -390,8 +402,9 @@ export function DesignerPage() {
           heightMm:        merged.heightMm,
           glassColor:      merged.glassColor,
           hardwareColor:   merged.hardwareColor,
-          dealPriceTjs:    dealPriceTjs > 0 ? dealPriceTjs : null,
+          dealPriceTjs,
           deliveryCostTjs: deliveryCostTjs > 0 ? deliveryCostTjs : null,
+          depositTjs,
           panels:          panelData,
           holes:           holeData,
         },
