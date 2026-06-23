@@ -111,7 +111,10 @@ public sealed class MeasurementService(
             await AutoCreateFactoryOrderAsync(id, ct);
 
         if (target == LeadStatus.Installed)
+        {
+            measurement.InstalledAt = DateTime.UtcNow;
             await CloseFactoryOrdersIfFullyInstalledAsync(id, ct);
+        }
 
         await db.SaveChangesAsync(ct);
     }
@@ -214,6 +217,18 @@ public sealed class MeasurementService(
 
         var glasses = CreateGlasses(measurement.Id, panels);
         AddHoles(glasses, request.Holes);
+
+        if (request.DepositTjs.HasValue && request.DepositTjs.Value > 0)
+        {
+            db.Payments.Add(new Payment
+            {
+                TenantId = currentUser.TenantId,
+                MeasurementId = measurement.Id,
+                AmountTjs = request.DepositTjs.Value,
+                Kind = PaymentKind.Deposit,
+                PaidAt = DateOnly.FromDateTime(DateTime.UtcNow),
+            });
+        }
 
         await db.SaveChangesAsync(ct);
         return await LoadResponseAsync(measurement.Id, ct);

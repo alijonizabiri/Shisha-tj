@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import {
   DndContext,
   DragOverlay,
@@ -29,6 +29,7 @@ const COLUMN_ORDER = Object.keys(LEAD_STATUS_META)
 export function LeadsKanbanPage() {
   const { data, isLoading, isError } = useMeasurementKanban()
   const patchStatus = usePatchMeasurementStatus()
+  const navigate = useNavigate()
 
   const [activeId, setActiveId] = useState<string | null>(null)
   const [dragError, setDragError] = useState<string | null>(null)
@@ -130,6 +131,7 @@ export function LeadsKanbanPage() {
               key={status}
               status={status}
               items={columnMap[status] ?? []}
+              onSelect={(leadId) => navigate(`/leads/${leadId}`)}
             />
           ))}
         </div>

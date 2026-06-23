@@ -5,3 +5,12 @@ public sealed record UserDto(Guid Id, string FullName, string Email, string Role
 public sealed record MeasurerDto(Guid Id, string FullName, string Email, decimal? MeasurerFixedFeeTjs);
 
 public sealed record UpdateUserMeasurerFeeRequest(decimal? MeasurerFixedFeeTjs);
+
+public sealed record CreateUserRequest(
+    string FullName,
+    string Email,
+    string Password,
+    string Role,
+    decimal? MeasurerFixedFeeTjs);
+
+public sealed record DeleteUserRequest;

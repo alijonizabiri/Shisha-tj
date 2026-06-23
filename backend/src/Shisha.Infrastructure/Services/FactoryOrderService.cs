@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Shisha.Application.Abstractions;
 using Shisha.Application.FactoryOrders;
+using Shisha.Application.Leads;
 using Shisha.Domain.Entities;
 using Shisha.Domain.Enums;
 using Shisha.Domain.Exceptions;
@@ -108,6 +109,29 @@ public sealed class FactoryOrderService(AppDbContext db, ICurrentUser currentUse
             var toBump = await db.Measurements
                 .Where(m => measurementIds.Contains(m.Id) && m.Status == LeadStatus.Buying)
                 .ToListAsync(ct);
+
+            // Defend-in-depth: verify each measurement still has a sufficient deposit
+            // (an admin could have deleted a payment after the Buying transition)
+            if (toBump.Count > 0)
+            {
+                var depositSums = await db.Payments
+                    .Where(p => toBump.Select(m => m.Id).Contains(p.MeasurementId)
+                             && p.Kind == PaymentKind.Deposit)
+                    .GroupBy(p => p.MeasurementId)
+                    .Select(g => new { MeasurementId = g.Key, Sum = g.Sum(p => p.AmountTjs) })
+                    .ToListAsync(ct);
+
+                var insufficientIds = toBump
+                    .Where(m => depositSums
+                        .FirstOrDefault(d => d.MeasurementId == m.Id)?.Sum < LeadBusinessRules.MinDepositTjs)
+                    .Select(m => m.Id)
+                    .ToList();
+
+                if (insufficientIds.Count > 0)
+                    throw new DomainValidationException("deposit",
+                        $"DEPOSIT_BELOW_MINIMUM: Замеры без достаточного депозита (мин. {LeadBusinessRules.MinDepositTjs} сом): " +
+                        string.Join(", ", insufficientIds));
+            }
 
             foreach (var m in toBump)
                 m.Status = LeadStatus.OrderedAtFactory;

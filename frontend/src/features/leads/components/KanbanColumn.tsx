@@ -7,9 +7,10 @@ import type { MeasurementKanbanItem } from '@/features/measurements/api'
 interface Props {
   status: string
   items: MeasurementKanbanItem[]
+  onSelect?: (leadId: string) => void
 }
 
-export function KanbanColumn({ status, items }: Props) {
+export function KanbanColumn({ status, items, onSelect }: Props) {
   const { isOver, setNodeRef } = useDroppable({ id: status })
 
   return (
@@ -29,7 +30,7 @@ export function KanbanColumn({ status, items }: Props) {
         )}
       >
         {items.map((item) => (
-          <MeasurementCard key={item.id} item={item} />
+          <MeasurementCard key={item.id} item={item} onSelect={onSelect} />
         ))}
         {items.length === 0 && (
           <p className="text-center text-xs text-muted-foreground py-4">Пусто</p>

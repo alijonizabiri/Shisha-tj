@@ -61,6 +61,7 @@ public sealed record CreateMeasurementRequest(
     string? Address,
     decimal? DealPriceTjs,
     decimal? DeliveryCostTjs,
+    decimal? DepositTjs,
     DateOnly? InstallationDate,
     IReadOnlyList<PanelInputDto>? Panels,
     IReadOnlyList<HoleRequest>? Holes);
