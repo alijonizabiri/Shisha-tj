@@ -701,7 +701,14 @@ function RollerWheel({ heightMm }: { heightMm: number }) {
 // ── HoleMesh ──────────────────────────────────────────────────────────────────
 
 function HoleMesh({ hole, panel }: { hole: Hole; panel: Panel }) {
-  const localX = hole.xMm - panel.widthMm / 2
+  // LShapeRight panels are rotated +90° around Y in the 3D scene, making
+  // local +X point toward world –Z (the corner between walls A and B).
+  // Hole xMm is stored in 2D convention (x=0 at left edge facing the panel).
+  // For wall B, "left in 2D" = away from the corner in 3D, so we mirror X.
+  const effectiveXMm = panel.shape === 'LShapeRight'
+    ? panel.widthMm - hole.xMm
+    : hole.xMm
+  const localX = effectiveXMm - panel.widthMm / 2
   const localY = panel.heightMm / 2 - hole.yMm
   const geo = useMemo(
     () => new THREE.CylinderGeometry(hole.radiusMm, hole.radiusMm, GLASS_THICKNESS + 6, 16),

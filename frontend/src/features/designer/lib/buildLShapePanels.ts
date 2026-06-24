@@ -77,10 +77,17 @@ export function buildLShapePanels({
     }
     case 'DoorsAtCorner': {
       const doorB = doorWidthBMm ?? doorWidthAMm
+      // Door A (wall A, near corner): handle on right side toward seam → hingeSide='Left'
+      // Door B (wall B, near corner): handle on left side toward seam → hingeSide='Right'
+      // For roller: extras(false) slides away from corner for A; for B we need opposite.
+      // For hinge: A uses user-selected hingeSide; B always mirrors it.
+      const extrasB = mechanism === 'Hinge'
+        ? { mechanism, hingeSide: (hingeSide === 'Left' ? 'Right' : 'Left') as HandleSide }
+        : { mechanism, hingeSide: 'Right' as HandleSide }
       return [
         makeA(wallAMm - doorWidthAMm, false),           // remainder A near concrete wall
-        makeA(doorWidthAMm, true, extras(false)),        // door A near corner
-        makeB(doorB, true, extras(false)),               // door B near corner
+        makeA(doorWidthAMm, true, extras(false)),        // door A near corner — handle toward seam
+        makeB(doorB, true, extrasB),                    // door B near corner — handle toward seam
         makeB(wallBMm - doorB, false),                  // remainder B near concrete wall
       ]
     }
