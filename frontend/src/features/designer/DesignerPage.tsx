@@ -175,10 +175,36 @@ export function DesignerPage() {
   }, [formValues.heightMm])
 
   // ── Holes ──────────────────────────────────────────────────────────────────
-  const defaultHolesByPanel = useMemo(
-    () => panels.map((p) => defaultHoles(p, p.heightMm, p.hingeSide)),
-    [panels],
-  )
+  // Auto-detect adjacent paired flat doors so their handles face the center seam:
+  //   Left door of pair  → hingeSide as-is (or 'Left') → handle on right side (toward seam)
+  //   Right door of pair → override to 'Right'          → handle on left side (toward seam)
+  // L-shape panels and panels with explicit hingeSide set by the user are unaffected.
+  const defaultHolesByPanel = useMemo(() => {
+    // Build a Set of panel IDs that are the *right* door in an adjacent flat pair.
+    const rightDoorIds = new Set<string>()
+    const sorted = [...panels].sort((a, b) => a.position - b.position)
+    for (let i = 0; i < sorted.length - 1; i++) {
+      const left = sorted[i]
+      const right = sorted[i + 1]
+      if (
+        left.isDoor &&
+        right.isDoor &&
+        left.shape === 'Flat' &&
+        right.shape === 'Flat' &&
+        !left.setId &&
+        !right.setId
+      ) {
+        rightDoorIds.add(right.id)
+      }
+    }
+
+    return panels.map((p) => {
+      // For the right door of a flat pair: override hingeSide → handle faces the seam
+      const effectiveHingeSide =
+        rightDoorIds.has(p.id) && !p.hingeSide ? 'Right' : p.hingeSide
+      return defaultHoles(p, p.heightMm, effectiveHingeSide)
+    })
+  }, [panels])
   const canvasKey = panels
     .map((p) => (p.isDoor && p.hingeSide ? `${p.widthMm}x${p.heightMm}h${p.hingeSide}` : `${p.widthMm}x${p.heightMm}`))
     .join('-')

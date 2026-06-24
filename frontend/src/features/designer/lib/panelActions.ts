@@ -185,6 +185,21 @@ export function syncHolesAfterPanelChange(
   prevPanels: Panel[],
   prevHoles: import('./types').Hole[][],
 ): import('./types').Hole[][] {
+  // Identify the right door in adjacent flat pairs (same logic as DesignerPage)
+  const rightDoorIds = new Set<string>()
+  const sorted = [...panels].sort((a, b) => a.position - b.position)
+  for (let i = 0; i < sorted.length - 1; i++) {
+    const left = sorted[i]
+    const right = sorted[i + 1]
+    if (
+      left.isDoor && right.isDoor &&
+      left.shape === 'Flat' && right.shape === 'Flat' &&
+      !left.setId && !right.setId
+    ) {
+      rightDoorIds.add(right.id)
+    }
+  }
+
   return panels.map((panel) => {
     const prevIdx = prevPanels.findIndex((p) => p.id === panel.id)
     const propertiesChanged =
@@ -194,9 +209,15 @@ export function syncHolesAfterPanelChange(
       prevPanels[prevIdx].isDoor !== panel.isDoor ||
       prevPanels[prevIdx].hingeSide !== panel.hingeSide
 
+    // For the right door of a flat pair without explicit hingeSide: override to 'Right'
+    const effectiveHingeSide: import('./types').HandleSide =
+      rightDoorIds.has(panel.id) && !panel.hingeSide
+        ? 'Right'
+        : (panel.hingeSide ?? 'Left')
+
     if (propertiesChanged || prevIdx === -1) {
-      return defaultHoles(panel, panel.heightMm, panel.hingeSide ?? 'Left')
+      return defaultHoles(panel, panel.heightMm, effectiveHingeSide)
     }
-    return prevHoles[prevIdx] ?? defaultHoles(panel, panel.heightMm, panel.hingeSide ?? 'Left')
+    return prevHoles[prevIdx] ?? defaultHoles(panel, panel.heightMm, effectiveHingeSide)
   })
 }
