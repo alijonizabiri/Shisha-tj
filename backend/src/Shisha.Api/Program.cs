@@ -202,12 +202,32 @@ app.Use((ctx, next) =>
     return next();
 });
 
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+    using (var scope = app.Services.CreateScope())
+    {
+        var services = scope.ServiceProvider;
+        try
+        {
+            var context = services.GetRequiredService<AppDbContext>();
+            // Это заставит EF проверить базу и создать все таблицы, если их нет
+            await context.Database.MigrateAsync();
+
+            // Опционально: если у тебя есть сид продакшн-данных (например, создание дефолтного админа)
+            // await YourSeeder.SeedProductionAsync(services);
+        }
+        catch (Exception ex)
+        {
+            var logger = services.GetRequiredService<ILogger<Program>>();
+            logger.LogError(ex, "An error occurred while migrating the database.");
+        }
+    }
     await DevSeeder.SeedAsync(app.Services);
 }
+
 
 app.UseHttpsRedirection();
 app.UseCors();
@@ -229,6 +249,8 @@ app.MapHealthChecks("/health", new HealthCheckOptions
     }
 });
 app.MapControllers();
+
+
 
 app.Run();
 
