@@ -90,13 +90,16 @@ builder.Services.AddSingleton<IFinancesReportPdfService, FinancesReportPdfServic
 builder.Services.AddSingleton<IFinancesReportExcelService, FinancesReportExcelService>();
 
 // CORS — origins come from config so production can override via env var
+// CORS — строго разрешаем только конкретные инстансы
 var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>()
-                     ?? ["http://localhost:5173","https://shisha-frontend.onrender.com"];
+                     ?? new[] { "https://shisha-frontend.onrender.com" };
+
 builder.Services.AddCors(opts =>
     opts.AddDefaultPolicy(policy =>
         policy.WithOrigins(allowedOrigins)
               .AllowAnyHeader()
-              .AllowAnyMethod()));
+              .AllowAnyMethod()
+              .WithExposedHeaders("Authorization"))); // Полезно для JWT
 
 // Rate limiting
 builder.Services.AddRateLimiter(opts =>
