@@ -7,8 +7,9 @@ export function setAccessToken(token: string | null): void {
   accessToken = token
 }
 
+// ХАРДКОДИМ ССЫЛКУ НА ТВОЙ БЭКЕНД В ОБЛАКЕ RENDER
 export const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_URL ?? 'http://localhost:5175',
+  baseURL: 'https://shisha-tj.onrender.com',
   headers: { 'Content-Type': 'application/json' },
 })
 
@@ -67,7 +68,8 @@ apiClient.interceptors.response.use(
     }
 
     try {
-      const base = import.meta.env.VITE_API_URL ?? 'http://localhost:5175'
+      // ТУТ ТОЖЕ ХАРДКОДИМ АДРЕС СЕРВЕРА ДЛЯ ОБНОВЛЕНИЯ ТОКЕНА
+      const base = 'https://shisha-tj.onrender.com'
       const { data } = await axios.post<{ accessToken: string; refreshToken: string }>(
         `${base}/api/v1/auth/refresh`,
         { refreshToken: storedRefresh },
