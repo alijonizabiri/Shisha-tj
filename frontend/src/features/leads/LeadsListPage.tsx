@@ -30,7 +30,7 @@ export function LeadsListPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold">Лиды</h1>
           {data && (
@@ -45,7 +45,7 @@ export function LeadsListPage() {
             className="inline-flex items-center h-9 rounded-md border border-input bg-background px-3 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors"
           >
             <Kanban className="mr-1 h-4 w-4" />
-            Канбан
+            <span className="hidden sm:inline">Канбан</span>
           </Link>
           <Button onClick={() => setNewLeadOpen(true)}>+ Новый лид</Button>
         </div>
@@ -61,8 +61,8 @@ export function LeadsListPage() {
         />
       </div>
 
-      <div className="rounded-md border border-border overflow-hidden">
-        <table className="w-full text-sm">
+      <div className="rounded-md border border-border overflow-x-auto">
+        <table className="w-full min-w-[500px] text-sm">
           <thead className="bg-muted/50">
             <tr>
               <th className="px-4 py-3 text-left font-medium text-muted-foreground">Клиент</th>

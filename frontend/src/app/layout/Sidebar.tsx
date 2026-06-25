@@ -1,6 +1,6 @@
 import type { ComponentType } from 'react'
 import { NavLink } from 'react-router-dom'
-import { BarChart3, ClipboardList, LayoutDashboard, Package2, Ruler, Users } from 'lucide-react'
+import { BarChart3, ClipboardList, LayoutDashboard, Package2, Ruler, Users, X } from 'lucide-react'
 import { cn } from '@/shared/lib/cn'
 import { useAuth } from '@/features/auth/useAuth'
 
@@ -20,7 +20,12 @@ const NAV: NavItem[] = [
   { label: 'Пользователи', to: '/users', icon: Users, roles: ['Admin'] },
 ]
 
-export function Sidebar() {
+interface SidebarProps {
+  open?: boolean
+  onClose?: () => void
+}
+
+export function Sidebar({ open, onClose }: SidebarProps) {
   const { user } = useAuth()
 
   const visible = NAV.filter(
@@ -28,9 +33,22 @@ export function Sidebar() {
   )
 
   return (
-    <aside className="flex w-56 shrink-0 flex-col border-r border-border bg-card">
-      <div className="flex h-14 items-center border-b border-border px-4">
+    <aside
+      className={cn(
+        'fixed inset-y-0 left-0 z-40 flex w-56 shrink-0 flex-col border-r border-border bg-card transition-transform duration-200',
+        'md:static md:translate-x-0',
+        open ? 'translate-x-0' : '-translate-x-full',
+      )}
+    >
+      <div className="flex h-14 items-center justify-between border-b border-border px-4">
         <span className="font-semibold tracking-tight">SHISHA_TJ</span>
+        <button
+          onClick={onClose}
+          aria-label="Закрыть меню"
+          className="rounded-md p-1 text-muted-foreground hover:text-foreground md:hidden"
+        >
+          <X className="h-4 w-4" />
+        </button>
       </div>
 
       <nav aria-label="Главная навигация" className="flex flex-1 flex-col gap-1 p-2">
@@ -39,9 +57,10 @@ export function Sidebar() {
             key={item.to}
             to={item.to}
             end={item.to === '/'}
+            onClick={onClose}
             className={({ isActive }) =>
               cn(
-                'flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors',
+                'flex items-center gap-3 rounded-md px-3 py-2.5 text-sm transition-colors',
                 isActive
                   ? 'bg-accent text-accent-foreground font-medium'
                   : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',

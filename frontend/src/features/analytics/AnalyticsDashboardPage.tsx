@@ -24,7 +24,7 @@ export function AnalyticsDashboardPage() {
   const { data: byColor, isLoading: colorLoading } = useAnalyticsByColor(range)
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6">
       {/* ── Header + filter ───────────────────────────────────────────────── */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-2xl font-semibold">Аналитика</h1>

@@ -203,7 +203,7 @@ export function UsersPage() {
     <div className="flex flex-col gap-4">
       <Toaster richColors position="top-right" />
 
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold">Пользователи</h1>
           {users && (
@@ -212,7 +212,8 @@ export function UsersPage() {
         </div>
         <Button onClick={() => setNewUserOpen(true)}>
           <UserPlus className="mr-2 h-4 w-4" />
-          Новый пользователь
+          <span className="hidden sm:inline">Новый пользователь</span>
+          <span className="sm:hidden">Добавить</span>
         </Button>
       </div>
 
@@ -222,8 +223,8 @@ export function UsersPage() {
         </div>
       )}
 
-      <div className="rounded-md border border-border bg-card">
-        <table className="w-full text-sm">
+      <div className="rounded-md border border-border bg-card overflow-x-auto">
+        <table className="w-full min-w-[560px] text-sm">
           <thead>
             <tr className="border-b border-border text-left text-muted-foreground">
               <th className="px-4 py-3 font-medium">Имя</th>

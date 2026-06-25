@@ -1,9 +1,12 @@
+import { useState } from 'react'
 import { Outlet } from 'react-router-dom'
 import { Toaster } from 'sonner'
 import { Sidebar } from './Sidebar'
 import { Header } from './Header'
 
 export function AppShell() {
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+
   return (
     <div className="flex h-screen overflow-hidden bg-background">
       <a
@@ -12,10 +15,20 @@ export function AppShell() {
       >
         Перейти к содержимому
       </a>
-      <Sidebar />
+
+      {/* Mobile overlay */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-black/40 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+
       <div className="flex flex-1 flex-col overflow-hidden">
-        <Header />
-        <main id="main-content" aria-label="Основной контент" className="flex-1 overflow-y-auto p-6">
+        <Header onMenuClick={() => setSidebarOpen((v) => !v)} />
+        <main id="main-content" aria-label="Основной контент" className="flex-1 overflow-y-auto p-4 md:p-6">
           <Outlet />
         </main>
       </div>

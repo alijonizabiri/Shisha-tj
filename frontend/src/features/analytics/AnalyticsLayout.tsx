@@ -10,7 +10,7 @@ export function AnalyticsLayout() {
   return (
     <div className="flex flex-col gap-0">
       {/* Tab bar */}
-      <div className="border-b border-border px-6 pt-4">
+      <div className="border-b border-border px-4 pt-4 md:px-6">
         <nav className="flex gap-1" aria-label="Разделы аналитики">
           {TABS.map((tab) => (
             <NavLink

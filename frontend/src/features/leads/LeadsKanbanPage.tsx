@@ -103,22 +103,25 @@ export function LeadsKanbanPage() {
 
   return (
     <div className="flex flex-col gap-4 h-full">
-      <div className="flex items-center justify-between shrink-0">
+      <div className="flex flex-wrap items-center justify-between gap-3 shrink-0">
         <h1 className="text-2xl font-semibold">Канбан</h1>
         <div className="flex items-center gap-2">
           {dragError && (
-            <p className="text-sm text-destructive">{dragError}</p>
+            <p className="text-sm text-destructive hidden sm:block">{dragError}</p>
           )}
           <Link
             to="/leads"
             className="inline-flex items-center h-9 rounded-md border border-input bg-background px-3 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors"
           >
             <List className="mr-1 h-4 w-4" />
-            Таблица
+            <span className="hidden sm:inline">Таблица</span>
           </Link>
           <Button onClick={() => setNewLeadOpen(true)}>+ Новый лид</Button>
         </div>
       </div>
+      {dragError && (
+        <p className="text-sm text-destructive sm:hidden">{dragError}</p>
+      )}
 
       <DndContext
         sensors={sensors}

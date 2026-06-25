@@ -46,7 +46,7 @@ export function FactoryOrdersPage() {
   return (
     <div className="flex flex-col gap-4">
       {/* Page header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold">Заказы на завод</h1>
           {data && (
@@ -70,8 +70,8 @@ export function FactoryOrdersPage() {
       </div>
 
       {/* Table */}
-      <div className="rounded-md border border-border overflow-hidden">
-        <table className="w-full text-sm">
+      <div className="rounded-md border border-border overflow-x-auto">
+        <table className="w-full min-w-[640px] text-sm">
           <thead className="bg-muted/50">
             <tr>
               <th className="px-4 py-3 text-left font-medium text-muted-foreground">Код</th>
