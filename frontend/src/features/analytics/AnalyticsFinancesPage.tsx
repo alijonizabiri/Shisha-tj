@@ -51,7 +51,7 @@ export function AnalyticsFinancesPage() {
   }))
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6">
       {/* Filter */}
       <div className="flex flex-wrap items-center gap-3">
         <h1 className="text-2xl font-semibold mr-auto">P&L Финансы</h1>
